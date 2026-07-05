@@ -45,7 +45,7 @@
             <div class="text-center">
                 <h3 class="m-0 mb-0" >{{ monthName }}</h3>
                 <span class="fs-md fw-500 text-secondary">
-                    Total Time: <strong style="color: var(--text-primary);">{{ totalHours }}h {{"%02d"|format(totalMins) }}m</strong>
+                    Total Time: <strong class="text-primary">{{ totalHours }}h {{"%02d"|format(totalMins) }}m</strong>
                 </span>
             </div>
             <a href="?org_user_id={{ selectedUser.id }}&month={{ nextMonth }}" class="btn btn-secondary" >
@@ -53,9 +53,28 @@
             </a>
         </div>
 
-        <div class="bg-card rounded-lg border" style="overflow: hidden">
+        <div class="d-flex align-items-center justify-content-between mb-4">
+            <h4 class="fs-md text-secondary m-0">Daily Check-ins</h4>
+            
+            <!-- Highlight Filter UI -->
+            <div class="d-flex align-items-center gap-2">
+                <span class="fs-sm text-secondary fw-500">Highlight ></span>
+                <button type="button" class="btn btn-sm btn-outline-secondary highlight-filter-btn" data-seconds="1800">30m</button>
+                <button type="button" class="btn btn-sm btn-outline-secondary highlight-filter-btn" data-seconds="2700">45m</button>
+                <button type="button" class="btn btn-sm btn-outline-secondary highlight-filter-btn" data-seconds="3600">1h</button>
+                
+                <div class="d-flex align-items-center gap-1 ms-2">
+                    <input type="number" id="custom-highlight-mins" class="form-control form-control-sm" style="width: 70px" placeholder="Mins" min="1">
+                    <button type="button" class="btn btn-sm btn-outline-secondary" id="highlight-custom-btn">Apply</button>
+                </div>
+                
+                <button type="button" class="btn btn-sm btn-ghost ms-2 text-danger" id="highlight-clear-btn" style="display:none;">Clear</button>
+            </div>
+        </div>
+
+        <div class="bg-card rounded-lg border">
             <!-- Calendar Header -->
-            <div class="fs-sm fw-600 text-center text-secondary bg-input d-grid p-0 border-b" style="grid-template-columns: repeat(7, 1fr); ; ; ; .5rem 0">
+            <div class="fs-sm fw-600 text-center text-secondary bg-input d-grid border-b calendar-header">
                 <div>Sun</div>
                 <div>Mon</div>
                 <div>Tue</div>
@@ -66,23 +85,23 @@
             </div>
             
             <!-- Calendar Grid -->
-            <div class="d-grid" style="grid-template-columns: repeat(7, 1fr); auto-rows: minmax(80px, auto)">
+            <div class="d-grid calendar-grid">
                 {# Padding for start day of week #}
                 {% for i in 0..(startDayOfWeek - 1) %}
                     {% if startDayOfWeek > 0 and i < startDayOfWeek %}
-                        <div class="border-b" style="border-right: 1px solid var(--border-color); background: rgba(0,0,0,0.2)"></div>
+                        <div class="border-b calendar-cell-empty"></div>
                     {% endif %}
                 {% endfor %}
 
                 {# Days #}
                 {% for key, dayData in calendarData %}
-                    <div class="p-0 border-b" style="border-right: 1px solid var(--border-color); .4rem; min-height: 80px">
-                        <div class="d-flex justify-content-between mb-0" style="align-items: flex-start; .4rem">
-                            <span class="fs-md fw-600 text-primary" style="color: var(--text-primary); {% if dayData.sessions|length > 0 %};{% endif %}">{{ dayData.day }}</span>
+                    <div class="border-b calendar-cell">
+                        <div class="d-flex justify-content-between mb-0 calendar-cell-header">
+                            <span class="fs-md fw-600 text-primary">{{ dayData.day }}</span>
                             {% if dayData.totalSeconds > 0 %}
                                 {% set hours = (dayData.totalSeconds / 3600)|round(0, 'floor') %}
                                 {% set mins = ((dayData.totalSeconds % 3600) / 60)|round(0, 'floor') %}
-                                <span class="fs-xs fw-600 text-secondary bg-input p-0 rounded-sm" >
+                                <span class="badge-daily-total">
                                     {{ hours }}h{{"%02d"|format(mins) }}m
                                 </span>
                             {% endif %}
@@ -96,13 +115,14 @@
                                 {% set catName = session.category ? session.category.name : 'None' %}
                                 {% set timeRange = session.startedAt|date('H:i') ~ ' - ' ~ (session.endedAt ? session.endedAt|date('H:i') : 'Now') %}
                                 
-                                <div class="fw-600 d-inline-flex align-items-center justify-content-center rounded position-relative custom-popover-trigger" 
-                                     style="font-size: 0.65rem; padding: 0.3rem 0.5rem; background-color: var(--bg-card); color: var(--text-primary); border: 1px solid var(--border-color); border-left: 4px solid {{ catColor }}; cursor: pointer; white-space: nowrap; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+                                {% set sessionDurationSeconds = session.durationSeconds|default(0) %}
+                                <div class="fw-600 d-inline-flex align-items-center justify-content-center rounded position-relative custom-popover-trigger calendar-session highlightable-session" 
+                                     style="border-left: 4px solid {{ catColor }};" data-duration="{{ sessionDurationSeconds }}">
                                     {{ sHours }}h{{"%02d"|format(sMins) }}m
                                     
                                     <div class="custom-popover-content shadow-lg rounded p-2" style="border-top: 3px solid {{ catColor }};">
                                         <div class="fw-bold mb-1">{{ catName }}</div>
-                                        <div class="text-muted" style="font-size: 0.65rem;">{{ timeRange }}</div>
+                                        <div class="text-muted calendar-session-popover-text">{{ timeRange }}</div>
                                     </div>
                                 </div>
                             {% endfor %}
@@ -115,18 +135,70 @@
                 {% set remainingCells = (7 - (totalCells % 7)) % 7 %}
                 {% for i in 0..(remainingCells - 1) %}
                     {% if remainingCells > 0 %}
-                        <div class="border-b" style="border-right: 1px solid var(--border-color); background: rgba(0,0,0,0.2)"></div>
+                        <div class="border-b calendar-cell-empty"></div>
                     {% endif %}
                 {% endfor %}
             </div>
         </div>
     {% else %}
-        <div class="text-center text-muted bg-card rounded-md" style="padding: 4rem 2rem; ; border: 1px dashed var(--border-color)">
+        <div class="text-center text-muted bg-card rounded-md empty-state-card">
             <span class="material-icons fs-4xl mb-4">person_search</span>
             <p>Please select a user from the dropdown above to view their check-in calendar.</p>
         </div>
     {% endif %}
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Highlight logic
+            const sessionElements = document.querySelectorAll('.highlightable-session');
+            const clearBtn = document.getElementById('highlight-clear-btn');
+            const customBtn = document.getElementById('highlight-custom-btn');
+            const customInput = document.getElementById('custom-highlight-mins');
+            
+            function applyHighlight(minSeconds) {
+                sessionElements.forEach(el => {
+                    const duration = parseInt(el.getAttribute('data-duration') || 0, 10);
+                    if (duration > minSeconds) {
+                        el.classList.add('session-highlight');
+                        el.classList.remove('session-dimmed');
+                    } else {
+                        el.classList.remove('session-highlight');
+                        el.classList.add('session-dimmed');
+                    }
+                });
+                clearBtn.style.display = 'inline-block';
+            }
+            
+            function clearHighlight() {
+                sessionElements.forEach(el => {
+                    el.classList.remove('session-highlight', 'session-dimmed');
+                });
+                clearBtn.style.display = 'none';
+                customInput.value = '';
+            }
+            
+            document.querySelectorAll('.highlight-filter-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    applyHighlight(parseInt(this.getAttribute('data-seconds'), 10));
+                });
+            });
+            
+            if (customBtn) {
+                customBtn.addEventListener('click', function() {
+                    const mins = parseInt(customInput.value, 10);
+                    if (!isNaN(mins) && mins > 0) {
+                        applyHighlight(mins * 60);
+                    }
+                });
+            }
+            
+            if (clearBtn) {
+                clearBtn.addEventListener('click', clearHighlight);
+            }
+        });
+    </script>
 {% endblock %}
+
 
 {% block stylesheets %}
 {{ parent() }}

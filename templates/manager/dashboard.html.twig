@@ -146,11 +146,7 @@
                         <td>{{ session.startedAt|date('M d, h:i A') }}</td>
                         <td>
                             {% if session.endedAt %}
-                                {% if session.endMethod == 'Auto End' %}
-                                    <span class="badge fs-xs bg-muted-soft" style="; color: #6B7280">Auto End</span>
-                                {% else %}
-                                    {{ session.endedAt|date('M d, h:i A') }}
-                                {% endif %}
+                                {{ session.endedAt|date('Y-m-d h:i A') }}
                             {% else %}
                                 {% if org.plan.name != 'basic' and session.category and session.category.maxSessionDurationMinutes is not null %}
                                     {% set maxDurationSeconds = session.category.maxSessionDurationMinutes * 60 %}
@@ -188,8 +184,8 @@
                             <span class="badge badge-info">{{ session.startMethod }}</span>
                         </td>
                         <td>
-                            {% if session.endMethod == 'Auto End' %}
-                                <span class="badge badge-secondary fs-xs bg-muted-soft" style="; color: #6B7280; border: 1px solid rgba(107, 114, 128, 0.3)">Auto End</span>
+                            {% if session.endMethod == 'Auto End' or session.endMethod == 'Force End' %}
+                                <span class="badge badge-danger">{{ session.endMethod }}</span>
                             {% else %}
                                 {% if session.isOvertime %}
                                     <span class="badge badge-danger mr-1">Overtime</span>

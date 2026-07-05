@@ -1,290 +1,104 @@
-# Check-in/Checkout Application – Multi-Tenant Time Tracking Platform
-
-### TL;DR
-
-A robust, web-first check-in/checkout and time-tracking platform that enables organizations of any size to track and report categorized work hours across multiple tenants. Role-based access (user, manager, administrator), spreadsheet-based user onboarding, detailed plan-based feature gating, and scalable Stripe-driven billing deliver both flexibility and compliance. Exposes REST APIs from day one, ensuring extensibility for mobile apps and third-party integrations.
+# TimeFlow - Multi-Tenant Time Tracking Platform
+## Product Requirement Document (PRD)
 
 ---
 
-## Goals
+## 1. Executive Summary & TL;DR
 
-### Business Goals
+TimeFlow is a secure, web-first, multi-tenant check-in/checkout and time-tracking platform designed for organizations ranging from small local businesses to large enterprises. The system allows organizations (tenants) to manage employee attendance, track categorized work hours, configure automated attendance policies (session limits, overtime, check-in windows), and generate detailed exportable reports.
 
-* Achieve onboarding of at least 10 paid organizations within the first quarter.
-* Scale to at least 50 organizations and 1,000 daily active users within 6 months.
-* Maintain <2% support requests related to core flows: sign-in, check-in, or billing.
-* Ensure data retention and security compliance via plan-based limits.
-* Integrate and maintain reliable Stripe-based billing with <1% payment failure rate.
-
-### User Goals
-
-* Enable frictionless, secure check-in/out for all users with minimal delay.
-* Allow managers to onboard users rapidly via spreadsheet or manual entry.
-* Give users/managers comprehensive, searchable, and (where allowed) exportable time logs and category breakdowns.
-* Allow admins to manage, troubleshoot, and report across all organizations.
-
-### Non-Goals
-
-* Payroll integration, advanced HR/payroll analytics (future release only).
-* Native mobile apps in MVP phase (REST APIs prime for future builds).
-* Biometric, hardware, or location-based check-in (future consideration).
+Built with **PHP 8.5** and **Symfony 8.1**, the platform focuses on high performance, tight data separation, and scalability. It features an interactive Kiosk interface for physical workspace tablet check-ins, a spreadsheet-driven user onboarding wizard, a self-service Stripe billing simulator, and a comprehensive platform-wide administrator control console.
 
 ---
 
-## User Stories
+## 2. Platform Vision & Objectives
 
-### Employee/User
+### 2.1 Business Goals
+* **Self-Service Onboarding**: Enable managers to sign up, configure their organization, and upload their employee roster in under 5 minutes without technical assistance.
+* **Subscription Monetization**: Drive revenue through plan-gated tiers (Basic, Silver, Gold) with clear value propositions around data retention, user limits, and reporting.
+* **Low Support Overhead**: Keep support queries related to core operations (Kiosk logins, PIN issues, spreadsheet uploads) below 2% of total active tenants.
 
-* As a user, I want to check in and check out with minimal steps, so my work hours are accurately tracked.
-* As a user, I want to select a work/activity category at check-in, so time is categorized for reporting.
-* As a user, I want to view my log history, so I can see total hours and activities.
-* As a user, I want clear feedback when my check-in is invalid (exceeded session, outside window, wrong PIN).
+### 2.2 User Goals
+* **Frictionless Clock-in**: Employees should be able to identify themselves, select an activity category, enter credentials (if secure), and check in within 10 seconds.
+* **Operational Integrity**: Prevent "buddy clocking" and password fatigue using standardized, easy-to-remember unique PINs.
+* **Auditability**: Managers must be able to view, search, and verify time logs for compliance, payroll, or invoicing.
 
-### Organization Manager
-
-* As a manager, I want to upload a spreadsheet of users, preview data, and map columns/fields, so I can onboard employees efficiently.
-* As a manager, I want to choose unique identifiers and customize fields (name/type), so user records conform to org needs.
-* As a manager, I want to define categories and set/check-in/out access (PIN/open), so security/compliance matches our workflow.
-* As a manager, I want to set session length, check-in time windows, and overtime rules, so attendance policies are enforced.
-* As a manager, I want to generate and (on sufficient plan) export reports by user, time period, category, and org-level status.
-* As a manager, I want to rotate check-in page links and reset access controls, so I can quickly address security concerns.
-
-### Platform Administrator
-
-* As a platform admin, I want to view and manage all organizations, billing/payment records, and subscription status.
-* As a platform admin, I want to override org policies/settings for support or compliance.
-* As a platform admin, I want to see audit logs, reports on usage, plan features, and export permissions across orgs.
-* As a platform admin, I want to troubleshoot manager or user access issues (e.g., import failures, PIN resets, policy errors).
+### 2.3 Out of Scope (Non-Goals)
+* **Native Apps**: iOS/Android native applications are out of scope for the current web phase (though REST APIs are constructed to support them in the future).
+* **Hardware Integration**: Integration with physical card readers, turnstiles, or biometric sensors.
+* **Payroll Processing**: Direct calculation of tax deductions, banking payouts, or integration with external payroll processors (e.g., ADP, Gusto) is left for future iterations.
 
 ---
 
-## Functional Requirements
+## 3. User Personas & Journeys (Detailed Step-by-Step)
 
-### 1\. User Management & Import
+### 3.1 Organization Employee / User
+* **Attributes**: Non-technical or semi-technical; clocks in/out daily using a shared workspace tablet (Kiosk).
+* **Clock-in Journey Steps**:
+  1. **Locate Name**: The employee approaches the Kiosk screen. They type their name into the autocomplete search input, filtering the active roster.
+  2. **Select Profile**: They click their name from the filtered dropdown.
+  3. **Enter Credentials**: If the organization operates in **Secure PIN Mode**, a numeric keyboard overlay is displayed. The employee enters their 4-character PIN (e.g. `B045`). Keypad input is visually masked.
+  4. **Select Category**: The Kiosk displays categories (e.g. "General Shift", "Overtime Task") configured for their tenant. The employee selects one.
+  5. **Submission and State Verification**:
+     - The request is dispatched. If the PIN is verified and the user does not have an open session, a new `WorkSession` is created.
+     - The Kiosk displays a green "Success" banner, showing the check-in time.
+     - After 3 seconds, the screen transitions back to the idle search state.
 
-* Spreadsheet import: Multiple formats (.csv, .xls, .xlsx), up to 1,000 user records per import.
-* Step-by-step import wizard:
-  * Step 1: Upload spreadsheet – parse, show preview table of all data.
-  * Step 2: Select unique identifier column (dropdown driven by header recognition or manual selection).
-  * Step 3: Map spreadsheet columns to user profile fields (First Name, Last Name, Email, etc.), select or define name & data type (Unique ID \[string\], String, Number \[int\]).
-  * Step 4: Apply plan-based limits (Basic: 3 fields/1 category; Silver: 10 fields/5 categories; Gold: all Silver plus Email/Phone for notification/alerts).
-  * Step 5: System runs fuzzy match: user is matched by unique identifier or, if ambiguous, first+last name (active users only). Ambiguous/missing matches highlighted for manual review.
-  * Step 6: Managers choose for each unmatched row: Add as new, update existing, or mark as inactive. Full audit preview before applying changes.
-  * Step 7: Commit – update DB, all changes logged with timestamp/actor.
-* Users can never be deleted, only inactivated for reporting integrity; inactives can be reactivated by manager or admin.
-* All interactions, merges, and outcomes are logged.
+### 3.2 Organization Manager
+* **Attributes**: Business owner, HR coordinator, or department head.
+* **Onboarding & Setup Journey Steps**:
+  1. **Registration**: The manager visits the signup page, enters organization details, selects a subscription tier, and inputs billing details (via Stripe simulator).
+  2. **Roster Upload**: The manager navigates to the **Users** section and clicks **Import Roster**. They upload a CSV file of employees.
+  3. **Mapping Configurations**:
+     - Previews the first 5 rows of data.
+     - Maps CSV columns to database fields (First Name, Last Name, Email, Phone) and custom fields.
+     - Defines which column functions as the unique identifier.
+  4. **Resolving Matches**:
+     - The system reviews the database. It highlights rows that match existing records as "Updates" and non-matching records as "New Inserts".
+     - The manager confirms or adjusts these mapping outcomes.
+  5. **Activation**: Clicking **Commit** imports the records and generates secure, unique A/B/C PINs for all active members.
+  6. **Configuration**: The manager goes to settings and sets session thresholds, grace windows, and creates category tags.
 
-### 2\. Check-in/Check-out & Time Tracking
-
-* Single-session rule: User can only have one open session at any time; new check-in requires prior checkout.
-* Access mode: Supports both Open (user selects name from list) and Secure (user enters unique 4-char PIN). Manager can toggle mode at any time.
-* Private check-in/out link generated per organization; can be rotated (invalidates previous link).
-* Session duration/time window:
-  * Basic: 2hr max/session/org, fixed, no override.
-  * Silver: up to 8h max/session/org, editable by manager.
-  * Gold: up to 24h max/session, can set per user.
-* Check-in/check-out windows:
-  * Organization-level default (all plans), per-user override (Silver/Gold only).
-* Overtime rules:
-  * Basic: Org-level only.
-  * Silver/Gold: Org-level and per-user.
-  * Overtime triggers: grace period, multipliers, approval workflows.
-* Category selection: Manager defines categories (plan limit), users select category at check-in. Default category can be set per user.
-* All sessions/events record: time, user, org, session type, category, method (PIN/open), window/overtime status, and device (if available).
-
-### 3\. Reporting & Exports
-
-* Search/filter on: Organization, user, category, session status (active/inactive, out-of-window, overtime), date/time range.
-* Export:
-  * None on Basic plan.
-  * Excel export (all fields, grouped by filter) on Silver/Gold.
-  * Organization-level, user-level, and category-level rollups.
-* Data retention:
-  * Basic: 45 days
-  * Silver: 3 months
-  * Gold: 12 months
-* Visualization: Time series, categorical breakdowns (charts, bar/line/summary)—viewable in product on all plans, exportable on paid plans only.
-
-### 4\. Notifications & Communication
-
-* Gold plan: Email and SMS integration (via field mapping) for check-in/check-out. All notifications are opt-in; event-based (check-in success/fail, checkout, password/PIN resets, upcoming session reminders).
-* Web hooks or REST API endpoints for custom org automations (Enterprise roadmap).
-* Admin: Receives platform-wide system notifications for org/account events (subscription changes, error spikes, audit triggers).
-
-### 5\. Subscription, Billing, and Plan Management
-
-* Manager self-service instant sign-up, providing org info and payment (Stripe; supports credit card only on MVP).
-* Automated billing (monthly renewal), in-app and email renewal reminders for managers.
-* Admins see all org billing/plan details, download invoices, view payment history.
-* System auto-disables features if payment fails or plan changes, with grace period and escalation path.
+### 3.3 Platform Administrator
+* **Attributes**: Platform owner or support representative.
+* **System Maintenance Journey Steps**:
+  1. **Global Dashboard Access**: The admin signs in to `/admin` using their superuser credentials.
+  2. **Audit Logs Review**: Reviews system-wide actions to monitor configuration changes, exports, and support operations.
+  3. **Support Intervention**:
+     - Search for a specific organization (e.g., golden-demo).
+     - Resolves tenant issues by overriding limits, resetting manager passwords, or manually adjusting expired work sessions.
 
 ---
 
-## User Experience (with Journey Detail)
+## 4. Plan Gating & Feature Matrix
 
-### 1\. Admin/Manager Onboarding & Dashboard
+The platform gates features and resource limits dynamically based on the organization's subscription plan.
 
-* **Landing Page:**
-  * Split CTA: “Sign Up” (manager); “Admin Login”; demo links. Material icons enrich nav/CTA.
-* **Sign Up:**
-  * Flow steps: Org details > Choose plan (feature summary tooltips/icons for limits) > Payment > Confirmation > Dashboard initialized.
-* **Dashboard:**
-  * Persistent sidebar menus: Dashboard, Users, Categories, Reporting, Settings, Help (Material icons for each).
-  * Header: Logo, profile/avatar, role indicator (admin/manager/user).
-  * Manager sees remaining quota (fields, categories, users) per plan in dashboard overview.
-
-### 2\. User Import (Wizard Flow)
-
-* Step 1: Upload – Drag/drop or upload button. File parsed client-side; preview in grid/table.
-* Step 2: Select unique identifier column (dropdown populated by headers).
-* Step 3: Map spreadsheet columns to user profile fields: Custom naming, type selection, plan-based limits with error banners if exceeded. Tooltips explain valid data types. Required fields flagged.
-* Step 4: System matches import to users (active). Table marks adds, updates, missing (to be inactivated), ambiguous mappings for manager review. Tooltips for action selection.
-* Step 5: Confirmation dialog with full change summary and option to download preview of changes as CSV for audit.
-* Step 6: “Apply” -> Commits changes; toast/snackbar feedback; logs event in audit trail.
-
-### 3\. Check-in/Checkout (Public Link/Lightweight Mode)
-
-* **Link page:**
-  * Org branding/logo at top, access mode explained briefly, all input fields large and touch-friendly.
-  * If ‘Open’ mode: Select name (autocomplete dropdown), then check-in.
-  * If ‘PIN’ mode: Enter PIN; friendly error feedback on failure; Material lock/unlock icons; see remaining attempts.
-  * Category selection (dropdown/buttons with category icons); check-in button (highlighted, responsive, clearly labeled).
-* **Session feedback:**
-  * Prominent session info: time started, duration, category; checkout button readily accessible.
-  * Session end—feedback on rule violation (if any): max duration exceeded, out-of-window status.
-* **Mobile Responsive:**
-  * Buttons and fields scale to touch, nav collapses to icon bar.
-
-### 4\. Administrator
-
-* **Global Menu:** Organizations, Reports, Billing, Settings (admin_panel_settings icon prominent for overrides).
-* **Dashboard:** List all organizations, search/filter; see key metrics (plan level, subscription, latest activity, export capability).
-* **Reports:** Filter by org/user/category/time. Export/download only if org plan allows (download icon with tooltip clarifies permission).
-* **Override/Support:** Admins can force reset PIN, reactivate user, modify time window/overtime rules with modal dialogs (with color warning and require reason/log).
-* **All administrator actions are logged for audit.**
+| Feature / Constraint | Basic Plan | Silver Plan | Gold Plan |
+| :--- | :--- | :--- | :--- |
+| **Employee Limit** | Max 10 | Max 100 | Max 1,000 |
+| **Manager Limit** | Max 1 | Max 1 | Unlimited |
+| **Max Session Duration** | 2 Hours (Hard Cap) | 8 Hours (Customizable) | 24 Hours (Customizable) |
+| **Access Mode** | Open Mode Only | Open or Secure PIN | Open or Secure PIN |
+| **Data Retention** | 45 Days | 90 Days | 365 Days |
+| **Report Exports** | Disabled | Excel/CSV Exports | Excel/CSV Exports |
+| **Custom Fields** | Max 3 | Max 10 | Unlimited |
+| **Category Limit** | Max 1 | Max 5 | Unlimited |
+| **Communications** | None | System Email Logs | Real/Simulated Email & SMS |
 
 ---
 
-## Sequence Diagrams (Pseudocode/Simple Visual)
+## 5. Security & Technical Architecture Rules
 
-### A. User Import
+### 5.1 Standardized PIN Security
+- **PIN format**: Must be exactly 4 characters. The first character must be **A**, **B**, or **C**, followed by exactly 3 numeric digits (e.g. `A001`, `B999`). This provides exactly 3,000 unique possible permutations per organization.
+- **Uniqueness constraint**: Enforced via a unique constraint in MySQL `uq_org_pin` on `[organization_id, pin]`.
+- **Brute-Force Protection**: A maximum of 3 consecutive failed PIN attempts within the session blocks Kiosk check-in. The lockout status is cleared when the manager resets the PIN.
 
-```
-Manager → Web UI: Upload/parse spreadsheet
-Web UI → Manager: Preview + select unique ID + map columns/types
-Manager → Web UI: Confirm mapping
-Web UI → Server: Process, run fuzzy match (existing users/active)
-Server → Web UI: Show adds/updates/inactivates
-Manager → Web UI: Confirm and commit
-Web UI → Server/DB: Apply changes, log audit
+### 5.2 Performance & Hash Caching
+- **Hashing Overhead**: BCrypt password hashing takes ~100ms per call. To prevent timeouts during bulk employee uploads or demo data generation, the system pre-computes and caches BCrypt hashes for all 3,000 valid PINs into `var/cache/pin_hashes.php`.
+- **Lookups**: `PinService` uses an $O(1)$ memory lookup on the precomputed cache array to instantly retrieve hashes during writes and comparisons.
 
-```
-
-### B. Secure Check-In
-
-```
-User → UI (link): Enter PIN → Submit
-UI → Server: Validate PIN + session rules
-If valid: UI allows category select → Confirm check-in
-UI → Server: Record check-in, update logs, send notif (if Gold)
-If invalid: UI feedback (error banner), block/retry
-
-```
-
-### C. Admin Export
-
-```
-Admin → Admin UI: Select org + report params
-UI → Server: Auth + fetch data
-Server (plan check): If permitted, generate XLSX → UI
-UI → Admin: Download link enabled
-Action logged in audit
-
-```
-
----
-
-## UI/UX Highlights
-
-* Role-driven, persistent navigation, clear menu labeling.
-* Material icons for all primary/secondary actions.
-* Tooltips and banners guide all critical decision points.
-* Accessibility: Contrast, tab/keyboard navigation, screen reader labels on all fields/buttons.
-* Feedback and validation at every user interaction.
-* Responsive: Mobile, tablet, and desktop (progressive/responsiveness baked in).
-* Export/download actions only if plan permits—otherwise, grayed-out and tooltip-explained.
-
----
-
-## Technical Considerations
-
-### Architectures & APIs
-
-* Web-first SPA (React/Angular/Vue suggested, but stack-agnostic for doc).
-* RESTful API endpoints for all CRUD ops: Users, Orgs, Sessions, Reports, Categories, Billing, Admin (fully versioned).
-* Designed for horizontal scaling (multi-tenant DB schema, stateless API layer).
-
-### Roles & Security
-
-* RBAC at API and UI level.
-* All sensitive flows double-checked (PIN entry, plan change, payroll export, override).
-
-### 3rd Party & Integration
-
-* Stripe API for subscription/billing.
-* Twilio (or similar) for Gold plan user notifications (email/SMS).
-* Secure mail (SMTP or Sendgrid) for invites/events.
-* All imports and exports validated and logged.
-
-### Data Storage & Privacy
-
-* Per-tenant logical separation; soft-deletion (inactive flagging), never actual removal.
-* All PII fields encrypted at rest; PINs salted/hashed.
-* Data retention enforced per plan (policy runs via nightly jobs).
-* Audit logs: every critical action (import, field mapping, session overruling, admin overrides, exports), queryable by admin for compliance.
-* GDPR and CCPA-ready (subject access/export, opt-out, retention handling).
-
-### Scalability & Performance
-
-* Designed for 1,000+ simultaneous orgs and \~10,000+ DAU.
-* Heavy imports/exports queued if >1k rows, processed async.
-* Rate limiting and DDoS prevention on all public endpoints.
-
-### Error Management, Edge Cases & Recovery
-
-* Import errors: Bad mapping, format, ambiguous IDs handled via preview/override.
-* Check-in errors: Double check-in, outside allowed window, exceeded session, wrong PIN, overtime triggers—all with tailored feedback and logs.
-* Payment/billing failure: Grace period with progressive escalation (email/in-app banner), auto-downgrade/disable as last resort.
-
----
-
-## Milestones & Sequencing
-
-### Phase 1: Architecture & Design (2–3 days)
-
-* Finalize workflow, detail user journeys, create wireframes/UI specs.
-* Team: 1 Product, 1 Full-Stack.
-* Deliverables: API spec, DB schema, clickable wireframes.
-
-### Phase 2: MVP Development (1 week)
-
-* Build core flows: Org onboarding, spreadsheet import, session logic, reporting, and plan-based gating.
-* Stripe integration live/tested end-to-end.
-* Audit logging and export scaffolding.
-
-### Phase 3: QA, UAT, and Admin Panel (3–4 days)
-
-* End-to-end tests, manager and admin flows, bug fix, accessibility review.
-* Deliverables: All roles validated, handoff checklists, launch support.
-
-### Team size: Lean (1–2 FTEs fast, full-stack + product); expand only post-launch.
-
----
-
-## Appendix: Supporting Documents
-
-* For complete step-by-step wireframes and journey visuals, refer to the “User Journey Wireframes – Check-in/Checkout App” document in this workspace.
-
----
-
-This represents a fully detailed, production-grade PRD with actionable design, engineering, reporting, and compliance guidance for all key personas, plans, and journeys.
+### 5.3 Automated Session Sweeper
+- To maintain data integrity, active sessions that exceed the allowed duration cap (based on organization settings or category limits) must be automatically cleaned up.
+- The `SessionSweeperService` scans open sessions on every Kiosk request and terminates them, setting `endedAt` to the maximum permitted session limit.

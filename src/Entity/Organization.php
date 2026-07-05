@@ -89,6 +89,9 @@ class Organization
     #[ORM\Column(type: "boolean", nullable: true)]
     private ?bool $exportsEnabledOverride = null;
 
+    #[ORM\Column(type: "boolean", options: ["default" => true])]
+    private bool $kioskTokenAutoRotate = true;
+
     #[ORM\Column(type: "datetime_immutable")]
     private \DateTimeImmutable $createdAt;
 
@@ -100,6 +103,7 @@ class Organization
         $this->createdAt = new \DateTimeImmutable();
         $this->updatedAt = new \DateTimeImmutable();
         $this->checkInLinkToken = bin2hex(random_bytes(16));
+        $this->kioskTokenAutoRotate = true;
     }
 
     public function getId(): ?int
@@ -422,6 +426,17 @@ class Organization
     public function setPhone(?string $phone): self
     {
         $this->phone = $phone;
+        return $this;
+    }
+
+    public function isKioskTokenAutoRotate(): bool
+    {
+        return $this->kioskTokenAutoRotate;
+    }
+
+    public function setKioskTokenAutoRotate(bool $kioskTokenAutoRotate): self
+    {
+        $this->kioskTokenAutoRotate = $kioskTokenAutoRotate;
         return $this;
     }
 }

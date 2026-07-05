@@ -30,7 +30,7 @@
                     {% for cat in categories %}
                         <tr>
                             <td>
-                                <div class="d-inline-flex align-items-center justify-content-center rounded-sm" style="width: 36px; height: 36px; background: {{ cat.color|default('#8b5cf6') }}20; color: {{ cat.color|default('#8b5cf6') }}">
+                                <div class="d-inline-flex align-items-center justify-content-center rounded-sm" style="width: 40px; height: 40px; background: {{ cat.color|default('#8b5cf6') }}20; color: {{ cat.color|default('#8b5cf6') }}">
                                     <span class="material-icons fs-xl">{{ cat.icon }}</span>
                                 </div>
                             </td>
@@ -125,11 +125,11 @@
             </div>
 
             {% if limitsData.usage.categories >= limitsData.limits.max_categories %}
-                <div class="alert alert-danger fs-sm p-0" >
-                    <span class="material-icons fs-md">lock</span>
-                    <span>Limit reached. Upgrade plan to unlock more categories.</span>
+                <div class="alert alert-warning alert-sm" >
+                    <span class="material-icons fs-md">info</span>
+                    <span>Active category limit reached. New categories will be added as Inactive.</span>
                 </div>
-            {% else %}
+            {% endif %}
                 <form method="post">
                     <div class="form-group">
                         <label class="form-label" for="category_name">Category Name</label>
@@ -139,7 +139,7 @@
                     <div class="d-grid gap-4" style="grid-template-columns: 1fr auto">
                         <div class="form-group">
                             <label class="form-label">Category Icon</label>
-                            <div class="icon-palette" id="add-icon-palette" class="d-grid gap-1 mt-0" style="grid-template-columns: repeat(5, 1fr); .4rem">
+                            <div id="add-icon-palette" class="icon-palette d-grid mt-0" style="grid-template-columns: repeat(5, 1fr); gap: 0.5rem;">
                                 {% for icon in ['work', 'code', 'palette', 'groups', 'support_agent', 'coffee', 'build', 'school', 'store', 'fitness_center'] %}
                                     <button type="button" class="icon-palette-btn" data-icon="{{ icon }}" title="{{ icon|replace({'_': ' '})|capitalize }}">
                                         <span class="material-icons fs-xl">{{ icon }}</span>
@@ -174,7 +174,6 @@
                         <span class="material-icons">add</span> Create Category
                     </button>
                 </form>
-            {% endif %}
         </div>
         
         <!-- ============================================== -->
@@ -194,7 +193,7 @@
                 <div class="d-grid gap-4" style="grid-template-columns: 1fr auto">
                     <div class="form-group">
                         <label class="form-label">Category Icon</label>
-                        <div class="icon-palette" id="edit-icon-palette" class="d-grid gap-1 mt-0" style="grid-template-columns: repeat(5, 1fr); .4rem">
+                        <div id="edit-icon-palette" class="icon-palette d-grid mt-0" style="grid-template-columns: repeat(5, 1fr); gap: 0.5rem;">
                             {% for icon in ['work', 'code', 'palette', 'groups', 'support_agent', 'coffee', 'build', 'school', 'store', 'fitness_center'] %}
                                 <button type="button" class="icon-palette-btn" data-icon="{{ icon }}" title="{{ icon|replace({'_': ' '})|capitalize }}">
                                     <span class="material-icons fs-xl">{{ icon }}</span>

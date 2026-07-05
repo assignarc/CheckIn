@@ -54,7 +54,7 @@
 <!-- Summaries & Exports Row -->
 <div class="grid-cols-4 mb-8">
     <div class="metric-card p-4" >
-        <div class="metric-icon indigo" style="width:36px; height:36px;"><span class="material-icons fs-xl">timer</span></div>
+        <div class="metric-icon indigo"><span class="material-icons fs-xl">timer</span></div>
         <div class="metric-info">
             <h3 class="fs-xl">{{ totalHours }}</h3>
             <p class="fs-xs">Total Hours Worked</p>
@@ -62,7 +62,7 @@
     </div>
     
     <div class="metric-card p-4" >
-        <div class="metric-icon rose" style="width:36px; height:36px;"><span class="material-icons fs-xl">more_time</span></div>
+        <div class="metric-icon rose"><span class="material-icons fs-xl">more_time</span></div>
         <div class="metric-info">
             <h3 class="fs-xl">{{ overtimeCount }}</h3>
             <p class="fs-xs">Overtime Instances</p>
@@ -70,7 +70,7 @@
     </div>
 
     <div class="metric-card p-4" >
-        <div class="metric-icon amber" style="width:36px; height:36px;"><span class="material-icons fs-xl">warning</span></div>
+        <div class="metric-icon amber"><span class="material-icons fs-xl">warning</span></div>
         <div class="metric-info">
             <h3 class="fs-xl">{{ outOfWindowCount }}</h3>
             <p class="fs-xs">Out-of-Window Logs</p>
@@ -96,7 +96,24 @@
 
 <!-- Logs Table -->
 <div class="glass-panel p-6">
-    <h3 class="fs-lg mb-5">Shift Logs</h3>
+    <div class="d-flex justify-content-between align-items-center mb-5">
+        <h3 class="fs-lg m-0">Shift Logs</h3>
+        
+        <!-- Highlight Filter UI -->
+        <div class="d-flex align-items-center gap-2">
+            <span class="fs-sm text-secondary fw-500">Highlight ></span>
+            <button type="button" class="btn btn-sm btn-outline-secondary highlight-filter-btn" data-seconds="1800">30m</button>
+            <button type="button" class="btn btn-sm btn-outline-secondary highlight-filter-btn" data-seconds="2700">45m</button>
+            <button type="button" class="btn btn-sm btn-outline-secondary highlight-filter-btn" data-seconds="3600">1h</button>
+            
+            <div class="d-flex align-items-center gap-1 ms-2">
+                <input type="number" id="custom-highlight-mins" class="form-control form-control-sm" style="width: 70px" placeholder="Mins" min="1">
+                <button type="button" class="btn btn-sm btn-outline-secondary" id="highlight-custom-btn">Apply</button>
+            </div>
+            
+            <button type="button" class="btn btn-sm btn-ghost ms-2 text-danger" id="highlight-clear-btn" style="display:none;">Clear</button>
+        </div>
+    </div>
 
     <div class="table-responsive">
         <table class="table">
@@ -114,7 +131,7 @@
             </thead>
             <tbody>
                 {% for session in sessions %}
-                    <tr>
+                    <tr class="highlightable-session" data-duration="{{ session.durationSeconds|default(0) }}">
                         <td class="fw-600">{{ session.orgUser.firstName }} {{ session.orgUser.lastName }}</td>
                         <td>
                             <span class="d-inline-flex align-items-center gap-1">
@@ -127,11 +144,7 @@
                         <td>{{ session.startedAt|date('Y-m-d h:i A') }}</td>
                         <td>
                             {% if session.endedAt %}
-                                {% if session.endMethod == 'Auto End' %}
-                                    <span class="badge fs-xs bg-muted-soft" style="; color: #6B7280">Auto End</span>
-                                {% else %}
-                                    {{ session.endedAt|date('Y-m-d h:i A') }}
-                                {% endif %}
+                                {{ session.endedAt|date('Y-m-d h:i A') }}
                             {% else %}
                                 {% if org.plan.name != 'basic' and session.category and session.category.maxSessionDurationMinutes is not null %}
                                     {% set maxDurationSeconds = session.category.maxSessionDurationMinutes * 60 %}
@@ -169,8 +182,8 @@
                             <span class="badge badge-info">{{ session.startMethod }}</span>
                         </td>
                         <td>
-                            {% if session.endMethod == 'Auto End' %}
-                                <span class="badge badge-secondary fs-xs bg-muted-soft" style="; color: #6B7280; border: 1px solid rgba(107, 114, 128, 0.3)">Auto End</span>
+                            {% if session.endMethod == 'Auto End' or session.endMethod == 'Force End' %}
+                                <span class="badge badge-danger">{{ session.endMethod }}</span>
                             {% else %}
                                 {% if session.isOvertime %}
                                     <span class="badge badge-danger mr-1">Overtime</span>
@@ -183,8 +196,18 @@
                                 {% endif %}
                             {% endif %}
                         </td>
-                        <td class="fs-xs text-secondary" style="max-width:200px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap" title="{{ session.deviceInfo }}">
-                            {{ session.deviceInfo|default('N/A') }}
+                        <td>
+                            {% if not session.endedAt %}
+                                <form action="{{ path('app_manager_reports_force_end', {id: session.id}) }}" method="post" style="display:inline;">
+                                    <button type="button" class="btn btn-danger btn-sm force-end-btn" title="Force End Session" style="padding: 0.25rem 0.5rem;">
+                                        <span class="material-icons fs-sm">stop_circle</span> Stop
+                                    </button>
+                                </form>
+                            {% else %}
+                                <div class="fs-xs text-secondary" style="max-width:150px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap" title="{{ session.deviceInfo }}">
+                                    {{ session.deviceInfo|default('N/A') }}
+                                </div>
+                            {% endif %}
                         </td>
                     </tr>
                 {% else %}
@@ -199,4 +222,78 @@
         </table>
     </div>
 </div>
+{% endblock %}
+
+{% block javascripts %}
+{{ parent() }}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        document.querySelectorAll('.force-end-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const form = this.closest('form');
+                $.confirm({
+                    title: 'Force End Session?',
+                    content: 'Are you sure you want to forcefully end this session? This action cannot be undone.',
+                    type: 'red',
+                    theme: 'modern',
+                    buttons: {
+                        confirm: {
+                            text: 'Stop Session',
+                            btnClass: 'btn-red',
+                            action: function () {
+                                form.submit();
+                            }
+                        },
+                        cancel: function () {
+                            // do nothing
+                        }
+                    }
+                });
+            });
+        });
+        
+        // Highlight logic
+        const sessionElements = document.querySelectorAll('.highlightable-session');
+        const clearBtn = document.getElementById('highlight-clear-btn');
+        const customBtn = document.getElementById('highlight-custom-btn');
+        const customInput = document.getElementById('custom-highlight-mins');
+        
+        function applyHighlight(minSeconds) {
+            sessionElements.forEach(el => {
+                const duration = parseInt(el.getAttribute('data-duration') || 0, 10);
+                if (duration > minSeconds) {
+                    el.classList.add('session-highlight');
+                    el.classList.remove('session-dimmed');
+                } else {
+                    el.classList.remove('session-highlight');
+                    el.classList.add('session-dimmed');
+                }
+            });
+            clearBtn.style.display = 'inline-block';
+        }
+        
+        function clearHighlight() {
+            sessionElements.forEach(el => {
+                el.classList.remove('session-highlight', 'session-dimmed');
+            });
+            clearBtn.style.display = 'none';
+            customInput.value = '';
+        }
+        
+        document.querySelectorAll('.highlight-filter-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                applyHighlight(parseInt(this.getAttribute('data-seconds'), 10));
+            });
+        });
+        
+        customBtn.addEventListener('click', function() {
+            const mins = parseInt(customInput.value, 10);
+            if (!isNaN(mins) && mins > 0) {
+                applyHighlight(mins * 60);
+            }
+        });
+        
+        clearBtn.addEventListener('click', clearHighlight);
+    });
+</script>
 {% endblock %}

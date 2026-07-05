@@ -42,7 +42,7 @@
                 <span class="material-icons">
                     {% if type == 'danger' %}error{% else %}check_circle{% endif %}
                 </span>
-                <span>{{ message }}</span>
+                <span>{{ message|raw }}</span>
             </div>
         {% endfor %}
     {% endfor %}

@@ -125,13 +125,20 @@
                 <!-- Toggle rows -->
                 <div class="d-flex flex-column gap-2 mb-4">
 
-                    <div class="toggle-row p-0 rounded-sm bg-primary-soft-bordered" style=" .75rem">
+                    <div class="toggle-row">
                         <div>
-                            <div class="fs-sm fw-600 text-purple-500"><span class="material-icons fs-md mr-1" style="vertical-align: middle">auto_renew</span> Kiosk URL Rotation</div>
+                            <div class="fs-sm fw-600 text-purple-500"><span class="material-icons fs-md mr-1" style="vertical-align: middle">auto_renew</span> Auto Rotate Kiosk URL</div>
                             <div class="fs-xs text-secondary mt-1">
-                                Your Kiosk URL rotates automatically every <strong>{{ app.user.organization.kioskTokenRotationHours }} hours</strong> as per system policy. This enhances security. Please contact the administrator if you need to change this schedule.
+                                Rotates the kiosk URL automatically every <strong>{{ org.kioskTokenRotationHours }} hours</strong> to enhance security. If disabled, rely on manual rotation.
                             </div>
                         </div>
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="auto_rotate_toggle"
+                                   {% if org.isKioskTokenAutoRotate() %}checked{% endif %}
+                                   onchange="$('#kiosk_token_auto_rotate_input').val(this.checked ? '1' : '0')">
+                            <span class="toggle-track"></span>
+                        </label>
+                        <input type="hidden" name="kiosk_token_auto_rotate" id="kiosk_token_auto_rotate_input" value="{{ org.isKioskTokenAutoRotate() ? '1' : '0' }}">
                     </div>
 
                     <div class="toggle-row">

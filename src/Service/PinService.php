@@ -40,44 +40,42 @@ class PinService
         return $pins;
     }
 
-    /**
-     * Get all cached PIN hashes. Generates and caches them if not already done.
-     */
-    public function getPinHashes(): array
-    {
-        $cacheFile = $this->projectDir . '/var/cache/pin_hashes.php';
-        if (file_exists($cacheFile)) {
-            return require $cacheFile;
-        }
-
-        $hashes = [];
-        $allPins = $this->getAllPossiblePins();
-        foreach ($allPins as $pin) {
-            $hashes[$pin] = $this->hasher->hash($pin);
-        }
-
-        $dir = dirname($cacheFile);
-        if (!is_dir($dir)) {
-            mkdir($dir, 0777, true);
-        }
-
-        file_put_contents($cacheFile, '<?php return ' . var_export($hashes, true) . ';');
-
-        return $hashes;
-    }
+    private ?array $cachedHashes = null;
 
     /**
      * Hash a PIN (utilizing the cache for fast lookups).
+     * If the PIN hash is already cached in var/cache/pin_hashes.php, it loads it.
+     * Otherwise, it hashes on-demand and writes back to the cache.
      */
     public function hashPin(string $pin): string
     {
         $pin = strtoupper(trim($pin));
-        $hashes = $this->getPinHashes();
-        if (isset($hashes[$pin])) {
-            return $hashes[$pin];
+        
+        $cacheFile = $this->projectDir . '/var/cache/pin_hashes.php';
+        if ($this->cachedHashes === null) {
+            if (file_exists($cacheFile)) {
+                $this->cachedHashes = require $cacheFile;
+            } else {
+                $this->cachedHashes = [];
+            }
         }
-        // Fallback if the PIN format does not match A000-C999
-        return $this->hasher->hash($pin);
+
+        if (isset($this->cachedHashes[$pin])) {
+            return $this->cachedHashes[$pin];
+        }
+
+        // Hash it on-demand (e.g. on first use of this PIN)
+        $hash = $this->hasher->hash($pin);
+        $this->cachedHashes[$pin] = $hash;
+
+        // Save updated cache back to file
+        $dir = dirname($cacheFile);
+        if (!is_dir($dir)) {
+            mkdir($dir, 0777, true);
+        }
+        file_put_contents($cacheFile, '<?php return ' . var_export($this->cachedHashes, true) . ';');
+
+        return $hash;
     }
 
     /**

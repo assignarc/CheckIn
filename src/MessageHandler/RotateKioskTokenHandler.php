@@ -25,7 +25,7 @@ class RotateKioskTokenHandler
     {
         $org = $this->em->getRepository(Organization::class)->find($message->getOrgId());
         
-        if (!$org) {
+        if (!$org || !$org->isKioskTokenAutoRotate()) {
             return;
         }
 

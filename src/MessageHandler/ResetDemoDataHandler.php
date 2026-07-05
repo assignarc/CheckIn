@@ -11,11 +11,13 @@ use App\Entity\WorkSession;
 use App\Message\ResetDemoDataMessage;
 use App\Message\RotateKioskTokenMessage;
 use App\Message\RotatePasswordMessage;
+use App\Service\LicenseService;
 use App\Service\PinService;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\DependencyInjection\ParameterBag\ParameterBagInterface;
 use Symfony\Component\Messenger\Attribute\AsMessageHandler;
 use Symfony\Component\Messenger\MessageBusInterface;
+
 
 
 #[AsMessageHandler]
@@ -25,17 +27,20 @@ class ResetDemoDataHandler
     private MessageBusInterface $messageBus;
     private ParameterBagInterface $params;
     private PinService $pinService;
+    private LicenseService $licenseService;
 
     public function __construct(
         EntityManagerInterface $em,
         MessageBusInterface $messageBus,
         ParameterBagInterface $params,
-        PinService $pinService
+        PinService $pinService,
+        LicenseService $licenseService
     ) {
         $this->em = $em;
         $this->messageBus = $messageBus;
         $this->params = $params;
         $this->pinService = $pinService;
+        $this->licenseService = $licenseService;
     }
 
     public function __invoke(ResetDemoDataMessage $message)
@@ -125,6 +130,8 @@ class ResetDemoDataHandler
             $usersCreated = 0;
             $usedBasicPins = [];
             $usedGoldenPins = [];
+            $activeBasicCount = 0;
+            $activeGoldenCount = 0;
             while (($row = fgetcsv($handle)) !== false) {
                 if ($usersCreated >= 100) break;
 
@@ -145,6 +152,15 @@ class ResetDemoDataHandler
                     $usedBasicPins[] = $pin;
                 }
 
+                $isActive = $this->licenseService->isNextUserActiveAllowed($targetOrg, $isGolden ? $activeGoldenCount : $activeBasicCount);
+                if ($isActive) {
+                    if ($isGolden) {
+                        $activeGoldenCount++;
+                    } else {
+                        $activeBasicCount++;
+                    }
+                }
+
                 $orgUser = new OrgUser();
                 $orgUser->setOrganization($targetOrg);
                 $orgUser->setFirstName($firstName);
@@ -153,6 +169,7 @@ class ResetDemoDataHandler
                 $orgUser->setEmail($email);
                 $orgUser->setPin($pin);
                 $orgUser->setPinHash($this->pinService->hashPin($pin));
+                $orgUser->setIsActive($isActive);
                 $this->em->persist($orgUser);
 
 

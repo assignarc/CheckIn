@@ -9,6 +9,7 @@ use App\Entity\Organization;
 use App\Entity\PaymentHistory;
 use App\Entity\WorkSession;
 use App\Entity\AuditLog;
+use App\Service\LicenseService;
 use App\Service\PinService;
 use App\Service\SessionSweeperService;
 use Doctrine\ORM\EntityManagerInterface;
@@ -23,11 +24,14 @@ use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 class ManagerController extends AbstractController
 {
     private PinService $pinService;
+    private LicenseService $licenseService;
 
-    public function __construct(PinService $pinService)
+    public function __construct(PinService $pinService, LicenseService $licenseService)
     {
         $this->pinService = $pinService;
+        $this->licenseService = $licenseService;
     }
+
 
     private function getOrgLimits(Organization $org, EntityManagerInterface $em): array
     {
@@ -228,9 +232,8 @@ class ManagerController extends AbstractController
             $windowStart  = $request->request->get('window_start');
             $windowEnd    = $request->request->get('window_end');
 
-            $limitsData      = $this->getOrgLimits($org, $em);
-            $maxAllowedHours = $limitsData['limits']['max_session_hours'];
-            if ($sessionLimit > $maxAllowedHours) {
+            $maxAllowedHours = $org->getSessionLimitHours();
+            if (!$this->licenseService->isSessionDurationAllowed($org, $sessionLimit * 60)) {
                 $sessionLimit = $maxAllowedHours;
                 $this->addFlash('warning', "Session duration limit capped at {$maxAllowedHours} hours by your plan.");
             }
@@ -247,15 +250,20 @@ class ManagerController extends AbstractController
 
             $maskLastName = $request->request->get('mask_last_name') === '1';
             $org->setMaskLastName($maskLastName);
+
+            $kioskTokenAutoRotate = $request->request->get('kiosk_token_auto_rotate') === '1';
+            $org->setKioskTokenAutoRotate($kioskTokenAutoRotate);
+
             $org->setUpdatedAt(new \DateTimeImmutable());
             $em->flush();
 
             $this->logAudit($em, $org, 'POLICY_CHANGE', [
-                'access_mode'         => $accessMode,
-                'session_limit_hours' => $sessionLimit,
-                'window_start'        => $windowStart,
-                'window_end'          => $windowEnd,
-                'mask_last_name'      => $maskLastName,
+                'access_mode'             => $accessMode,
+                'session_limit_hours'     => $sessionLimit,
+                'window_start'            => $windowStart,
+                'window_end'              => $windowEnd,
+                'mask_last_name'          => $maskLastName,
+                'kiosk_token_auto_rotate' => $kioskTokenAutoRotate,
             ], $request);
 
             $this->addFlash('success', 'Policies updated successfully.');
@@ -305,18 +313,14 @@ class ManagerController extends AbstractController
             $maxDurationInput = $request->request->get('max_session_duration');
             $terminateAtMax = $request->request->has('terminate_at_max_duration');
 
-            // Plan category limit check
-            if (count($categories) >= $limitsData['limits']['max_categories']) {
-                $this->addFlash('danger', "Category limit reached. Your plan allows max {$limitsData['limits']['max_categories']} categories. Upgrade to unlock more.");
-                return $this->redirectToRoute('app_manager_categories');
-            }
+            $isActive = $this->licenseService->isNextCategoryAllowed($org);
 
             if ($name) {
                 $category = new Category();
                 $category->setOrganization($org);
                 $category->setName($name);
                 $category->setIcon($icon);
-                $category->setIsActive(true);
+                $category->setIsActive($isActive);
 
                 // Handle session duration overrides for non-basic plans
                 if ($org->getPlan()->hasCustomSessionDurations()) {
@@ -327,7 +331,7 @@ class ManagerController extends AbstractController
                             $this->addFlash('danger', "Max Session Duration must be in HR:MIN format (e.g. 08:00 or 02:30).");
                             return $this->redirectToRoute('app_manager_categories');
                         }
-                        if ($maxMinutes <= 0 || $maxMinutes > $planMaxMinutes) {
+                        if ($maxMinutes <= 0 || !$this->licenseService->isSessionDurationAllowed($org, $maxMinutes)) {
                             $this->addFlash('danger', "Max Session Duration for a category must be greater than 0 and cannot exceed the plan limit of {$org->getSessionLimitHours()} hours.");
                             return $this->redirectToRoute('app_manager_categories');
                         }
@@ -346,7 +350,12 @@ class ManagerController extends AbstractController
                 $em->flush();
 
                 $this->logAudit($em, $org, 'CATEGORY_CREATE', ['name' => $name], $request);
-                $this->addFlash('success', "Category '{$name}' created successfully.");
+                
+                if ($isActive) {
+                    $this->addFlash('success', "Category '{$name}' created successfully.");
+                } else {
+                    $this->addFlash('warning', "Category '{$name}' created as Inactive due to active category quota.");
+                }
             }
             return $this->redirectToRoute('app_manager_categories');
         }
@@ -368,6 +377,13 @@ class ManagerController extends AbstractController
         $category = $em->getRepository(Category::class)->find($id);
         if ($category && $category->getOrganization()->getId() === $org->getId()) {
             $newStatus = !$category->isActive();
+
+            if ($newStatus && !$this->licenseService->isNextCategoryAllowed($org)) {
+                $limitsData = $this->getOrgLimits($org, $em);
+                $this->addFlash('danger', "Active category limit reached ({$limitsData['limits']['max_categories']}). Deactivate another category or upgrade your plan.");
+                return $this->redirectToRoute('app_manager_categories');
+            }
+
             $category->setIsActive($newStatus);
             $em->flush();
 
@@ -408,7 +424,7 @@ class ManagerController extends AbstractController
                             $this->addFlash('danger', "Max Session Duration must be in HR:MIN format (e.g. 08:00 or 02:30).");
                             return $this->redirectToRoute('app_manager_categories');
                         }
-                        if ($maxMinutes <= 0 || $maxMinutes > $planMaxMinutes) {
+                        if ($maxMinutes <= 0 || !$this->licenseService->isSessionDurationAllowed($org, $maxMinutes)) {
                             $this->addFlash('danger', "Max Session Duration for a category must be greater than 0 and cannot exceed the plan limit of {$org->getSessionLimitHours()} hours.");
                             return $this->redirectToRoute('app_manager_categories');
                         }
@@ -483,7 +499,13 @@ class ManagerController extends AbstractController
 
         $orgUser = $em->getRepository(OrgUser::class)->find($id);
         if ($orgUser && $orgUser->getOrganization()->getId() === $org->getId()) {
-            $orgUser->setIsActive(!$orgUser->isActive());
+            $newStatus = !$orgUser->isActive();
+            if ($newStatus && !$this->licenseService->isNextUserActiveAllowed($org)) {
+                $this->addFlash('danger', "Cannot activate user. OrgUser limit reached ({$org->getMaxOrgUsers()}). Please deactivate another user first or upgrade your plan.");
+                return $this->redirectToRoute('app_manager_users');
+            }
+            
+            $orgUser->setIsActive($newStatus);
             $orgUser->setUpdatedAt(new \DateTimeImmutable());
             $em->flush();
 
@@ -528,11 +550,7 @@ class ManagerController extends AbstractController
         $manager = $this->getUser();
         $org = $manager->getOrganization();
 
-        $limitsData = $this->getOrgLimits($org, $em);
-        if ($limitsData['usage']['orgUsers'] >= $limitsData['limits']['max_orgUsers']) {
-            $this->addFlash('danger', "OrgUser limit reached ({$limitsData['limits']['max_orgUsers']}). Please upgrade your plan.");
-            return $this->redirectToRoute('app_manager_users');
-        }
+        $isActive = $this->licenseService->isNextUserActiveAllowed($org);
 
         $first = $request->request->get('first_name');
         $last = $request->request->get('last_name');
@@ -568,7 +586,7 @@ class ManagerController extends AbstractController
         $orgUser->setLastName($last);
         if ($email) $orgUser->setEmail($email);
         if ($phone) $orgUser->setPhone($phone);
-        $orgUser->setIsActive(true);
+        $orgUser->setIsActive($isActive);
         $orgUser->setPinHash($this->pinService->hashPin($pin));
         $orgUser->setPin($pin);
 
@@ -576,7 +594,12 @@ class ManagerController extends AbstractController
         $em->flush();
 
         $this->logAudit($em, $org, 'USER_CREATE', ['name' => "{$first} {$last}"], $request);
-        $this->addFlash('success', "OrgUser {$first} {$last} added successfully with PIN: {$pin}");
+        
+        if ($isActive) {
+            $this->addFlash('success', "User {$first} {$last} added successfully with PIN: <strong>{$pin}</strong>");
+        } else {
+            $this->addFlash('warning', "User {$first} {$last} added as <strong>Inactive</strong> due to active user quota. PIN: <strong>{$pin}</strong>");
+        }
 
         return $this->redirectToRoute('app_manager_users');
     }
@@ -675,11 +698,7 @@ class ManagerController extends AbstractController
         $currentManager = $this->getUser();
         $org = $currentManager->getOrganization();
 
-        $limitsData = $this->getOrgLimits($org, $em);
-        if ($limitsData['usage']['managers'] >= $limitsData['limits']['max_managers']) {
-            $this->addFlash('danger', "Manager limit reached ({$limitsData['limits']['max_managers']}) for your plan. Upgrade to Gold to add multiple managers.");
-            return $this->redirectToRoute('app_manager_users');
-        }
+        $isActive = $this->licenseService->isNextManagerAllowed($org);
 
         $first = $request->request->get('first_name');
         $last = $request->request->get('last_name');
@@ -706,14 +725,19 @@ class ManagerController extends AbstractController
         $newManager->setEmail($email);
         $newManager->setPhone($phone);
         $newManager->setRole('ROLE_ORG_MANAGER');
-        $newManager->setIsActive(true);
+        $newManager->setIsActive($isActive);
         $newManager->setPasswordHash($passwordHasher->hashPassword($newManager, $password));
 
         $em->persist($newManager);
         $em->flush();
 
         $this->logAudit($em, $org, 'MANAGER_CREATE', ['email' => $email], $request);
-        $this->addFlash('success', "Manager {$first} {$last} added successfully.");
+        
+        if ($isActive) {
+            $this->addFlash('success', "Manager {$first} {$last} added successfully.");
+        } else {
+            $this->addFlash('warning', "Manager {$first} {$last} added as Inactive due to active manager quota.");
+        }
 
         return $this->redirectToRoute('app_manager_users');
     }
@@ -799,8 +823,7 @@ class ManagerController extends AbstractController
                         $mappedCustomFields++;
                     }
                 }
-                $maxFields = $limitsData['limits']['max_fields'];
-                if ($mappedCustomFields > $maxFields) {
+                if (!$this->licenseService->isCustomFieldsCountAllowed($org, $mappedCustomFields)) {
                     $this->addFlash('danger', "Your plan limits custom fields to {$maxFields}. You mapped {$mappedCustomFields} custom fields. Please downgrade mapping or upgrade plan.");
                     return $this->render('manager/import_wizard.html.twig', [
                         'step' => 2,
@@ -1032,7 +1055,7 @@ class ManagerController extends AbstractController
                     }
 
                     $usedPinsThisImport = [];
-                    $currentActiveCount = $em->getRepository(OrgUser::class)->count(['organization' => $org, 'isActive' => true]);
+                    $importedActiveCountInThisBatch = 0;
                     
                     foreach ($results as $item) {
                         $idx = $item['row_index'];
@@ -1061,17 +1084,13 @@ class ManagerController extends AbstractController
                             if ($item['phone']) $orgUser->setPhone($item['phone']);
                             $orgUser->setUniqueIdHash($item['unique_hash']);
                             
-                            $isActive = true;
-                            if ($currentActiveCount >= $maxLimit) {
-                                if ($overQuotaAction === 'import_disabled') {
-                                    $isActive = false;
-                                } else {
-                                    $isActive = false;
-                                }
+                            // Determine active status using LicenseService
+                            $isActive = $this->licenseService->isNextUserActiveAllowed($org, $importedActiveCountInThisBatch);
+                            if ($isActive) {
+                                $importedActiveCountInThisBatch++;
                             }
                             
                             $orgUser->setIsActive($isActive);
-                            if ($isActive) $currentActiveCount++;
 
                             $orgUser->setPinHash($this->pinService->hashPin($plainPin));
                             $orgUser->setPin($plainPin);
@@ -1090,11 +1109,9 @@ class ManagerController extends AbstractController
                                 $orgUser->setUniqueIdHash($item['unique_hash']);
                                 
                                 if ($enableInactive && !$orgUser->isActive()) {
-                                    if ($currentActiveCount >= $maxLimit && $overQuotaAction !== 'import_disabled') {
-                                        // Over limit, keep inactive
-                                    } else {
+                                    if ($this->licenseService->isNextUserActiveAllowed($org, $importedActiveCountInThisBatch)) {
                                         $orgUser->setIsActive(true);
-                                        $currentActiveCount++;
+                                        $importedActiveCountInThisBatch++;
                                     }
                                 }
 
@@ -1476,5 +1493,33 @@ class ManagerController extends AbstractController
         return $this->render('manager/audit_logs.html.twig', [
             'logs' => $logs
         ]);
+    }
+
+    #[Route('/reports/force-end/{id}', name: 'app_manager_reports_force_end', methods: ['POST'])]
+    public function forceEndSession(int $id, Request $request, EntityManagerInterface $em): Response
+    {
+        /** @var Manager $manager */
+        $manager = $this->getUser();
+        $org = $manager->getOrganization();
+
+        $session = $em->getRepository(\App\Entity\WorkSession::class)->find($id);
+
+        if ($session && $session->getOrgUser()->getOrganization()->getId() === $org->getId() && !$session->getEndedAt()) {
+            $now = new \DateTime();
+            $session->setEndedAt($now);
+            $session->setEndMethod('Force End');
+            
+            $durationSeconds = $now->getTimestamp() - $session->getStartedAt()->getTimestamp();
+            $session->setDurationSeconds($durationSeconds);
+
+            $em->flush();
+
+            $this->logAudit($em, $org, 'FORCE_END_SESSION', ['session_id' => $session->getId(), 'user' => $session->getOrgUser()->getFirstName() . ' ' . $session->getOrgUser()->getLastName()], $request);
+            
+            $this->addFlash('success', "Session for {$session->getOrgUser()->getFirstName()} {$session->getOrgUser()->getLastName()} has been forcefully ended.");
+        }
+
+        $referer = $request->headers->get('referer');
+        return $referer ? $this->redirect($referer) : $this->redirectToRoute('app_manager_reports');
     }
 }
