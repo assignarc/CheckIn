@@ -1,0 +1,678 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Kiosk - {{ org.name }}{% endblock %}
+
+{% block body %}
+
+<div class="kiosk-container">
+    <div class="kiosk-header">
+        <img src="{{ path('app_org_logo', {slug: org.slug}) }}" alt="{{ org.name }} Logo" class="kiosk-logo">
+        <h2 class="kiosk-org-name">{{ org.name }}</h2>
+    </div>
+
+    <!-- Active Card Frame -->
+    <div class="kiosk-panel">
+        
+        <!-- Wizard Flow Indicators -->
+        <div class="wizard-steps mb-6" id="kiosk-wizard" style="margin-top: 0.5rem; margin-bottom: 2rem;">
+            <div class="wizard-step active" id="w-step-1" title="Search">1</div>
+            <div class="wizard-step" id="w-step-2" title="Confirm">2</div>
+            <div class="wizard-step" id="w-step-3" title="Check-In">3</div>
+        </div>
+        
+        <!-- STEP 1: Identification -->
+        <div id="kiosk-step-auth" class="d-block">
+            <div id="kiosk-auth-header" class="mb-4" style="margin-right: 2rem;">
+                <h3 class="kiosk-step-title m-0">Identify Yourself</h3>
+            </div>
+            
+            <div class="form-group autocomplete-container" id="auth-search-box">
+                <label class="form-label" for="orgUser-search">Type your name...</label>
+                <div class="position-relative">
+                    <input type="text" id="orgUser-search" class="form-control" placeholder="Search user..." autocomplete="off">
+                    <span class="material-icons text-muted position-absolute" style="right: 12px; top: 10px">search</span>
+                </div>
+                <div id="orgUser-dropdown" class="autocomplete-dropdown" style="display: none;"></div>
+            </div>
+
+            <!-- PIN Pad (Only shown if secure mode) -->
+            <div id="pin-pad-container" class="pin-pad-container" style="display: none;">
+                <h3 class="kiosk-step-title mb-2 text-primary" id="pin-welcome-name"></h3>
+                
+                <div class="pin-display">
+                    <div class="pin-dot" id="dot-1"></div>
+                    <div class="pin-dot" id="dot-2"></div>
+                    <div class="pin-dot" id="dot-3"></div>
+                    <div class="pin-dot" id="dot-4"></div>
+                </div>
+
+                <p class="fs-xs text-muted mb-4 mt-1">Enter 4-Digit Security PIN</p>
+
+                <div class="pin-grid">
+                    <button type="button" class="pin-btn pin-btn-special" data-key="A" onclick="pressPin('A')">A</button>
+                    <button type="button" class="pin-btn pin-btn-special" data-key="B" onclick="pressPin('B')">B</button>
+                    <button type="button" class="pin-btn pin-btn-special" data-key="C" onclick="pressPin('C')">C</button>
+                    
+                    <button type="button" class="pin-btn" data-key="1" onclick="pressPin('1')">1</button>
+                    <button type="button" class="pin-btn" data-key="2" onclick="pressPin('2')">2</button>
+                    <button type="button" class="pin-btn" data-key="3" onclick="pressPin('3')">3</button>
+                    <button type="button" class="pin-btn" data-key="4" onclick="pressPin('4')">4</button>
+                    <button type="button" class="pin-btn" data-key="5" onclick="pressPin('5')">5</button>
+                    <button type="button" class="pin-btn" data-key="6" onclick="pressPin('6')">6</button>
+                    <button type="button" class="pin-btn" data-key="7" onclick="pressPin('7')">7</button>
+                    <button type="button" class="pin-btn" data-key="8" onclick="pressPin('8')">8</button>
+                    <button type="button" class="pin-btn" data-key="9" onclick="pressPin('9')">9</button>
+                    <button type="button" class="pin-btn pin-btn-clear" data-key="CLEAR" onclick="clearPin()">Clear</button>
+                    <button type="button" class="pin-btn" data-key="0" onclick="pressPin('0')">0</button>
+                    <button type="button" class="pin-btn" data-key="BACKSPACE" onclick="deletePin()"><span class="material-icons">backspace</span></button>
+                </div>
+                <div class="mt-4">
+                    <button type="button" class="btn btn-secondary w-100" onclick="resetKiosk()">Cancel</button>
+                </div>
+            </div>
+
+            <!-- Open Mode Quick Submit (Only shown in open mode) -->
+            <div id="open-mode-container" class="mt-8" style="display: none;">
+                <h3 class="kiosk-step-title mb-4 text-primary" id="open-welcome-name"></h3>
+                <div class="d-flex gap-3">
+                    <button type="button" class="btn btn-secondary flex-1" onclick="resetKiosk()">Cancel</button>
+                    <button type="button" class="btn btn-primary flex-1" onclick="submitOpenAuth()">
+                        Continue <span class="material-icons">arrow_forward</span>
+                    </button>
+                </div>
+            </div>
+            
+            <div id="auth-error" class="alert alert-danger mt-6" style="display: none;"></div>
+        </div>
+
+        <!-- STEP 2: Check-In Prompt (Select Category) -->
+        <!-- STEP 2: Check-In Prompt (Select Category) -->
+        <div id="kiosk-step-checkin" style="display: none;">
+            <h3 class="kiosk-step-title" id="checkin-step-title">Check In</h3>
+
+            <h4 class="form-label kiosk-category-label">Select Work Category</h4>
+            <div class="category-selection-grid">
+                {% for cat in categories %}
+                    <div class="category-option-card" onclick="selectCategory('{{ cat.id }}')" id="cat-card-{{ cat.id }}" style="--cat-color: {{ cat.color|default('#8b5cf6') }};">
+                        <span class="material-icons" style="color: var(--cat-color);">{{ cat.icon }}</span>
+                        <span class="fs-sm fw-600" style="color: var(--cat-color)">{{ cat.name }}</span>
+                    </div>
+                {% else %}
+                    <div class="category-option-card selected" onclick="selectCategory('')">
+                        <span class="material-icons">work</span>
+                        <span class="fs-sm fw-500">General Work</span>
+                    </div>
+                {% endfor %}
+            </div>
+
+            <div class="kiosk-action-row">
+                <button type="button" class="btn btn-secondary kiosk-action-btn" onclick="resetKiosk()">Cancel</button>
+                <button type="button" class="btn btn-success kiosk-action-btn" onclick="submitCheckin()">
+                    <span class="material-icons">login</span> Confirm Check In
+                </button>
+            </div>
+        </div>
+
+        <!-- STEP 3: Checkout Prompt -->
+        <!-- STEP 3: Checkout Prompt -->
+        <div id="kiosk-step-checkout" style="display: none;">
+            <h3 class="kiosk-step-title">Active Session Found</h3>
+            <p class="kiosk-step-subtitle" id="checkout-orgUser-name">Welcome!</p>
+
+            <div class="checkout-details-box">
+                <div class="checkout-detail-row">
+                    <span class="checkout-detail-label">Category</span>
+                    <span id="checkout-session-category" class="checkout-detail-value">General</span>
+                </div>
+                <div class="checkout-detail-row">
+                    <span class="checkout-detail-label">Checked In At</span>
+                    <span id="checkout-session-start" class="checkout-detail-value">--:--</span>
+                </div>
+            </div>
+
+            <div class="kiosk-action-row">
+                <button type="button" class="btn btn-secondary kiosk-action-btn" onclick="resetKiosk()">Cancel</button>
+                <button type="button" class="btn btn-danger kiosk-action-btn" onclick="submitCheckout()">
+                    <span class="material-icons">logout</span> Check Out Now
+                </button>
+            </div>
+        </div>
+
+        <!-- STEP 4: Success Feedback Screen -->
+        <!-- STEP 4: Success Feedback Screen -->
+        <div id="kiosk-step-success" class="success-step-container" style="display: none;">
+            <div class="success-icon-wrapper">
+                <span class="material-icons success-icon-anim">check_circle</span>
+            </div>
+            <h2 id="success-title" class="success-title">Success!</h2>
+            <p id="success-message" class="success-message">Action complete.</p>
+
+            <div id="success-session-details" class="success-details-box">
+                <!-- Filled dynamically -->
+            </div>
+
+            <button type="button" class="btn btn-primary" onclick="resetKiosk()">Next Person</button>
+        </div>
+
+    </div>
+    
+    <!-- Unified Kiosk Footer -->
+    <div class="kiosk-footer">
+        <div class="kiosk-footer-theme">
+            <div class="theme-selector">
+                <button type="button" class="theme-option" data-value="light" onclick="setTheme('light')" title="Light Mode">
+                    <span class="material-icons">light_mode</span>
+                </button>
+                <button type="button" class="theme-option" data-value="dark" onclick="setTheme('dark')" title="Dark Mode">
+                    <span class="material-icons">dark_mode</span>
+                </button>
+                <button type="button" class="theme-option" data-value="system" onclick="setTheme('system')" title="System Theme">
+                    <span class="material-icons">settings_brightness</span>
+                </button>
+            </div>
+        </div>
+        
+        <div class="kiosk-footer-clock">
+            <div id="digital-clock" class="digital-clock" style="box-shadow: none; border: none; background: transparent; padding: 0; font-size: 1.1rem;">
+                00:00:00 AM
+            </div>
+        </div>
+
+        <div class="kiosk-footer-exit">
+            <a href="#" id="exit-kiosk-btn" class="btn-exit-kiosk" title="Exit Kiosk">
+                <span class="material-icons" style="font-size: 1.1rem;">arrow_back</span> Exit Kiosk
+            </a>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Digital Clock
+    function updateClock() {
+        const now = new Date();
+        let hours = now.getHours();
+        let minutes = now.getMinutes();
+        let seconds = now.getSeconds();
+        const ampm = hours >= 12 ? 'PM' : 'AM';
+        
+        hours = hours % 12;
+        hours = hours ? hours : 12; // the hour '0' should be '12'
+        minutes = minutes < 10 ? '0'+minutes : minutes;
+        seconds = seconds < 10 ? '0'+seconds : seconds;
+        
+        document.getElementById('digital-clock').textContent = `${hours}:${minutes}:${seconds} ${ampm}`;
+    }
+    setInterval(updateClock, 1000);
+    updateClock();
+
+    // Data lists from Twig
+    const accessMode = '{{ org.accessMode }}';
+    const maskLastName = {{ org.maskLastName ? 'true' : 'false' }};
+
+    // Mask last name: keep first + last char, replace middle with *
+    function maskLastNameFn(lastName) {
+        if (lastName.length <= 2) return lastName;
+        const first = lastName[0];
+        const last = lastName[lastName.length - 1];
+        const stars = '*'.repeat(lastName.length - 2);
+        return first + stars + last;
+    }
+
+    const orgUsers = [
+        {% for emp in orgUsers %}
+            (function(){
+                const firstName = '{{ emp.firstName|e('js') }}';
+                const lastName  = '{{ emp.lastName|e('js') }}';
+                return {
+                    id: '{{ emp.id }}',
+                    name: firstName + ' ' + lastName,
+                    maskedName: firstName + ' ' + maskLastNameFn(lastName)
+                };
+            })(),
+        {% endfor %}
+    ];
+
+    let selectedOrgUserId = null;
+    let selectedCategoryId = null;
+    let enteredPin = '';
+    let autoResetTimer = null;
+
+    const searchInput = document.getElementById('orgUser-search');
+    const dropdown = document.getElementById('orgUser-dropdown');
+
+    searchInput.addEventListener('input', function() {
+        const query = searchInput.value.toLowerCase().trim();
+        dropdown.innerHTML = '';
+        
+        if (!query) {
+            dropdown.style.display = 'none';
+            return;
+        }
+
+        const matches = orgUsers.filter(emp => emp.name.toLowerCase().includes(query));
+        
+        if (matches.length === 0) {
+            dropdown.style.display = 'none';
+            return;
+        }
+
+        matches.forEach(emp => {
+            const item = document.createElement('div');
+            item.className = 'autocomplete-item';
+            const displayName = maskLastName ? emp.maskedName : emp.name;
+            item.textContent = displayName;
+            item.onclick = function() {
+                selectOrgUser(emp.id, displayName);
+            };
+            dropdown.appendChild(item);
+        });
+
+        dropdown.style.display = 'block';
+    });
+
+    // Close autocomplete on click outside
+    document.addEventListener('click', function(e) {
+        if (!e.target.closest('.autocomplete-container')) {
+            dropdown.style.display = 'none';
+        }
+    });
+
+    function setWizardStep(step) {
+        const wizard = document.getElementById('kiosk-wizard');
+        if (!wizard) return;
+        
+        wizard.style.display = 'flex';
+        
+        const w1 = document.getElementById('w-step-1');
+        const w2 = document.getElementById('w-step-2');
+        const w3 = document.getElementById('w-step-3');
+
+        w1.className = 'wizard-step';
+        w2.className = 'wizard-step';
+        w3.className = 'wizard-step';
+
+        if (step === 1) {
+            w1.classList.add('active');
+        } else if (step === 2) {
+            w1.classList.add('completed');
+            w2.classList.add('active');
+        } else if (step === 3) {
+            w1.classList.add('completed');
+            w2.classList.add('completed');
+            w3.classList.add('active');
+        } else if (step === 4) {
+            wizard.style.display = 'none';
+        }
+    }
+
+    function selectOrgUser(id, name) {
+        selectedOrgUserId = id;
+        searchInput.value = name;
+        dropdown.style.display = 'none';
+        document.getElementById('auth-error').style.display = 'none';
+        
+        document.getElementById('kiosk-auth-header').style.display = 'none';
+        document.getElementById('auth-search-box').style.display = 'none';
+
+        setWizardStep(2);
+
+        if (accessMode === 'secure') {
+            document.getElementById('pin-welcome-name').textContent = name;
+            document.getElementById('pin-pad-container').style.display = 'block';
+            enteredPin = '';
+            updatePinDots();
+        } else {
+            document.getElementById('open-welcome-name').textContent = `Continue as ${name}?`;
+            document.getElementById('open-mode-container').style.display = 'block';
+        }
+    }
+
+    // PIN Handling
+    function pressPin(digit) {
+        if (enteredPin.length < 4) {
+            enteredPin += digit;
+            updatePinDots();
+            
+            if (enteredPin.length === 4) {
+                // Auto submit PIN
+                submitAuth();
+            }
+        }
+    }
+
+    function highlightKey(key) {
+        const btn = document.querySelector(`.pin-btn[data-key="${key}"]`);
+        if (btn) {
+            btn.classList.add('active-press');
+            setTimeout(() => btn.classList.remove('active-press'), 150);
+        }
+    }
+
+    document.addEventListener('keydown', function(e) {
+        if (document.getElementById('pin-pad-container') && document.getElementById('pin-pad-container').style.display !== 'none') {
+            const key = e.key.toUpperCase();
+            if (['A', 'B', 'C', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9'].includes(key)) {
+                highlightKey(key);
+                pressPin(key);
+            } else if (key === 'BACKSPACE') {
+                highlightKey('BACKSPACE');
+                deletePin();
+            } else if (key === 'ESCAPE' || key === 'DELETE') {
+                highlightKey('CLEAR');
+                clearPin();
+            }
+        }
+    });
+
+    function clearPin() {
+        enteredPin = '';
+        updatePinDots();
+    }
+
+    function deletePin() {
+        if (enteredPin.length > 0) {
+            enteredPin = enteredPin.slice(0, -1);
+            updatePinDots();
+        }
+    }
+
+    function updatePinDots() {
+        for (let i = 1; i <= 4; i++) {
+            const dot = document.getElementById(`dot-${i}`);
+            if (i <= enteredPin.length) {
+                dot.classList.add('filled');
+            } else {
+                dot.classList.remove('filled');
+            }
+        }
+    }
+
+    // Authenticate (PIN verification)
+    function submitAuth() {
+        const errorDiv = document.getElementById('auth-error');
+        errorDiv.style.display = 'none';
+
+        const formData = new FormData();
+        formData.append('orgUser_id', selectedOrgUserId);
+        formData.append('pin', enteredPin);
+
+        fetch('{{ path("app_kiosk_authenticate", {slug: org.slug, token: token}) }}', {
+            method: 'POST',
+            body: formData
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                if (data.action === 'checkin_prompt') {
+                    showCheckinStep(data.orgUser.name);
+                } else if (data.action === 'checkout_prompt') {
+                    showCheckoutStep(data.orgUser.name, data.session);
+                }
+            } else {
+                errorDiv.textContent = data.message;
+                errorDiv.style.display = 'block';
+                clearPin();
+            }
+        })
+        .catch(err => {
+            errorDiv.textContent = 'An error occurred during verification. Please try again.';
+            errorDiv.style.display = 'block';
+            clearPin();
+        });
+    }
+
+    // Open Mode Continue
+    function submitOpenAuth() {
+        // Since there is no PIN, we perform a direct prompt lookup by fetching checkout/checkin status
+        const errorDiv = document.getElementById('auth-error');
+        errorDiv.style.display = 'none';
+
+        const formData = new FormData();
+        formData.append('orgUser_id', selectedOrgUserId);
+        formData.append('pin', '0000'); // Dummy pin, open mode bypasses validation
+
+        fetch('{{ path("app_kiosk_authenticate", {slug: org.slug, token: token}) }}', {
+            method: 'POST',
+            body: formData
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                if (data.action === 'checkin_prompt') {
+                    showCheckinStep(data.orgUser.name);
+                } else if (data.action === 'checkout_prompt') {
+                    showCheckoutStep(data.orgUser.name, data.session);
+                }
+            } else {
+                // In case of any validation errors
+                errorDiv.textContent = data.message;
+                errorDiv.style.display = 'block';
+            }
+        })
+        .catch(err => {
+            errorDiv.textContent = 'Connection error. Please try again.';
+            errorDiv.style.display = 'block';
+        });
+    }
+
+    function showCheckinStep(name) {
+        document.getElementById('kiosk-step-auth').style.display = 'none';
+        document.getElementById('kiosk-step-checkin').style.display = 'block';
+        document.getElementById('checkin-step-title').textContent = `Welcome, ${name}.`;
+        
+        document.getElementById('pin-pad-container').style.display = 'none';
+        document.getElementById('open-mode-container').style.display = 'none';
+
+        setWizardStep(3);
+
+        // If there's exactly 1 category card, auto-select it
+        const catCards = document.querySelectorAll('.category-option-card');
+        if (catCards.length === 1) {
+            catCards[0].click();
+        }
+    }
+
+    function showCheckoutStep(name, session) {
+        document.getElementById('kiosk-step-auth').style.display = 'none';
+        document.getElementById('kiosk-step-checkout').style.display = 'block';
+        document.getElementById('checkout-orgUser-name').textContent = `Hello, ${name}.`;
+        document.getElementById('checkout-session-category').textContent = session.category;
+        
+        document.getElementById('pin-pad-container').style.display = 'none';
+        document.getElementById('open-mode-container').style.display = 'none';
+
+        setWizardStep(3);
+
+        const date = new Date(session.startedAt);
+        document.getElementById('checkout-session-start').textContent = date.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+    }
+
+    function selectCategory(id) {
+        selectedCategoryId = id;
+        document.querySelectorAll('.category-option-card').forEach(el => el.classList.remove('selected'));
+        if (id) {
+            document.getElementById(`cat-card-${id}`).classList.add('selected');
+        }
+    }
+
+    // Submit Check-In
+    function submitCheckin() {
+        const formData = new FormData();
+        formData.append('orgUser_id', selectedOrgUserId);
+        formData.append('category_id', selectedCategoryId || '');
+        formData.append('action', 'checkin');
+        formData.append('verified', 'true');
+
+        fetch('{{ path("app_kiosk_action", {slug: org.slug, token: token}) }}', {
+            method: 'POST',
+            body: formData
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                showSuccessStep('Check-In Complete', 'You are now checked in.', data.session, 'checkin');
+            } else {
+                $.alert({
+                    title: 'Check-In Failed',
+                    content: data.message,
+                    theme: 'modern',
+                    type: 'red',
+                    buttons: {
+                        ok: {
+                            text: 'OK',
+                            btnClass: 'btn-red'
+                        }
+                    }
+                });
+            }
+        });
+    }
+
+    // Submit Checkout
+    function submitCheckout() {
+        const formData = new FormData();
+        formData.append('orgUser_id', selectedOrgUserId);
+        formData.append('action', 'checkout');
+
+        fetch('{{ path("app_kiosk_action", {slug: org.slug, token: token}) }}', {
+            method: 'POST',
+            body: formData
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                showSuccessStep('Checkout Complete', 'Your session has ended.', data.session, 'checkout');
+            } else {
+                $.alert({
+                    title: 'Checkout Failed',
+                    content: data.message,
+                    theme: 'modern',
+                    type: 'red',
+                    buttons: {
+                        ok: {
+                            text: 'OK',
+                            btnClass: 'btn-red'
+                        }
+                    }
+                });
+            }
+        });
+    }
+
+    function showSuccessStep(title, msg, session, type) {
+        document.getElementById('kiosk-step-checkin').style.display = 'none';
+        document.getElementById('kiosk-step-checkout').style.display = 'none';
+        document.getElementById('kiosk-step-success').style.display = 'block';
+        
+        setWizardStep(4);
+
+        document.getElementById('success-title').textContent = title;
+        document.getElementById('success-message').textContent = msg;
+
+        const detailsDiv = document.getElementById('success-session-details');
+        detailsDiv.innerHTML = '';
+        detailsDiv.style.display = 'block';
+
+        if (type === 'checkin') {
+            detailsDiv.innerHTML = `
+                <div class="d-flex justify-content-between mb-2">
+                    <span class="text-secondary">Check-in Time</span>
+                    <span class="fw-600">${session.startedAt}</span>
+                </div>
+                ${session.outOfWindow ? `
+                <div class="badge badge-warning justify-content-center mt-2 w-100">
+                    <span class="material-icons fs-md mr-1">warning</span> Out of Window
+                </div>
+                ` : ''}
+            `;
+        } else {
+            detailsDiv.innerHTML = `
+                <div class="d-flex justify-content-between mb-2">
+                    <span class="text-secondary">Started</span>
+                    <span class="fw-600">${session.startedAt}</span>
+                </div>
+                <div class="d-flex justify-content-between mb-2">
+                    <span class="text-secondary">Ended</span>
+                    <span class="fw-600">${session.endedAt}</span>
+                </div>
+                <div class="d-flex justify-content-between">
+                    <span class="text-secondary">Total Worked</span>
+                    <span class="fw-700 text-primary">${session.duration}</span>
+                </div>
+                <div class="d-flex gap-2 mt-3">
+                    ${session.isOvertime ? `
+                    <span class="badge badge-danger justify-content-center flex-1">
+                        Overtime
+                    </span>` : ''}
+                    ${session.isOutOfWindow ? `
+                    <span class="badge badge-warning justify-content-center flex-1">
+                        Out of Window
+                    </span>` : ''}
+                </div>
+            `;
+        }
+
+        // Set timer to automatically return to start screen after 5 seconds
+        autoResetTimer = setTimeout(resetKiosk, 6000);
+    }
+
+    function resetKiosk() {
+        if (autoResetTimer) {
+            clearTimeout(autoResetTimer);
+            autoResetTimer = null;
+        }
+
+        selectedOrgUserId = null;
+        selectedCategoryId = null;
+        enteredPin = '';
+        
+        searchInput.value = '';
+        dropdown.style.display = 'none';
+        
+        document.getElementById('kiosk-auth-header').style.display = 'block';
+        document.getElementById('auth-search-box').style.display = 'block';
+        
+        document.getElementById('pin-pad-container').style.display = 'none';
+        document.getElementById('open-mode-container').style.display = 'none';
+        document.getElementById('auth-error').style.display = 'none';
+        
+        document.getElementById('kiosk-step-checkin').style.display = 'none';
+        document.getElementById('kiosk-step-checkout').style.display = 'none';
+        document.getElementById('kiosk-step-success').style.display = 'none';
+        
+        document.getElementById('kiosk-step-auth').style.display = 'block';
+        
+        setWizardStep(1);
+    }
+
+    // Initialize wizard
+    setWizardStep(1);
+
+    // jQuery Confirm Exit Handler
+    $(document).ready(function() {
+        $('#exit-kiosk-btn').on('click', function(e) {
+            e.preventDefault();
+            $.confirm({
+                title: 'Exit Kiosk?',
+                content: 'Are you sure you want to exit the Kiosk screen?',
+                type: 'red',
+                theme: 'modern',
+                buttons: {
+                    confirm: {
+                        text: 'Exit',
+                        btnClass: 'btn-red',
+                        action: function () {
+                            window.location.href = "{{ path('app_home') }}";
+                        }
+                    },
+                    cancel: function () {
+                        // Do nothing
+                    }
+                }
+            });
+        });
+    });
+</script>
+
+
+{% endblock %}

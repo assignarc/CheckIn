@@ -1,0 +1,58 @@
+{% extends 'manager/layout.html.twig' %}
+
+{% block title %}Audit Logs - TimeFlow{% endblock %}
+{% block header_title %}Audit Logs{% endblock %}
+
+{% block manager_content %}
+<div class="glass-panel p-6">
+    <div class="d-flex align-items-center justify-content-between mb-6">
+        <h3 class="fs-lg text-purple-300 m-0">Organization Audit Logs</h3>
+    </div>
+
+    <div class="table-responsive">
+        <table class="table fs-md">
+            <thead>
+                <tr>
+                    <th>Timestamp</th>
+                    <th>Actor</th>
+                    <th>Action</th>
+                    <th>Details</th>
+                    <th>IP Address</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for log in logs %}
+                    <tr>
+                        <td class="white-space-nowrap">{{ log.createdAt|date('Y-m-d H:i:s') }}</td>
+                        <td>
+                            {% if log.manager %}
+                                {{ log.manager.firstName }} {{ log.manager.lastName }}
+                                <div class="fs-sm text-muted">{{ log.manager.email }}</div>
+                            {% else %}
+                                <span class="badge badge-secondary">System</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <span class="badge" style="background: rgba(167, 139, 250, 0.15); color: #c4b5fd;">
+                                {{ log.action }}
+                            </span>
+                        </td>
+                        <td>
+                            <div class="fs-sm p-0" style="max-height: 100px; overflow-y: auto; font-family: monospace; background: rgba(0,0,0,0.2); .5rem; border-radius: 4px">
+                                {{ log.detailsJson|json_encode(constant('JSON_PRETTY_PRINT')) }}
+                            </div>
+                        </td>
+                        <td class="text-muted">{{ log.ipAddress|default('—') }}</td>
+                    </tr>
+                {% else %}
+                    <tr>
+                        <td colspan="5" class="text-center text-muted p-8">
+                            No audit logs available.
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

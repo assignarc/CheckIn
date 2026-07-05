@@ -1,0 +1,548 @@
+{% extends 'manager/layout.html.twig' %}
+
+{% block title %}Users & Managers - TimeFlow{% endblock %}
+{% block header_title %}Directory Management{% endblock %}
+{% block stylesheets %}
+
+    
+{% endblock %}
+
+{% block manager_content %}
+<div class="tabs-container">
+    <div class="tab active" onclick="switchTab('orgUsers-tab')" id="tab-orgUsers-tab">Users ({{ limitsData.usage.orgUsers }} / {{ limitsData.limits.max_orgUsers }})</div>
+    <div class="tab" onclick="switchTab('managers-tab')" id="tab-managers-tab">Managers ({{ limitsData.usage.managers }} / {{ limitsData.limits.max_managers }})</div>
+</div>
+
+<!-- EMPLOYEES DIRECTORY TAB -->
+<div id="tab-content-orgUsers-tab" class="tab-pane d-block">
+    <div class="d-grid gap-5" style="grid-template-columns: 2.2fr 1fr">
+        
+        <!-- Left: Users List -->
+        <div class="glass-panel">
+            <div class="d-flex align-items-center justify-content-between flex-wrap gap-4 mb-4">
+                <h3 class="fs-md m-0">User Registry</h3>
+                
+                <div class="d-flex align-items-center gap-2">
+                    <form method="get" class="d-flex align-items-center gap-2 m-0">
+                        <input type="text" name="q" placeholder="Search..." value="{{ searchQuery|default('') }}" class="form-control fs-sm p-0" style="width: 150px; .35rem 0.5rem">
+                        <select name="status" class="form-control" onchange="this.form.submit()" class="fs-sm p-0" >
+                            <option value="all" {% if statusFilter|default('all') == 'all' %}selected{% endif %}>All Status</option>
+                            <option value="active" {% if statusFilter|default('all') == 'active' %}selected{% endif %}>Active</option>
+                            <option value="inactive" {% if statusFilter|default('all') == 'inactive' %}selected{% endif %}>Inactive</option>
+                        </select>
+                        <button type="submit" class="btn btn-primary btn-sm"  title="Search">
+                            <span class="material-icons fs-md">search</span>
+                        </button>
+                    </form>
+                    <a href="{{ path('app_manager_users_import') }}" class="btn btn-secondary btn-sm" style="padding: .35rem 0.75rem; white-space: nowrap">
+                        <span class="material-icons fs-md">cloud_upload</span> Import
+                    </a>
+                </div>
+            </div>
+
+            <div class="table-responsive">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Email</th>
+                            <th>Phone</th>
+                            <th>PIN</th>
+                            <th>Metadata</th>
+                            <th>Status</th>
+                            <th class="text-right w-140">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for emp in orgUsers %}
+                            <tr style="{% if not emp.isActive %}opacity: 0.5;{% endif %}">
+                                <td class="fw-600">{{ emp.firstName }} {{ emp.lastName }}</td>
+                                <td>{{ emp.email|default('—') }}</td>
+                                <td>{{ emp.phone|default('—') }}</td>
+                                <td>
+                                    {% if emp.pin %}
+                                        <span class="badge fs-sm text-primary p-0" style="background: rgba(99,102,241,0.15); font-family: monospace; letter-spacing: 0.1em; .25rem 0.55rem; border-radius: 6px; border: 1px solid rgba(99,102,241,0.3)">
+                                            {{ emp.pin }}
+                                        </span>
+                                    {% else %}
+                                        <span class="fs-sm text-muted">—</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <div class="d-flex flex-column" style="gap:0.2rem; font-size:0.72rem">
+                                        {% for key, val in emp.customFieldsJson %}
+                                            <span class="text-secondary"><strong>{{ key }}:</strong> {{ val }}</span>
+                                        {% else %}
+                                            <span class="text-muted">None</span>
+                                        {% endfor %}
+                                    </div>
+                                </td>
+                                <td>
+                                    {% if emp.isActive %}
+                                        <span class="badge badge-success">Active</span>
+                                    {% else %}
+                                        <span class="badge badge-danger">Inactive</span>
+                                    {% endif %}
+                                </td>
+                                <td class="text-right">
+                                    <div class="d-flex justify-content-end gap-1">
+                                        <!-- Edit -->
+                                        <button class="btn btn-secondary btn-sm" title="Edit User" class="p-0" 
+                                            onclick="openEditUserModal({{ emp.id }}, '{{ emp.firstName|e('js') }}', '{{ emp.lastName|e('js') }}', '{{ emp.email|default('')|e('js') }}', '{{ emp.phone|default('')|e('js') }}', '{{ emp.pin|default('')|e('js') }}')">
+                                            <span class="material-icons fs-md">edit</span>
+                                        </button>
+
+                                        <!-- Reset PIN -->
+                                        <form action="{{ path('app_manager_user_reset_pin', {id: emp.id}) }}" method="post" class="confirm-form" data-confirm="Reset PIN for {{ emp.firstName }}? A new PIN will be auto-generated." class="d-inline">
+                                            <button type="submit" class="btn btn-secondary btn-sm" title="Reset PIN" class="p-0" >
+                                                <span class="material-icons fs-md">lock_reset</span>
+                                            </button>
+                                        </form>
+
+                                        <!-- Toggle active -->
+                                        <form action="{{ path('app_manager_user_toggle', {id: emp.id}) }}" method="post" class="d-inline">
+                                            <button type="submit" class="btn {% if emp.isActive %}btn-danger{% else %}btn-success{% endif %} btn-sm fs-xs" >
+                                                {% if emp.isActive %}Deactivate{% else %}Reactivate{% endif %}
+                                            </button>
+                                        </form>
+                                    </div>
+                                </td>
+                            </tr>
+                        {% else %}
+                            <tr>
+                                <td colspan="7" class="text-center text-muted" style="padding: 2.5rem 0">
+                                    <span class="material-icons mb-0" style="font-size: 2.5rem; .5rem">people</span>
+                                    <p class="fs-sm">No users registered. Upload a CSV or add manually.</p>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Right: Manual Add Form -->
+        <div id="add-user-container" class="glass-panel" style="height: fit-content;">
+            <h3 class="fs-md d-flex align-items-center gap-1 mb-4">
+                <span class="material-icons fs-md text-primary">person_add</span> Register User
+            </h3>
+
+
+
+            {% if limitsData.usage.orgUsers >= limitsData.limits.max_orgUsers %}
+                <div class="alert alert-danger p-0" style="font-size:0.78rem; .6rem 0.85rem">
+                    <span class="material-icons fs-md">lock</span>
+                    <span>User quota reached. Upgrade plan.</span>
+                </div>
+            {% else %}
+                <form action="{{ path('app_manager_user_add') }}" method="post">
+                    <div class="grid-cols-2">
+                        <div class="form-group">
+                            <label class="form-label" for="first_name">First Name</label>
+                            <input type="text" name="first_name" id="first_name" class="form-control" required placeholder="John">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="last_name">Last Name</label>
+                            <input type="text" name="last_name" id="last_name" class="form-control" required placeholder="Doe">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="email">Email Address</label>
+                        <input type="email" name="email" id="email" class="form-control" placeholder="john.doe@company.com">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="phone">Phone Number</label>
+                        <input type="tel" name="phone" id="phone" class="form-control" data-controller="intl-tel-input" data-intl-tel-input-allowed-countries-value="{{ app_config('allowed_phone_countries', ['us'])|json_encode|e('html_attr') }}" placeholder="+123456789">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="pin">Security PIN <span class="fs-xs text-muted">(optional, auto-generated if blank)</span></label>
+
+                        <!-- PIN display -->
+                        <div class="mb-0">
+                            <div id="pin-display" class="fs-xl fw-700 text-center text-primary w-100" style="font-family: monospace; letter-spacing: 0.2em; background: rgba(99,102,241,0.08); border: 1px solid rgba(99,102,241,0.25); border-radius: 8px; padding: 0.5rem;">
+                                <span id="pin-prefix-display" style="opacity:0.35;">?</span><span id="pin-digits-display" style="opacity:0.35;">___</span>
+                            </div>
+                            <input type="hidden" name="pin" id="pin">
+                        </div>
+
+                        <!-- Unified Pin Pad -->
+                        <div class="d-grid gap-1 mt-2" style="grid-template-columns: repeat(3, 1fr)">
+                            <button type="button" class="btn btn-outline-primary btn-sm pin-prefix-btn py-2" data-char="A" onclick="setPinPrefix('A')" class="fs-md fw-700 font-mono">A</button>
+                            <button type="button" class="btn btn-outline-primary btn-sm pin-prefix-btn py-2" data-char="B" onclick="setPinPrefix('B')" class="fs-md fw-700 font-mono">B</button>
+                            <button type="button" class="btn btn-outline-primary btn-sm pin-prefix-btn py-2" data-char="C" onclick="setPinPrefix('C')" class="fs-md fw-700 font-mono">C</button>
+                            
+                            {% for d in [1,2,3,4,5,6,7,8,9] %}
+                                <button type="button" class="btn btn-secondary btn-sm py-2" onclick="appendPinDigit('{{ d }}')" class="fs-md font-mono">{{ d }}</button>
+                            {% endfor %}
+                            
+                            <button type="button" class="btn btn-secondary btn-sm py-2" onclick="clearPin()" class="fs-sm font-mono">Clear</button>
+                            <button type="button" class="btn btn-secondary btn-sm py-2" onclick="appendPinDigit('0')" class="fs-md font-mono">0</button>
+                            <button type="button" class="btn btn-danger btn-sm py-2 d-flex align-items-center justify-content-center" onclick="backspacePinDigit()" title="Backspace"><span class="material-icons fs-sm">backspace</span></button>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary mt-0 w-100" >
+                        <span class="material-icons fs-md">add</span> Register User
+                    </button>
+                </form>
+            {% endif %}
+        </div>
+
+        <!-- Right: Edit User Form -->
+        <div id="edit-user-container" class="glass-panel d-none" style="height: fit-content;">
+            <h3 class="fs-md d-flex align-items-center gap-1 mb-4">
+                <span class="material-icons fs-md text-primary">edit</span> Edit User
+            </h3>
+            <form method="post" id="editUserForm">
+                <div class="grid-cols-2">
+                    <div class="form-group">
+                        <label class="form-label" for="eu_first">First Name</label>
+                        <input type="text" name="first_name" id="eu_first" class="form-control" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="eu_last">Last Name</label>
+                        <input type="text" name="last_name" id="eu_last" class="form-control" required>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="eu_email">Email Address</label>
+                    <input type="email" name="email" id="eu_email" class="form-control" placeholder="Optional">
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="eu_phone">Phone</label>
+                    <input type="tel" name="eu_phone" id="eu_phone" class="form-control" data-controller="intl-tel-input" data-intl-tel-input-allowed-countries-value="{{ app_config('allowed_phone_countries', ['us'])|json_encode|e('html_attr') }}" placeholder="Optional">
+                </div>
+
+                <!-- Edit PIN section -->
+                <div class="form-group">
+                    <label class="form-label">PIN <span class="fs-xs text-muted">(leave unchanged if you don't want to reset)</span></label>
+                    <div class="mb-0">
+                        <div id="edit-pin-display" class="fs-xl fw-700 text-center text-primary w-100" style="font-family:monospace; letter-spacing:0.2em; background:rgba(99,102,241,0.08); border:1px solid rgba(99,102,241,0.25); border-radius:8px; padding: 0.5rem;">
+                            <span id="edit-pin-text">——</span>
+                        </div>
+                    </div>
+                    <div class="d-grid gap-1 mt-2" style="grid-template-columns:repeat(3,1fr)">
+                        <button type="button" class="btn btn-outline-primary btn-sm edit-prefix-btn py-2" data-char="A" onclick="setEditPinPrefix('A')" class="fs-md fw-700 font-mono">A</button>
+                        <button type="button" class="btn btn-outline-primary btn-sm edit-prefix-btn py-2" data-char="B" onclick="setEditPinPrefix('B')" class="fs-md fw-700 font-mono">B</button>
+                        <button type="button" class="btn btn-outline-primary btn-sm edit-prefix-btn py-2" data-char="C" onclick="setEditPinPrefix('C')" class="fs-md fw-700 font-mono">C</button>
+                        
+                        {% for d in [1,2,3,4,5,6,7,8,9] %}
+                            <button type="button" class="btn btn-secondary btn-sm py-2" onclick="appendEditPinDigit('{{ d }}')" class="fs-md font-mono">{{ d }}</button>
+                        {% endfor %}
+                        
+                        <button type="button" class="btn btn-secondary btn-sm py-2" onclick="clearEditPin()" class="fs-sm font-mono">Clear</button>
+                        <button type="button" class="btn btn-secondary btn-sm py-2" onclick="appendEditPinDigit('0')" class="fs-md font-mono">0</button>
+                        <button type="button" class="btn btn-danger btn-sm py-2 d-flex align-items-center justify-content-center" onclick="backspaceEditPinDigit()" title="Backspace"><span class="material-icons fs-sm">backspace</span></button>
+                    </div>
+                    <input type="hidden" name="pin" id="eu_pin">
+                </div>
+                <div class="d-flex justify-content-end gap-3 mt-4" >
+                    <button type="button" onclick="cancelEditUser()" class="btn btn-secondary btn-sm w-100">Cancel</button>
+                    <button type="submit" class="btn btn-primary btn-sm w-100">
+                        <span class="material-icons fs-md">save</span> Save
+                    </button>
+                </div>
+            </form>
+        </div>
+
+    </div>
+</div>
+
+<!-- MANAGERS DIRECTORY TAB -->
+<div id="tab-content-managers-tab" class="tab-pane tab-hidden">
+    <div class="d-grid gap-5" style="grid-template-columns: 2.2fr 1fr">
+        
+        <!-- Left: Managers List -->
+        <div class="glass-panel">
+            <h3 class="fs-md mb-4">Authorized Managers</h3>
+            
+            <div class="table-responsive">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Email</th>
+                            <th>Phone</th>
+                            <th>Added</th>
+                            <th>Status</th>
+                            <th class="text-right w-80">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for mgr in managers %}
+                            <tr>
+                                <td class="fw-600">{{ mgr.firstName }} {{ mgr.lastName }}</td>
+                                <td>{{ mgr.email }}</td>
+                                <td>{{ mgr.phone|default('—') }}</td>
+                                <td>{{ mgr.createdAt|date('M d, Y') }}</td>
+                                <td>
+                                    <span class="badge badge-success">Active</span>
+                                </td>
+                                <td class="text-right">
+                                    <button class="btn btn-secondary btn-sm" title="Edit Manager" class="p-0" 
+                                        onclick="openEditManagerModal({{ mgr.id }}, '{{ mgr.firstName|e('js') }}', '{{ mgr.lastName|e('js') }}', '{{ mgr.email|e('js') }}', '{{ mgr.phone|default('')|e('js') }}')">
+                                        <span class="material-icons fs-md">edit</span>
+                                    </button>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Right: Add / Edit Manager Form -->
+        <div class="glass-panel position-relative" style="height: fit-content">
+            
+            <div id="add-manager-container">
+                <h3 class="fs-md d-flex align-items-center gap-1 mb-4">
+                    <span class="material-icons fs-md text-primary">admin_panel_settings</span> Add Manager
+                </h3>
+
+
+
+                {% if limitsData.usage.managers >= limitsData.limits.max_managers %}
+                    <div class="alert alert-warning p-0" style="font-size:0.78rem; .6rem 0.85rem">
+                        <span class="material-icons fs-md">lock</span>
+                        <span>Max {{ limitsData.limits.max_managers }} manager(s) allowed. Upgrade to Gold.</span>
+                    </div>
+                {% else %}
+                    <form action="{{ path('app_manager_add_manager') }}" method="post">
+                        <div class="grid-cols-2">
+                            <div class="form-group">
+                                <label class="form-label" for="mgr_first">First Name</label>
+                                <input type="text" name="first_name" id="mgr_first" class="form-control" required placeholder="Alice">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label" for="mgr_last">Last Name</label>
+                                <input type="text" name="last_name" id="mgr_last" class="form-control" required placeholder="Smith">
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="mgr_email">Email Address</label>
+                            <input type="email" name="email" id="mgr_email" class="form-control" required placeholder="alice.smith@company.com">
+                        </div>
+                            <label class="form-label" for="mgr_phone">Phone Number</label>
+                            <input type="tel" name="phone" id="mgr_phone" class="form-control" required data-controller="intl-tel-input" data-intl-tel-input-allowed-countries-value="{{ app_config('allowed_phone_countries', ['us'])|json_encode|e('html_attr') }}">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="mgr_pwd">Password</label>
+                            <input type="password" name="password" id="mgr_pwd" class="form-control" required placeholder="Min. 8 characters">
+                        </div>
+
+                        <button type="submit" class="btn btn-primary mt-0 w-100" >
+                            <span class="material-icons fs-md">add_moderator</span> Create Manager
+                        </button>
+                    </form>
+                {% endif %}
+            </div>
+
+            <div id="edit-manager-container" class="tab-hidden">
+                <h3 class="fs-md d-flex align-items-center gap-1 mb-4">
+                    <span class="material-icons fs-md text-primary">edit</span> Edit Manager
+                </h3>
+                
+                <form method="post" id="editManagerForm">
+                    <div class="grid-cols-2">
+                        <div class="form-group">
+                            <label class="form-label" for="em_first">First Name</label>
+                            <input type="text" name="first_name" id="em_first" class="form-control" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="em_last">Last Name</label>
+                            <input type="text" name="last_name" id="em_last" class="form-control" required>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="em_email">Email Address</label>
+                        <input type="email" name="email" id="em_email" class="form-control" required>
+                    </div>
+                        <label class="form-label" for="em_phone">Phone Number</label>
+                        <input type="tel" name="em_phone" id="em_phone" class="form-control" required data-controller="intl-tel-input" data-intl-tel-input-allowed-countries-value="{{ app_config('allowed_phone_countries', ['us'])|json_encode|e('html_attr') }}">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="em_pwd">New Password <span class="fs-xs text-muted">(leave blank to keep current)</span></label>
+                        <input type="password" name="password" id="em_pwd" class="form-control" placeholder="Min. 8 characters" autocomplete="new-password">
+                    </div>
+                    <div class="d-flex justify-content-end gap-2 mt-6">
+                        <button type="button" onclick="cancelEditManager()" class="btn btn-secondary flex-1">Cancel</button>
+                        <button type="submit" class="btn btn-primary" style="flex:2;">Save Changes</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+
+
+<!-- Modal backdrop overlay -->
+
+
+<script>
+    function switchTab(tabId) {
+        document.querySelectorAll('.tab-pane').forEach(el => {
+            el.classList.add('tab-hidden');
+            el.classList.remove('d-block');
+        });
+        const target = document.getElementById(`tab-content-${tabId}`);
+        if (target) {
+            target.classList.remove('tab-hidden');
+            target.classList.add('d-block');
+        }
+        document.querySelectorAll('.tab').forEach(el => el.classList.remove('active'));
+        document.getElementById(`tab-${tabId}`).classList.add('active');
+    }
+
+    // ── Add-user PIN Pad ──────────────────────────────────────────────────
+    let _pinPrefix = '';
+    let _pinDigits = '';
+
+    function updatePinDisplay() {
+        const prefixEl = document.getElementById('pin-prefix-display');
+        const digitsEl = document.getElementById('pin-digits-display');
+        const hiddenInput = document.getElementById('pin');
+
+        prefixEl.textContent = _pinPrefix || '?';
+        prefixEl.style.opacity = _pinPrefix ? '1' : '0.35';
+
+        const filled = _pinDigits.padEnd(3, '_');
+        digitsEl.textContent = filled;
+        digitsEl.style.opacity = _pinDigits.length > 0 ? '1' : '0.35';
+
+        hiddenInput.value = (_pinPrefix && _pinDigits.length === 3) ? _pinPrefix + _pinDigits : '';
+    }
+
+    function setPinPrefix(char) {
+        _pinPrefix = char;
+        updatePinDisplay();
+        document.querySelectorAll('.pin-prefix-btn').forEach(btn => {
+            btn.classList.toggle('btn-primary', btn.dataset.char === char);
+            btn.classList.toggle('btn-outline-primary', btn.dataset.char !== char);
+        });
+    }
+
+    function clearPin() {
+        _pinPrefix = '';
+        _pinDigits = '';
+        updatePinDisplay();
+        document.querySelectorAll('.pin-prefix-btn').forEach(btn => {
+            btn.classList.add('btn-outline-primary');
+            btn.classList.remove('btn-primary');
+        });
+    }
+
+    function appendPinDigit(digit) {
+        if (_pinDigits.length < 3) { _pinDigits += digit; updatePinDisplay(); }
+    }
+
+    function backspacePinDigit() {
+        if (_pinDigits.length > 0) { _pinDigits = _pinDigits.slice(0, -1); updatePinDisplay(); }
+    }
+
+    // ── Edit User Modal ───────────────────────────────────────────────────
+    let _editPrefix = '';
+    let _editDigits = '';
+    let _editOriginalPin = '';
+
+    function openEditUserModal(id, first, last, email, phone, currentPin) {
+        const form = document.getElementById('editUserForm');
+        form.action = `/manager/users/edit/${id}`;
+        document.getElementById('eu_first').value  = first;
+        document.getElementById('eu_last').value   = last;
+        document.getElementById('eu_email').value  = email;
+        document.getElementById('eu_phone').value  = phone;
+
+        // Pre-fill PIN display (but don't set hidden — user must actively change)
+        _editPrefix = '';
+        _editDigits = '';
+        _editOriginalPin = currentPin;
+        document.getElementById('eu_pin').value = '';
+        document.getElementById('edit-pin-text').textContent = currentPin || '——';
+
+        // Reset prefix buttons
+        document.querySelectorAll('.edit-prefix-btn').forEach(btn => {
+            btn.classList.remove('btn-primary');
+            btn.classList.add('btn-outline-primary');
+        });
+
+        document.getElementById('add-user-container').classList.add('d-none');
+        document.getElementById('edit-user-container').classList.remove('d-none');
+    }
+
+    function updateEditPinDisplay() {
+        const text = document.getElementById('edit-pin-text');
+        const hidden = document.getElementById('eu_pin');
+        if (_editPrefix || _editDigits) {
+            text.textContent = (_editPrefix || '?') + _editDigits.padEnd(3, '_');
+            hidden.value = (_editPrefix && _editDigits.length === 3) ? _editPrefix + _editDigits : '';
+        } else {
+            text.textContent = _editOriginalPin || '——';
+            hidden.value = '';
+        }
+    }
+
+    function setEditPinPrefix(char) {
+        _editPrefix = char;
+        updateEditPinDisplay();
+        document.querySelectorAll('.edit-prefix-btn').forEach(btn => {
+            btn.classList.toggle('btn-primary', btn.dataset.char === char);
+            btn.classList.toggle('btn-outline-primary', btn.dataset.char !== char);
+        });
+    }
+
+    function appendEditPinDigit(digit) {
+        if (_editDigits.length < 3) { _editDigits += digit; updateEditPinDisplay(); }
+    }
+
+    function backspaceEditPinDigit() {
+        if (_editDigits.length > 0) { _editDigits = _editDigits.slice(0, -1); updateEditPinDisplay(); }
+    }
+
+    function clearEditPin() {
+        _editPrefix = '';
+        _editDigits = '';
+        document.getElementById('edit-pin-text').textContent = _editOriginalPin || '——';
+        document.querySelectorAll('.edit-prefix-btn').forEach(btn => {
+            btn.classList.remove('btn-primary');
+            btn.classList.add('btn-outline-primary');
+        });
+        document.getElementById('eu_pin').value = '';
+    }
+
+    // ── Edit Manager Modal ────────────────────────────────────────────────
+    function openEditManagerModal(id, first, last, email, phone) {
+        document.getElementById('add-manager-container').classList.add('tab-hidden');
+        document.getElementById('edit-manager-container').classList.remove('tab-hidden');
+
+        const form = document.getElementById('editManagerForm');
+        form.action = `/manager/users/edit-manager/${id}`;
+        document.getElementById('em_first').value = first;
+        document.getElementById('em_last').value  = last;
+        document.getElementById('em_email').value = email;
+        document.getElementById('em_phone').value = phone;
+        document.getElementById('em_pwd').value   = '';
+    }
+
+    function cancelEditManager() {
+        document.getElementById('edit-manager-container').classList.add('tab-hidden');
+        document.getElementById('add-manager-container').classList.remove('tab-hidden');
+    }
+
+    // Close modals on backdrop click
+    document.querySelectorAll('dialog').forEach(dlg => {
+        dlg.addEventListener('click', e => {
+            if (e.target === dlg) dlg.close();
+        });
+    });
+    function cancelEditUser() {
+        document.getElementById('edit-user-container').classList.add('d-none');
+        document.getElementById('add-user-container').classList.remove('d-none');
+    }
+</script>
+{% endblock %}
+
+{% block javascripts %}
+    {{ parent() }}
+{% endblock %}

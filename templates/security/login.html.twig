@@ -1,0 +1,76 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Login - TimeFlow{% endblock %}
+
+{% block body %}
+<div class="position-absolute" style="top: 1.5rem; right: 1.5rem; z-index: 1000;">
+    <div class="theme-selector">
+        <button type="button" class="theme-option" data-value="light" onclick="setTheme('light')" title="Light Mode">
+            <span class="material-icons">light_mode</span>
+        </button>
+        <button type="button" class="theme-option" data-value="dark" onclick="setTheme('dark')" title="Dark Mode">
+            <span class="material-icons">dark_mode</span>
+        </button>
+        <button type="button" class="theme-option" data-value="system" onclick="setTheme('system')" title="System Theme">
+            <span class="material-icons">settings_brightness</span>
+        </button>
+    </div>
+</div>
+
+<div class="d-flex align-items-center justify-content-center p-8" style="min-height: 100vh">
+    <div class="glass-panel w-100" style="max-width: 450px">
+        <div class="text-center mb-8">
+            <div class="text-primary d-inline-flex align-items-center justify-content-center mb-4 rounded-md" style="width: 60px; height: 60px; background: var(--primary-glow)">
+                <span class="material-icons fs-3xl">lock</span>
+            </div>
+            <h2>Welcome Back</h2>
+            <p class="fs-md text-secondary mt-1">Sign in to your manager or admin account</p>
+        </div>
+
+        {% if error %}
+            <div class="alert alert-danger">
+                <span class="material-icons">error</span>
+                <span>{{ error.messageKey|trans(error.messageData, 'security') }}</span>
+            </div>
+        {% endif %}
+
+        <form method="post" action="{{ path('app_login') }}">
+            <div class="form-group">
+                <label for="inputEmail" class="form-label">Email Address</label>
+                <input type="email" value="{{ last_username }}" name="_username" id="inputEmail" class="form-control" autocomplete="email" required autofocus placeholder="name@company.com">
+            </div>
+
+            <div class="form-group">
+                <label for="inputPassword" class="form-label">Password</label>
+                <input type="password" name="_password" id="inputPassword" class="form-control" autocomplete="current-password" required placeholder="Enter password">
+            </div>
+
+            {% if captcha_enabled %}
+                <div class="form-group">
+                    <label for="captcha_answer" class="form-label">Security Verification: What is {{ captcha_question }}?</label>
+                    <input type="number" name="captcha_answer" id="captcha_answer" class="form-control" required placeholder="Enter the result">
+                </div>
+            {% endif %}
+
+            <input type="hidden" name="_csrf_token" value="{{ csrf_token('authenticate') }}">
+
+            <div style="margin: 1.5rem 0 1rem 0;">
+                <button type="submit" class="btn btn-primary w-100">
+                    <span class="material-icons">login</span> Sign In
+                </button>
+            </div>
+            
+            <div class="fs-md text-center mt-6">
+                <span class="text-muted">Need an account?</span>
+                <a href="{{ path('app_signup') }}" class="fw-600" style="margin-left: 0.25rem">Sign up as Manager</a>
+            </div>
+            
+            <div class="text-center mt-2">
+                <a href="{{ path('app_home') }}" class="fs-sm text-muted">
+                    <span class="material-icons fs-md" style="vertical-align: middle">arrow_back</span> Back to Home
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,218 @@
+{% extends 'manager/layout.html.twig' %}
+
+{% block title %}Dashboard - TimeFlow{% endblock %}
+{% block header_title %}Organization Dashboard{% endblock %}
+
+{% block manager_content %}
+<!-- Overview Stats Grid -->
+<div class="grid-cols-3 mb-8">
+    <!-- Stat 1: Active Sessions -->
+    <div class="metric-card">
+        <div class="metric-icon indigo">
+            <span class="material-icons">directions_run</span>
+        </div>
+        <div class="metric-info">
+            <h3>{{ activeCount }}</h3>
+            <p>Users Checked In Now</p>
+        </div>
+    </div>
+ 
+    <!-- Stat 2: Total Users -->
+    <div class="metric-card">
+        <div class="metric-icon emerald">
+            <span class="material-icons">people</span>
+        </div>
+        <div class="metric-info">
+            <h3>{{ limitsData.usage.orgUsers }} <span class="fs-md fw-400 text-muted">/ {{ limitsData.limits.max_orgUsers }}</span></h3>
+            <p>Total Registered Users</p>
+        </div>
+    </div>
+
+    <!-- Stat 3: Organization Mode -->
+    <div class="metric-card">
+        <div class="metric-icon {% if org.accessMode == 'secure' %}rose{% else %}amber{% endif %}">
+            <span class="material-icons">{% if org.accessMode == 'secure' %}lock{% else %}lock_open{% endif %}</span>
+        </div>
+        <div class="metric-info">
+            <h3 class="fs-2xl text-uppercase">{{ org.accessMode }}</h3>
+            <p>Kiosk Verification Mode</p>
+        </div>
+    </div>
+</div>
+
+<div class="grid-cols-3 gap-8 mb-8" style="grid-template-columns: 2fr 1fr">
+    <!-- Plan Quota Gauges -->
+    <div class="glass-panel p-6">
+        <h3 class="fs-lg d-flex align-items-center gap-2 mb-6">
+            <span class="material-icons text-primary">usage_badge</span> Subscription Quotas & Limits
+        </h3>
+        
+        <!-- Users Quota -->
+        <div class="quota-box">
+            {% set empPercent = (limitsData.usage.orgUsers / limitsData.limits.max_orgUsers * 100)|round %}
+            <div class="fs-sm fw-600 d-flex justify-content-between">
+                <span>User Registry Allocation</span>
+                <span>{{ limitsData.usage.orgUsers }} of {{ limitsData.limits.max_orgUsers }} ({{ empPercent }}%)</span>
+            </div>
+            <div class="quota-bar">
+                <div class="quota-progress {% if empPercent > 90 %}danger{% elseif empPercent > 75 %}warning{% endif %}" style="width: {{ empPercent }}%;"></div>
+            </div>
+        </div>
+
+        <!-- Categories Quota -->
+        <div class="quota-box mt-6">
+            {% set catPercent = (limitsData.usage.categories / limitsData.limits.max_categories * 100)|round %}
+            <div class="fs-sm fw-600 d-flex justify-content-between">
+                <span>Categories Count Limit</span>
+                <span>{{ limitsData.usage.categories }} of {{ limitsData.limits.max_categories }} ({{ catPercent }}%)</span>
+            </div>
+            <div class="quota-bar">
+                <div class="quota-progress {% if catPercent > 90 %}danger{% elseif catPercent > 75 %}warning{% endif %}" style="width: {{ catPercent }}%;"></div>
+            </div>
+        </div>
+
+        <!-- Managers Quota -->
+        <div class="quota-box mt-6">
+            {% set manPercent = (limitsData.usage.managers / limitsData.limits.max_managers * 100)|round %}
+            <div class="fs-sm fw-600 d-flex justify-content-between">
+                <span>Manager Accounts Limit</span>
+                <span>{{ limitsData.usage.managers }} of {{ limitsData.limits.max_managers }} ({{ manPercent }}%)</span>
+            </div>
+            <div class="quota-bar">
+                <div class="quota-progress" style="width: {{ manPercent }}%;"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Category Breakdown Chart -->
+    <div class="glass-panel p-6">
+        <h3 class="fs-lg mb-6">Activity Breakdown</h3>
+        {% if categoryBreakdown|length > 0 %}
+            <div class="d-flex flex-column gap-4">
+                {% for cat, hrs in categoryBreakdown %}
+                    <div>
+                        <div class="fs-sm d-flex justify-content-between">
+                            <span class="fw-500">{{ cat }}</span>
+                            <span class="fw-600 text-secondary">{{ hrs }} hrs</span>
+                        </div>
+                        <div class="bg-input mt-0 rounded-full" style="height: 6px; ; .25rem">
+                            <!-- Simulated percentage width for display -->
+                            <div class="h-100 rounded-full" style="background:var(--primary); width: {% if hrs > 100 %}100%{% else %}{{ hrs }}%{% endif %}"></div>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="text-center text-muted p-8" >
+                <span class="material-icons fs-4xl mb-2">pie_chart_discard</span>
+                <p class="fs-sm">No activity data recorded yet.</p>
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Recent Sessions Feed -->
+<div class="glass-panel p-6">
+    <div class="d-flex align-items-center justify-content-between mb-5">
+        <h3 class="fs-lg m-0">Recent Check-In Activity</h3>
+        <a href="{{ path('app_manager_reports') }}" class="fs-sm fw-600">View All Timesheets</a>
+    </div>
+
+    <div class="table-responsive">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>User</th>
+                    <th>Category</th>
+                    <th>Started At</th>
+                    <th>Ended At</th>
+                    <th>Duration</th>
+                    <th>Method</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for session in recentSessions %}
+                    <tr>
+                        <td class="fw-600">{{ session.orgUser.firstName }} {{ session.orgUser.lastName }}</td>
+                        <td>
+                            <span class="d-inline-flex align-items-center gap-1">
+                                <span class="material-icons fs-md text-secondary">
+                                    {{ session.category.icon|default('work') }}
+                                </span>
+                                {{ session.category.name|default('General') }}
+                            </span>
+                        </td>
+                        <td>{{ session.startedAt|date('M d, h:i A') }}</td>
+                        <td>
+                            {% if session.endedAt %}
+                                {% if session.endMethod == 'Auto End' %}
+                                    <span class="badge fs-xs bg-muted-soft" style="; color: #6B7280">Auto End</span>
+                                {% else %}
+                                    {{ session.endedAt|date('M d, h:i A') }}
+                                {% endif %}
+                            {% else %}
+                                {% if org.plan.name != 'basic' and session.category and session.category.maxSessionDurationMinutes is not null %}
+                                    {% set maxDurationSeconds = session.category.maxSessionDurationMinutes * 60 %}
+                                {% else %}
+                                    {% set maxDurationSeconds = org.sessionLimitHours * 3600 %}
+                                {% endif %}
+
+                                {% set shouldTerminate = false %}
+                                {% if org.plan.name == 'basic' %}
+                                    {% set shouldTerminate = true %}
+                                {% elseif session.category and session.category.terminateAtMaxDuration %}
+                                    {% set shouldTerminate = true %}
+                                {% endif %}
+
+                                <span class="badge badge-success ticking-timer" 
+                                      data-started="{{ session.startedAt|date('c') }}" 
+                                      data-max-duration="{{ maxDurationSeconds }}"
+                                      data-terminate="{{ shouldTerminate ? 'true' : 'false' }}" class="fs-sm d-inline-flex align-items-center gap-1 p-0 tracking-wide" style="font-family: monospace; ; .35rem 0.6rem; ; text-transform: none" 
+                                      title="Active Session">
+                                    <span class="ticking-dot"></span>
+                                    <span class="timer-text">00:00:00</span>
+                                </span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if session.durationSeconds %}
+                                {% set hours = (session.durationSeconds / 3600)|round(0, 'floor') %}
+                                {% set mins = ((session.durationSeconds % 3600) / 60)|round(0, 'floor') %}
+                                {{ hours }}h {{ mins }}m
+                            {% else %}
+                                --
+                            {% endif %}
+                        </td>
+                        <td>
+                            <span class="badge badge-info">{{ session.startMethod }}</span>
+                        </td>
+                        <td>
+                            {% if session.endMethod == 'Auto End' %}
+                                <span class="badge badge-secondary fs-xs bg-muted-soft" style="; color: #6B7280; border: 1px solid rgba(107, 114, 128, 0.3)">Auto End</span>
+                            {% else %}
+                                {% if session.isOvertime %}
+                                    <span class="badge badge-danger mr-1">Overtime</span>
+                                {% endif %}
+                                {% if session.isOutOfWindow %}
+                                    <span class="badge badge-warning">Out of Window</span>
+                                {% endif %}
+                                {% if not session.isOvertime and not session.isOutOfWindow %}
+                                    <span class="fs-sm text-muted">Normal</span>
+                                {% endif %}
+                            {% endif %}
+                        </td>
+                    </tr>
+                {% else %}
+                    <tr>
+                        <td colspan="7" class="text-center text-muted" style="padding: 3rem 0">
+                            <span class="material-icons fs-4xl mb-2">history</span>
+                            <p class="fs-sm">No historical sessions logged.</p>
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

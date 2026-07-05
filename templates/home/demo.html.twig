@@ -1,0 +1,75 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Request Demo Access - CheckIn{% endblock %}
+
+{% block body %}
+<div class="position-absolute" style="top: 1.5rem; right: 1.5rem; z-index: 1000;">
+    <div class="theme-selector">
+        <button type="button" class="theme-option" data-value="light" onclick="setTheme('light')" title="Light Mode">
+            <span class="material-icons">light_mode</span>
+        </button>
+        <button type="button" class="theme-option" data-value="dark" onclick="setTheme('dark')" title="Dark Mode">
+            <span class="material-icons">dark_mode</span>
+        </button>
+        <button type="button" class="theme-option" data-value="system" onclick="setTheme('system')" title="System Theme">
+            <span class="material-icons">settings_brightness</span>
+        </button>
+    </div>
+</div>
+
+<div class="p-0 w-100 max-w-500" style="margin: 4rem auto;">
+    <div class="text-center mb-8">
+        <h2 class="fs-3xl fw-800">Access <span class="text-gradient">Live Demo</span></h2>
+        <p class="text-secondary mt-1">Provide your details to immediately unlock the demo credentials.</p>
+    </div>
+
+    {% for type, messages in app.flashes %}
+        {% for message in messages %}
+            <div class="alert alert-{{ type }} mb-6">
+                <span class="material-icons">
+                    {% if type == 'danger' %}error{% else %}check_circle{% endif %}
+                </span>
+                <span>{{ message }}</span>
+            </div>
+        {% endfor %}
+    {% endfor %}
+
+    <form action="{{ path('app_request_demo') }}" method="post" class="glass-panel" style="padding: 2.5rem;">
+        <div class="form-group">
+            <label class="form-label" for="name">Full Name</label>
+            <input type="text" name="name" id="name" class="form-control" placeholder="Jane Doe" required>
+        </div>
+
+        <div class="form-group">
+            <label class="form-label" for="email">Work Email</label>
+            <input type="email" name="email" id="email" class="form-control" placeholder="jane@company.com" required>
+        </div>
+
+        <div class="form-group">
+            <label class="form-label" for="phone">Phone Number (Optional)</label>
+            <input type="tel" name="phone" id="phone" class="form-control" data-controller="intl-tel-input" data-intl-tel-input-allowed-countries-value="{{ app_config('allowed_phone_countries', ['us'])|json_encode|e('html_attr') }}" placeholder="(555) 123-4567">
+        </div>
+
+        <div class="form-group">
+            <label class="form-label" for="company">Company Name (Optional)</label>
+            <input type="text" name="company" id="company" class="form-control" placeholder="Acme Corp">
+        </div>
+
+        {% if captcha_enabled %}
+            <div class="form-group mb-6">
+                <label class="form-label" for="captcha" class="d-flex align-items-center gap-2 mb-2">
+                    <span class="material-icons text-primary fs-md">verified_user</span>
+                    Verification: What is {{ captcha_question }}?
+                </label>
+                <input type="number" name="captcha" id="captcha" class="form-control" required placeholder="Enter the math result">
+            </div>
+        {% endif %}
+
+        <div class="mt-8">
+            <button type="submit" class="btn btn-primary w-100 d-flex justify-content-center align-items-center gap-2">
+                Unlock Demo <span class="material-icons">lock_open</span>
+            </button>
+        </div>
+    </form>
+</div>
+{% endblock %}

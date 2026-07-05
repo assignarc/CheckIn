@@ -1,0 +1,406 @@
+{% extends 'manager/layout.html.twig' %}
+
+{% block title %}Import Users - TimeFlow{% endblock %}
+{% block header_title %}Spreadsheet Onboarding Wizard{% endblock %}
+
+{% block manager_content %}
+<div class="m-0" style="max-width: 900px;  auto">
+    
+    <!-- Wizard Steps Indicator -->
+    <!-- Wizard Steps Indicator -->
+    <div class="wizard-steps mb-8">
+        <div class="wizard-step {% if step >= 1 %}completed{% endif %} d-flex align-items-center justify-content-center">
+            {% if step > 1 %}<span class="material-icons fs-lg">check</span>{% else %}1{% endif %}
+        </div>
+        <div class="wizard-step {% if step == 2 %}active{% elseif > %}completed{% endif %} d-flex align-items-center justify-content-center">
+            {% if step > 2 %}<span class="material-icons fs-lg">check</span>{% else %}2{% endif %}
+        </div>
+        <div class="wizard-step {% if step == 3 %}active{% elseif > %}completed{% endif %} d-flex align-items-center justify-content-center">
+            {% if step > 3 %}<span class="material-icons fs-lg">check</span>{% else %}3{% endif %}
+        </div>
+        <div class="wizard-step {% if step == 4 %}active{% elseif > %}completed{% endif %} d-flex align-items-center justify-content-center">
+            {% if step > 4 %}<span class="material-icons fs-lg">check</span>{% else %}4{% endif %}
+        </div>
+        <div class="wizard-step {% if step == 5 %}active{% endif %} d-flex align-items-center justify-content-center">
+            5
+        </div>
+    </div>
+
+    <!-- STEP 1: Upload File -->
+    {% if step == 1 %}
+        <div class="glass-panel text-center" style="padding: 2.5rem">
+            <h3 class="fs-xl d-flex align-items-center justify-content-center gap-2 mb-2">
+                <span class="material-icons text-primary">cloud_upload</span> Upload User CSV Spreadsheet
+            </h3>
+            <p class="fs-md text-secondary mb-10">
+                Upload a comma-separated values (.csv) file containing user records. Supports up to 1,000 rows.
+            </p>
+
+            <form method="post" enctype="multipart/form-data">
+                <input type="hidden" name="step" value="1">
+                
+                <label for="import_file" class="dropzone" id="dropzone-label">
+                    <span class="material-icons">cloud_download</span>
+                    <h4 id="file-name-label">Drag & drop or click to upload CSV file</h4>
+                    <p class="fs-sm text-muted mt-1">Supported fields: First Name, Last Name, Email, Phone, PIN, Custom field names</p>
+                    <input type="file" name="import_file" id="import_file" class="d-none" accept=".csv" required onchange="handleFileSelected()">
+                </label>
+
+                <div class="d-flex align-items-center justify-content-between mt-8 pt-6 border-t">
+                    <a href="{{ path('app_manager_users') }}" class="btn btn-secondary">
+                        <span class="material-icons">arrow_back</span> Back to Directory
+                    </a>
+                    <button type="submit" class="btn btn-primary">
+                        Parse Spreadsheet <span class="material-icons">arrow_forward</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    {% endif %}
+
+    <!-- STEP 2: Column Mapping & Unique ID -->
+    {% if step == 2 %}
+        <form method="post" class="glass-panel p-8">
+            <input type="hidden" name="step" value="2">
+            
+            <h3 class="fs-xl d-flex align-items-center gap-2 mb-2">
+                <span class="material-icons text-primary">map</span> Map Columns & Set Unique Key
+            </h3>
+            <p class="fs-md text-secondary mb-8">
+                Select the column representing the unique identifier (e.g. Email or User ID) and map file headers to profile fields.
+            </p>
+
+            <!-- Unique key select -->
+            <div class="form-group mb-8" style="max-width: 400px">
+                <label class="form-label" for="unique_col">Unique Identifier Column (Optional)</label>
+                <select name="unique_col" id="unique_col" class="form-control">
+                    <option value="">-- None (Match by Name Fallback) --</option>
+                    {% for index, header in headers %}
+                        <option value="{{ index }}" {% if header|lower in ['email', 'id', 'orguser id', 'user id', 'unique id'] %}selected{% endif %}>{{ header }}</option>
+                    {% endfor %}
+                </select>
+                <span class="form-text">Used to match rows against existing database records for merges/updates. If left blank, users will be matched by"FirstName-LastName".</span>
+            </div>
+
+            <!-- Mapping Grid -->
+            <h4 class="fs-md mb-4 pt-6 border-t">Map Spreadsheet Headers to Profile Fields</h4>
+            <div class="grid-cols-2 gap-4" >
+                
+                <div class="form-group">
+                    <label class="form-label" for="map_first">First Name (Required)</label>
+                    <select name="mappings[first_name]" id="map_first" class="form-control" required>
+                        <option value="">-- Select Column --</option>
+                        {% for index, header in headers %}
+                            <option value="{{ index }}" {% if header|lower in ['first', 'first name', 'firstname', 'name'] %}selected{% endif %}>{{ header }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="map_last">Last Name (Required)</label>
+                    <select name="mappings[last_name]" id="map_last" class="form-control" required>
+                        <option value="">-- Select Column --</option>
+                        {% for index, header in headers %}
+                            <option value="{{ index }}" {% if header|lower in ['last', 'last name', 'lastname'] %}selected{% endif %}>{{ header }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="map_email">Email Address</label>
+                    <select name="mappings[email]" id="map_email" class="form-control">
+                        <option value="">-- Select Column --</option>
+                        {% for index, header in headers %}
+                            <option value="{{ index }}" {% if header|lower in ['email', 'email address', 'mail'] %}selected{% endif %}>{{ header }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="map_phone">Phone Number</label>
+                    <select name="mappings[phone]" id="map_phone" class="form-control">
+                        <option value="">-- Select Column --</option>
+                        {% for index, header in headers %}
+                            <option value="{{ index }}" {% if header|lower in ['phone', 'mobile', 'phone number', 'telephone'] %}selected{% endif %}>{{ header }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="map_pin">Kiosk PIN</label>
+                    <select name="mappings[pin]" id="map_pin" class="form-control">
+                        <option value="">-- Select Column (Auto-assigns 0000 if empty) --</option>
+                        {% for index, header in headers %}
+                            <option value="{{ index }}" {% if header|lower in ['pin', 'kiosk pin', 'passcode'] %}selected{% endif %}>{{ header }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <!-- Custom mapped metadata (up to plan limit) -->
+                <div class="form-group">
+                    <label class="form-label" for="map_custom_1">Custom metadata (e.g. Department)</label>
+                    <select name="mappings[Department]" id="map_custom_1" class="form-control">
+                        <option value="">-- Select Column --</option>
+                        {% for index, header in headers %}
+                            <option value="{{ index }}" {% if header|lower in ['department', 'dept', 'team'] %}selected{% endif %}>{{ header }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+
+            <!-- Preview parsed rows -->
+            <h4 class="fs-md mt-8 mb-4">File Preview Data (Top 5 Rows)</h4>
+            <div class="table-responsive mb-8">
+                <table class="table fs-sm">
+                    <thead>
+                        <tr>
+                            {% for header in headers %}
+                                <th>{{ header }}</th>
+                            {% endfor %}
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for row in previewRows %}
+                            <tr>
+                                {% for col in row %}
+                                    <td>{{ col }}</td>
+                                {% endfor %}
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="d-flex align-items-center justify-content-between pt-6 border-t">
+                <button type="submit" name="wizard_action" value="cancel" class="btn btn-secondary">Cancel</button>
+                <button type="submit" name="wizard_action" value="next" class="btn btn-primary">
+                    Perform Matching <span class="material-icons">arrow_forward</span>
+                </button>
+            </div>
+        </form>
+    {% endif %}
+
+    <!-- STEP 3: Match Review & Options -->
+    {% if step == 3 %}
+        <form method="post" class="glass-panel p-8 w-100" >
+            <input type="hidden" name="step" value="3">
+            
+            <h3 class="fs-xl d-flex align-items-center gap-2 mb-2">
+                <span class="material-icons text-primary">rule</span> Match Review & Options
+            </h3>
+            
+            <div class="mb-8 p-6" style="background: rgba(99, 102, 241, 0.05); border: 1px solid rgba(99, 102, 241, 0.2); border-radius: 8px">
+                <h4 class="fs-md mt-0 mb-3">Match Processing Options</h4>
+                <label class="fw-500 d-flex align-items-center gap-2 cursor-pointer">
+                    <input type="checkbox" name="enable_inactive" value="1" checked>
+                    Re-enable matched existing users if they are currently disabled
+                </label>
+            </div>
+
+            {% set newUsers = results|filter(i => i.match_type != 'update') %}
+            {% set updatedUsers = results|filter(i => i.match_type == 'update') %}
+            
+            <!-- NEW USERS TABLE -->
+            <h4 class="fs-lg text-success mb-4">New Users ({{ newUsers|length }})</h4>
+            <div class="table-responsive mb-10" style="max-height: 400px; overflow-y: auto">
+                <table class="table fs-sm">
+                    <thead><tr><th>Import Record</th><th>Email / Details</th><th>Match Reason</th><th style="width: 180px;">Action Resolution</th></tr></thead>
+                    <tbody>
+                        {% for item in newUsers %}
+                            <tr>
+                                <td class="fw-600">{{ item.first_name }} {{ item.last_name }}</td>
+                                <td><div>{{ item.email }}</div><div class="fs-xs text-muted">PIN: {{ item.pin }}</div></td>
+                                <td><span class="badge badge-success fs-xs">No match found</span></td>
+                                <td>
+                                    <select name="actions[{{ item.row_index }}]" class="form-control fs-sm p-0" >
+                                        <option value="add" selected>Create As New User</option>
+                                        <option value="skip">Skip / Ignore Row</option>
+                                    </select>
+                                </td>
+                            </tr>
+                        {% else %}
+                            <tr><td colspan="4" class="text-center text-muted">No new users found in import.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- UPDATED USERS TABLE -->
+            <h4 class="fs-lg mb-4" style="color: var(--info)">Updated Users ({{ updatedUsers|length }})</h4>
+            <div class="table-responsive mb-10" style="max-height: 400px; overflow-y: auto">
+                <table class="table fs-sm">
+                    <thead><tr><th>Import Record</th><th>Email / Details</th><th>Match Reason</th><th style="width: 180px;">Action Resolution</th></tr></thead>
+                    <tbody>
+                        {% for item in updatedUsers %}
+                            <tr style="background: rgba(16, 185, 129, 0.03);">
+                                <td class="fw-600">{{ item.first_name }} {{ item.last_name }}</td>
+                                <td><div>{{ item.email }}</div><div class="fs-xs text-muted">PIN: {{ item.pin }}</div></td>
+                                <td>
+                                    Matched: <strong>{{ item.matched_orgUser_name }}</strong><br>
+                                    {% if item.matched_orgUser_is_active %}
+                                        <span class="badge badge-success mt-0" style="font-size: 0.65rem; .25rem">Active</span>
+                                    {% else %}
+                                        <span class="badge badge-danger mt-0" style="font-size: 0.65rem; .25rem">Disabled</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <select name="actions[{{ item.row_index }}]" class="form-control fs-sm p-0" >
+                                        <option value="update" selected>Update Database Record</option>
+                                        <option value="add">Create As New User</option>
+                                        <option value="skip">Skip / Ignore Row</option>
+                                    </select>
+                                </td>
+                            </tr>
+                        {% else %}
+                            <tr><td colspan="4" class="text-center text-muted">No users to update.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="d-flex align-items-center justify-content-between pt-6 border-t">
+                <button type="submit" name="wizard_action" value="cancel" class="btn btn-secondary">Cancel</button>
+                <button type="submit" name="wizard_action" value="next" class="btn btn-primary">
+                    Next Step <span class="material-icons">arrow_forward</span>
+                </button>
+            </div>
+        </form>
+    {% endif %}
+
+    <!-- STEP 4: Missing Users Audit -->
+    {% if step == 4 %}
+        <form method="post" class="glass-panel p-8 w-100" >
+            <input type="hidden" name="step" value="4">
+            
+            <h3 class="fs-xl d-flex align-items-center gap-2 mb-2">
+                <span class="material-icons text-danger">person_off</span> Missing Users Audit
+            </h3>
+            <p class="fs-md text-secondary mb-8">
+                The following users currently exist in your database, but were <strong>NOT</strong> found in the uploaded spreadsheet. How would you like to handle them?
+            </p>
+
+            <div class="mb-8 p-6 bg-danger-soft-bordered" style=" border-radius: 8px">
+                <div class="d-flex flex-column gap-4">
+                    <label class="d-flex gap-3 cursor-pointer" style="align-items: flex-start">
+                        <input type="radio" name="missing_action" value="keep" checked class="mt-0" >
+                        <div>
+                            <div class="fs-md fw-600">Keep these users (Do nothing)</div>
+                            <div class="fs-sm text-secondary">They will remain active or disabled exactly as they currently are.</div>
+                        </div>
+                    </label>
+                    <label class="d-flex gap-3 cursor-pointer" style="align-items: flex-start">
+                        <input type="radio" name="missing_action" value="disable" class="mt-0" >
+                        <div>
+                            <div class="fs-md fw-600 text-danger">Disable all missing users</div>
+                            <div class="fs-sm text-secondary">This acts as a bulk sync. Anyone not in your spreadsheet will be immediately deactivated.</div>
+                        </div>
+                    </label>
+                </div>
+            </div>
+
+            <h4 class="fs-lg mb-4">Missing Users List ({{ missingUsers|length }})</h4>
+            <div class="table-responsive mb-10" style="max-height: 400px; overflow-y: auto">
+                <table class="table fs-sm">
+                    <thead><tr><th>Name</th><th>Email</th><th>Current Status</th></tr></thead>
+                    <tbody>
+                        {% for u in missingUsers %}
+                            <tr style="{% if not u.is_active %}opacity:0.6;{% endif %}">
+                                <td class="fw-600">{{ u.name }}</td>
+                                <td>{{ u.email|default('—') }}</td>
+                                <td>
+                                    {% if u.is_active %}
+                                        <span class="badge badge-success fs-xs">Active</span>
+                                    {% else %}
+                                        <span class="badge badge-danger fs-xs">Disabled</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                        {% else %}
+                            <tr><td colspan="3" class="text-center text-muted">All database users are accounted for in the spreadsheet.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="d-flex align-items-center justify-content-between pt-6 border-t">
+                <button type="submit" name="wizard_action" value="cancel" class="btn btn-secondary">Cancel</button>
+                <button type="submit" name="wizard_action" value="next" class="btn btn-primary">
+                    Continue <span class="material-icons">arrow_forward</span>
+                </button>
+            </div>
+        </form>
+    {% endif %}
+
+    <!-- STEP 5: Quota & Final Commit -->
+    {% if step == 5 %}
+        <form method="post" class="glass-panel p-8 w-100" >
+            <input type="hidden" name="step" value="5">
+            
+            <h3 class="fs-xl d-flex align-items-center gap-2 mb-2">
+                <span class="material-icons text-primary">fact_check</span> License Quota & Final Commit
+            </h3>
+            
+            <div class="d-grid gap-8 mt-8 mb-8" style="grid-template-columns: 1fr 1fr">
+                <div class="text-center p-6 border" style="background: var(--bg-body); border-radius: 8px">
+                    <div class="fs-md text-secondary mb-2">Projected Active Users</div>
+                    <div class="fw-700" style="font-size: 2.5rem; color: {% if isOverLimit %}var(--danger){% else %}var(--success){% endif %}">{{ projectedActiveTotal }}</div>
+                    <div class="fs-sm text-muted mt-2">
+                        {{ finalExistingActiveCount }} existing + {{ newActiveCount }} new
+                    </div>
+                </div>
+                
+                <div class="text-center p-6 border" style="background: var(--bg-body); border-radius: 8px">
+                    <div class="fs-md text-secondary mb-2">Plan License Limit</div>
+                    <div class="fw-700 text-primary fs-3xl">{{ maxLimit }}</div>
+                    <div class="fs-sm text-muted mt-2">Current Plan: {{ limitsData.plan }}</div>
+                </div>
+            </div>
+
+            {% if isOverLimit %}
+                <div class="alert alert-danger mb-8">
+                    <h4 class="fs-md d-flex align-items-center gap-1 mt-0 mb-2">
+                        <span class="material-icons">warning</span> Quota Exceeded
+                    </h4>
+                    <p class="fs-md mb-4">
+                        This import will push your active user count to <strong>{{ projectedActiveTotal }}</strong>, which exceeds your plan limit of <strong>{{ maxLimit }}</strong>.
+                    </p>
+                    <div class="d-flex flex-column gap-3">
+                        <label class="d-flex align-items-center gap-2 cursor-pointer">
+                            <input type="radio" name="over_quota_action" value="abort" checked>
+                            <strong>Abort Import</strong> (I will upgrade my plan and try again)
+                        </label>
+                        <label class="d-flex align-items-center gap-2 cursor-pointer">
+                            <input type="radio" name="over_quota_action" value="import_disabled">
+                            <strong>Import Excess Users as Disabled</strong> (They will not be able to check in until you activate them)
+                        </label>
+                    </div>
+                </div>
+            {% else %}
+                <div class="alert alert-success d-flex align-items-center gap-2 mb-8">
+                    <span class="material-icons">check_circle</span> You have enough licenses to complete this import.
+                </div>
+                <input type="hidden" name="over_quota_action" value="ok">
+            {% endif %}
+
+            <div class="d-flex align-items-center justify-content-between pt-6 border-t">
+                <button type="submit" name="wizard_action" value="cancel" class="btn btn-secondary">Cancel</button>
+                <button type="submit" name="wizard_action" value="execute" class="btn btn-success">
+                    <span class="material-icons">check_circle</span> Confirm & Execute Import
+                </button>
+            </div>
+        </form>
+    {% endif %}
+
+</div>
+
+<script>
+    function handleFileSelected() {
+        const fileInput = document.getElementById('import_file');
+        const fileLabel = document.getElementById('file-name-label');
+        if (fileInput.files.length > 0) {
+            fileLabel.textContent = `Selected: ${fileInput.files[0].name}`;
+            document.getElementById('dropzone-label').style.borderColor = 'var(--primary)';
+        }
+    }
+</script>
+{% endblock %}

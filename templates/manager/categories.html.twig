@@ -1,0 +1,339 @@
+{% extends 'manager/layout.html.twig' %}
+
+{% block title %}Categories - TimeFlow{% endblock %}
+{% block header_title %}Work Categories{% endblock %}
+
+{% block stylesheets %}
+
+{% endblock %}
+
+{% block manager_content %}
+<div class="d-grid gap-8" style="grid-template-columns: 2.2fr 1fr">
+
+    <!-- Left: Categories List -->
+    <div class="glass-panel p-6">
+        <h3 class="fs-lg mb-5">Custom Categories</h3>
+        
+        <div class="table-responsive">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th style="width: 70px;">Icon</th>
+                        <th>Name</th>
+                        <th>Max Duration</th>
+                        <th>Auto End?</th>
+                        <th>Status</th>
+                        <th class="text-right w-140">Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for cat in categories %}
+                        <tr>
+                            <td>
+                                <div class="d-inline-flex align-items-center justify-content-center rounded-sm" style="width: 36px; height: 36px; background: {{ cat.color|default('#8b5cf6') }}20; color: {{ cat.color|default('#8b5cf6') }}">
+                                    <span class="material-icons fs-xl">{{ cat.icon }}</span>
+                                </div>
+                            </td>
+                            <td class="fw-600">{{ cat.name }}</td>
+                            <td>
+                                {% if org.plan.name == 'basic' %}
+                                    <span class="fs-sm text-secondary">Plan Default ({{ limitsData.limits.max_session_hours }}h)</span>
+                                {% else %}
+                                    {% if cat.maxSessionDurationMinutes %}
+                                        <span class="badge badge-info fs-xs">{{ cat.getFormattedMaxDuration() }}</span>
+                                    {% else %}
+                                        <span class="fs-sm text-muted">Inherit ({{ limitsData.limits.max_session_hours }}h)</span>
+                                    {% endif %}
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if org.plan.name == 'basic' %}
+                                    <span class="badge badge-success fs-xs">Yes</span>
+                                {% else %}
+                                    {% if cat.terminateAtMaxDuration %}
+                                        <span class="badge badge-success fs-xs">Yes</span>
+                                    {% else %}
+                                        <span class="badge badge-warning fs-xs text-warning" style="background: rgba(245,158,11,0.1)">No (Red Overtime)</span>
+                                    {% endif %}
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if cat.isActive %}
+                                    <span class="badge badge-success fs-xs text-success" style="background: rgba(16,185,129,0.1)">Active</span>
+                                {% else %}
+                                    <span class="badge fs-xs text-muted bg-muted-soft" >Inactive</span>
+                                {% endif %}
+                            </td>
+                            <td class="text-right">
+                                <div class="d-inline-flex gap-1">
+                                    <!-- Edit settings button -->
+                                    <button type="button" class="btn btn-secondary btn-sm"  title="Edit settings"
+                                            onclick="openEditModal('{{ cat.id }}', '{{ cat.name|escape('js') }}', '{{ cat.icon|escape('js') }}', '{{ cat.color|default('#8b5cf6') }}', '{{ cat.getFormattedMaxDuration() }}', '{{ cat.terminateAtMaxDuration ? 'true' : 'false' }}')">
+                                        <span class="material-icons fs-md">edit</span>
+                                    </button>
+
+                                    <!-- Toggle Active Button -->
+                                    <form action="{{ path('app_manager_category_toggle_active', {id: cat.id}) }}" method="post" class="confirm-form d-inline"
+                                          data-confirm="Are you sure you want to {% if cat.isActive %}inactivate{% else %}activate{% endif %} this category?">
+                                        {% if cat.isActive %}
+                                            <button type="submit" class="btn btn-danger btn-sm"  title="Inactivate category">
+                                                <span class="material-icons fs-md">pause_circle</span>
+                                            </button>
+                                        {% else %}
+                                            <button type="submit" class="btn btn-success btn-sm"  title="Activate category">
+                                                <span class="material-icons fs-md">play_circle</span>
+                                            </button>
+                                        {% endif %}
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+                    {% else %}
+                        <tr>
+                            <td colspan="6" class="text-center text-muted" style="padding: 3rem 0">
+                                <span class="material-icons fs-4xl mb-2">category</span>
+                                <p class="fs-sm">No custom categories defined. OrgUsers will log time as General.</p>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Right Column: Add/Edit Category Form -->
+    <div class="glass-panel p-6 position-relative" style="height: fit-content">
+        
+        <!-- ============================================== -->
+        <!-- Add Category Form -->
+        <!-- ============================================== -->
+        <div id="add-category-container">
+            <h3 class="fs-lg d-flex align-items-center gap-2 mb-4">
+                <span class="material-icons text-primary">add_circle</span> Add Category
+            </h3>
+            
+            <!-- Quota Usage Progress -->
+            {% set percent = (limitsData.usage.categories / limitsData.limits.max_categories * 100)|round %}
+            <div class="fs-xs text-secondary mb-6">
+                <div class="d-flex justify-content-between mb-1">
+                    <span>Plan Quota Limit</span>
+                    <span>{{ limitsData.usage.categories }} / {{ limitsData.limits.max_categories }} categories</span>
+                </div>
+                <div class="quota-bar" style="height: 6px;">
+                    <div class="quota-progress {% if percent >= 100 %}danger{% endif %}" style="width: {{ percent }}%;"></div>
+                </div>
+            </div>
+
+            {% if limitsData.usage.categories >= limitsData.limits.max_categories %}
+                <div class="alert alert-danger fs-sm p-0" >
+                    <span class="material-icons fs-md">lock</span>
+                    <span>Limit reached. Upgrade plan to unlock more categories.</span>
+                </div>
+            {% else %}
+                <form method="post">
+                    <div class="form-group">
+                        <label class="form-label" for="category_name">Category Name</label>
+                        <input type="text" name="name" id="category_name" class="form-control" placeholder="e.g. Break, Support" required>
+                    </div>
+
+                    <div class="d-grid gap-4" style="grid-template-columns: 1fr auto">
+                        <div class="form-group">
+                            <label class="form-label">Category Icon</label>
+                            <div class="icon-palette" id="add-icon-palette" class="d-grid gap-1 mt-0" style="grid-template-columns: repeat(5, 1fr); .4rem">
+                                {% for icon in ['work', 'code', 'palette', 'groups', 'support_agent', 'coffee', 'build', 'school', 'store', 'fitness_center'] %}
+                                    <button type="button" class="icon-palette-btn" data-icon="{{ icon }}" title="{{ icon|replace({'_': ' '})|capitalize }}">
+                                        <span class="material-icons fs-xl">{{ icon }}</span>
+                                    </button>
+                                {% endfor %}
+                            </div>
+                            <input type="hidden" name="icon" id="category_icon" value="work">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Color</label>
+                            <input type="color" name="color" id="category_color" value="#8b5cf6" class="bg-input mt-0 p-0 rounded-sm border cursor-pointer" style="width: 44px; height: 44px; ; ; .4rem">
+                        </div>
+                    </div>
+
+                    {% if org.plan.name != 'basic' %}
+                        <div class="form-group">
+                            <label class="form-label" for="add_max_session_duration">Max Session Duration (HR:MIN)</label>
+                            <div class="d-flex align-items-center gap-4">
+                                <input type="range" id="add_duration_slider" class="form-control" min="0" max="{{ limitsData.limits.max_session_hours * 60 }}" step="15" value="480" class="flex-1">
+                                <input type="text" name="max_session_duration" id="add_max_session_duration" class="form-control" pattern="^[0-9]+:[0-5][0-9]$" placeholder="08:00" class="text-center" style="width: 90px">
+                            </div>
+                            <span class="form-text">Cannot exceed plan limit of {{ limitsData.limits.max_session_hours }}:00. Set to 00:00 to inherit plan default.</span>
+                        </div>
+
+                        <div class="form-group d-flex align-items-center gap-2 mt-2">
+                            <input type="checkbox" name="terminate_at_max_duration" id="terminate_at_max_duration" class="text-primary" style="width: 18px; height: 18px; accent-">
+                            <label for="terminate_at_max_duration" class="fs-sm fw-500 cursor-pointer">Auto-terminate session at limit</label>
+                        </div>
+                    {% endif %}
+
+                    <button type="submit" class="btn btn-primary mt-6 w-100">
+                        <span class="material-icons">add</span> Create Category
+                    </button>
+                </form>
+            {% endif %}
+        </div>
+        
+        <!-- ============================================== -->
+        <!-- Edit Category Form (Initially Hidden) -->
+        <!-- ============================================== -->
+        <div id="edit-category-container" class="d-none">
+            <h3 class="fs-lg d-flex align-items-center gap-2 mb-4">
+                <span class="material-icons text-primary">edit</span> Edit Category
+            </h3>
+            
+            <form id="edit-category-form" method="post">
+                <div class="form-group">
+                    <label class="form-label" for="edit_category_name">Category Name</label>
+                    <input type="text" name="name" id="edit_category_name" class="form-control" required>
+                </div>
+
+                <div class="d-grid gap-4" style="grid-template-columns: 1fr auto">
+                    <div class="form-group">
+                        <label class="form-label">Category Icon</label>
+                        <div class="icon-palette" id="edit-icon-palette" class="d-grid gap-1 mt-0" style="grid-template-columns: repeat(5, 1fr); .4rem">
+                            {% for icon in ['work', 'code', 'palette', 'groups', 'support_agent', 'coffee', 'build', 'school', 'store', 'fitness_center'] %}
+                                <button type="button" class="icon-palette-btn" data-icon="{{ icon }}" title="{{ icon|replace({'_': ' '})|capitalize }}">
+                                    <span class="material-icons fs-xl">{{ icon }}</span>
+                                </button>
+                            {% endfor %}
+                        </div>
+                        <input type="hidden" name="icon" id="edit_category_icon" value="work">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Color</label>
+                        <input type="color" name="color" id="edit_category_color" value="#8b5cf6" class="bg-input mt-0 p-0 rounded-sm border cursor-pointer" style="width: 44px; height: 44px; ; ; .4rem">
+                    </div>
+                </div>
+
+                {% if org.plan.name != 'basic' %}
+                    <div class="form-group">
+                        <label class="form-label" for="edit_max_session_duration">Max Session Duration (HR:MIN)</label>
+                        <div class="d-flex align-items-center gap-4">
+                            <input type="range" id="edit_duration_slider" class="form-control" min="0" max="{{ limitsData.limits.max_session_hours * 60 }}" step="15" value="480" class="flex-1">
+                            <input type="text" name="max_session_duration" id="edit_max_session_duration" class="form-control" pattern="^[0-9]+:[0-5][0-9]$" placeholder="08:00" class="text-center" style="width: 90px">
+                        </div>
+                        <span class="form-text">Cannot exceed plan limit of {{ limitsData.limits.max_session_hours }}:00. Set to 00:00 to inherit default.</span>
+                    </div>
+
+                    <div class="form-group d-flex align-items-center gap-2 mt-2">
+                        <input type="checkbox" name="terminate_at_max_duration" id="edit_terminate_at_max_duration" class="text-primary" style="width: 18px; height: 18px; accent-">
+                        <label for="edit_terminate_at_max_duration" class="fs-sm fw-500 cursor-pointer">Auto-terminate session at limit (otherwise flags as Red overtime)</label>
+                    </div>
+                {% else %}
+                    <div class="fs-sm text-secondary bg-input p-3 rounded-sm border">
+                        <span class="material-icons fs-md text-warning mr-1" style="vertical-align: bottom">info</span>
+                        Max duration ({{ limitsData.limits.max_session_hours }} hours) and auto-termination are fixed on the Basic plan.
+                    </div>
+                {% endif %}
+
+                <div class="d-flex justify-content-end gap-2 mt-6">
+                    <button type="button" class="btn btn-secondary flex-1" onclick="cancelEdit()">Cancel</button>
+                    <button type="submit" class="btn btn-primary" style="flex:2;">Save Changes</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Format minutes to HH:MM
+    function formatMinutesToHHMM(totalMinutes) {
+        if (!totalMinutes || totalMinutes == 0) return '';
+        let h = Math.floor(totalMinutes / 60);
+        let m = totalMinutes % 60;
+        return (h < 10 ? '0'+h : h) + ':' + (m < 10 ? '0'+m : m);
+    }
+    
+    function parseHHMMtoMinutes(val) {
+        if (!val) return 0;
+        let parts = val.split(':');
+        if (parts.length === 2) {
+            return parseInt(parts[0]) * 60 + parseInt(parts[1]);
+        }
+        return 0;
+    }
+
+    function syncSliderAndInput(sliderId, inputId) {
+        const slider = document.getElementById(sliderId);
+        const input = document.getElementById(inputId);
+        if (!slider || !input) return;
+        
+        slider.addEventListener('input', function() {
+            if (this.value == 0) {
+                input.value = ''; // 0 means inherit
+            } else {
+                input.value = formatMinutesToHHMM(this.value);
+            }
+        });
+        
+        input.addEventListener('change', function() {
+            let mins = parseHHMMtoMinutes(this.value);
+            if (mins > slider.max) {
+                mins = slider.max;
+                this.value = formatMinutesToHHMM(mins);
+            }
+            slider.value = mins;
+        });
+    }
+
+    function openEditModal(id, name, icon, color, maxDuration, terminate) {
+        document.getElementById('add-category-container').classList.add('d-none');
+        document.getElementById('edit-category-container').classList.remove('d-none');
+        
+        const form = document.getElementById('edit-category-form');
+        form.action = `/manager/categories/${id}/update`;
+        
+        document.getElementById('edit_category_name').value = name;
+        document.getElementById('edit_category_color').value = color || '#8b5cf6';
+        
+        // Update edit hidden input & palette state
+        document.getElementById('edit_category_icon').value = icon;
+        $('#edit-icon-palette .icon-palette-btn').removeClass('active');
+        $(`#edit-icon-palette .icon-palette-btn[data-icon="${icon}"]`).addClass('active');
+        
+        const durationInput = document.getElementById('edit_max_session_duration');
+        const durationSlider = document.getElementById('edit_duration_slider');
+        if (durationInput && durationSlider) {
+            durationInput.value = maxDuration || '';
+            durationSlider.value = parseHHMMtoMinutes(maxDuration);
+        }
+        
+        const terminateCheckbox = document.getElementById('edit_terminate_at_max_duration');
+        if (terminateCheckbox) {
+            terminateCheckbox.checked = terminate === 'true';
+        }
+    }
+    
+    function cancelEdit() {
+        document.getElementById('edit-category-container').classList.add('d-none');
+        document.getElementById('add-category-container').classList.remove('d-none');
+    }
+
+    $(document).ready(function() {
+        // Init active state for creation form palette
+        $('#add-icon-palette .icon-palette-btn[data-icon="work"]').addClass('active');
+
+        // Handle clicks in add palette
+        $(document).on('click', '#add-icon-palette .icon-palette-btn', function() {
+            $('#add-icon-palette .icon-palette-btn').removeClass('active');
+            $(this).addClass('active');
+            $('#category_icon').val($(this).data('icon'));
+        });
+
+        // Handle clicks in edit palette
+        $(document).on('click', '#edit-icon-palette .icon-palette-btn', function() {
+            $('#edit-icon-palette .icon-palette-btn').removeClass('active');
+            $(this).addClass('active');
+            $('#edit_category_icon').val($(this).data('icon'));
+        });
+        
+        // Setup slider syncs
+        syncSliderAndInput('add_duration_slider', 'add_max_session_duration');
+        syncSliderAndInput('edit_duration_slider', 'edit_max_session_duration');
+    });
+</script>
+{% endblock %}

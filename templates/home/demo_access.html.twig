@@ -1,0 +1,112 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Live Demo Credentials - CheckIn{% endblock %}
+
+{% block body %}
+<div class="position-absolute" style="top: 1.5rem; right: 1.5rem; z-index: 1000;">
+    <div class="theme-selector">
+        <button type="button" class="theme-option" data-value="light" onclick="setTheme('light')" title="Light Mode">
+            <span class="material-icons">light_mode</span>
+        </button>
+        <button type="button" class="theme-option" data-value="dark" onclick="setTheme('dark')" title="Dark Mode">
+            <span class="material-icons">dark_mode</span>
+        </button>
+        <button type="button" class="theme-option" data-value="system" onclick="setTheme('system')" title="System Theme">
+            <span class="material-icons">settings_brightness</span>
+        </button>
+    </div>
+</div>
+
+<div class="p-0 w-100 max-w-800" style="margin: 4rem auto;">
+    <div class="text-center mb-8">
+        <h2 class="fs-3xl fw-800"><span class="text-gradient">Demo Unlocked</span></h2>
+        <p class="text-secondary mt-1">Here are your live demo environments. Credentials rotate every 24 hours.</p>
+    </div>
+
+    <div class="grid-cols-2 gap-6">
+        <!-- Basic Demo Card -->
+        <div class="glass-panel p-6">
+            <div class="d-flex align-items-center gap-3 mb-4">
+                <div class="avatar bg-success-light text-success">
+                    <span class="material-icons">stars</span>
+                </div>
+                <div>
+                    <h3 class="fs-xl fw-700 m-0">Basic Plan Demo</h3>
+                    <div class="fs-sm text-secondary">Open Check-in Mode</div>
+                </div>
+            </div>
+
+            <div class="form-group mb-4">
+                <label class="form-label text-secondary">Admin Login</label>
+                <div class="d-flex gap-2">
+                    <input type="text" readonly class="form-control bg-body" value="basic@platform.com">
+                </div>
+            </div>
+
+            <div class="form-group mb-4">
+                <label class="form-label text-secondary">Admin Password</label>
+                <div class="d-flex gap-2">
+                    <input type="text" readonly class="form-control bg-body" value="{{ basic_password }}">
+                </div>
+            </div>
+
+            <hr class="my-4" style="border-color: var(--border-color)">
+
+            <div class="form-group mb-0">
+                <label class="form-label text-secondary">Public Kiosk Link</label>
+                <div class="d-flex gap-2">
+                    <input type="text" readonly class="form-control bg-body" value="{{ url('app_kiosk', {slug: 'basic-demo', token: basic_token}) }}">
+                    <a href="{{ path('app_kiosk', {slug: 'basic-demo', token: basic_token}) }}" target="_blank" class="btn btn-outline-primary px-3">
+                        <span class="material-icons">open_in_new</span>
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Golden Demo Card -->
+        <div class="glass-panel p-6" style="border-top: 3px solid #f59e0b">
+            <div class="d-flex align-items-center gap-3 mb-4">
+                <div class="avatar" style="background: rgba(245,158,11,0.1); color: #f59e0b">
+                    <span class="material-icons">military_tech</span>
+                </div>
+                <div>
+                    <h3 class="fs-xl fw-700 m-0">Gold Plan Demo</h3>
+                    <div class="fs-sm text-secondary">Secure PIN Check-in Mode</div>
+                </div>
+            </div>
+
+            <div class="form-group mb-4">
+                <label class="form-label text-secondary">Admin Login</label>
+                <div class="d-flex gap-2">
+                    <input type="text" readonly class="form-control bg-body" value="golden@platform.com">
+                </div>
+            </div>
+
+            <div class="form-group mb-4">
+                <label class="form-label text-secondary">Admin Password</label>
+                <div class="d-flex gap-2">
+                    <input type="text" readonly class="form-control bg-body" value="{{ golden_password }}">
+                </div>
+            </div>
+
+            <hr class="my-4" style="border-color: var(--border-color)">
+
+            <div class="form-group mb-0">
+                <label class="form-label text-secondary">Public Kiosk Link</label>
+                <div class="d-flex gap-2">
+                    <input type="text" readonly class="form-control bg-body" value="{{ url('app_kiosk', {slug: 'golden-demo', token: golden_token}) }}">
+                    <a href="{{ path('app_kiosk', {slug: 'golden-demo', token: golden_token}) }}" target="_blank" class="btn btn-outline-primary px-3">
+                        <span class="material-icons">open_in_new</span>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="text-center mt-8">
+        <a href="{{ path('app_login') }}" target="_blank" class="btn btn-primary btn-lg px-8">
+            Go to Manager Login <span class="material-icons">arrow_forward</span>
+        </a>
+    </div>
+</div>
+{% endblock %}

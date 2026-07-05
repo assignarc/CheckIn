@@ -1,0 +1,283 @@
+{% extends 'manager/layout.html.twig' %}
+
+{% block title %}Policy Settings - TimeFlow{% endblock %}
+{% block header_title %}Organization Settings &amp; Policies{% endblock %}
+{% block stylesheets %}
+
+    
+{% endblock %}
+
+{% block manager_content %}
+
+<div class="d-grid align-items-start gap-5" style="grid-template-columns: 1fr 260px">
+
+    <!-- Left: Tabbed settings panel -->
+    <div class="glass-panel p-0" style="overflow: hidden">
+
+        <!-- Tab bar -->
+        <div class="settings-tab-bar">
+            <button class="settings-tab active" data-tab="tab-org">
+                <span class="material-icons">business</span> Organization
+            </button>
+            <button class="settings-tab" data-tab="tab-account">
+                <span class="material-icons">manage_accounts</span> My Account
+            </button>
+            <button class="settings-tab" data-tab="tab-policies">
+                <span class="material-icons">admin_panel_settings</span> Policies
+            </button>
+        </div>
+
+        <!-- ── Tab: Organization Profile ────────────────────────────── -->
+        <div id="tab-org" class="settings-tab-pane active">
+            <form method="post" action="{{ path('app_manager_settings') }}" enctype="multipart/form-data">
+                <input type="hidden" name="_section" value="org_profile">
+
+                <div class="grid-cols-2">
+                    <div class="form-group">
+                        <label class="form-label" for="org_name">Organization Name</label>
+                        <input type="text" name="org_name" id="org_name" class="form-control"
+                               value="{{ app.user.organization.name }}" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="org_phone">Phone</label>
+                        <input type="text" name="org_phone" id="org_phone" class="form-control"
+                               value="{{ app.user.organization.phone|default('') }}"
+                               placeholder="+1 (555) 000-0000">
+                    </div>
+                </div>
+                <div class="grid-cols-2">
+                    <div class="form-group">
+                        <label class="form-label" for="org_logo">Organization Logo</label>
+                        <div class="d-flex align-items-center gap-4">
+                            <img src="{{ path('app_org_logo', {slug: app.user.organization.slug}) }}" alt="Logo" class="border" style="width: 48px; height: 48px; border-radius: 8px">
+                            <input type="file" name="org_logo" id="org_logo" class="form-control" accept="image/png, image/jpeg, image/gif, image/webp" class="flex-1">
+                        </div>
+                        <span class="form-text d-block fs-xs text-muted mt-1">
+                            Logo must be between 64x64px and 256x256px (renders at 128x128px). Only square dimensions are supported; non-square images will be auto-cropped from the center.
+                        </span>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="org_address">Address</label>
+                    <input type="text" name="org_address" id="org_address" class="form-control"
+                           value="{{ app.user.organization.address|default('') }}"
+                           placeholder="123 Main Street, Suite 100, City, State ZIP">
+                </div>
+
+                <div class="settings-tab-footer">
+                    <button type="submit" class="btn btn-primary">
+                        <span class="material-icons fs-md">save</span> Save Profile
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <!-- ── Tab: My Account ──────────────────────────────────────── -->
+        <div id="tab-account" class="settings-tab-pane">
+            <form method="post" action="{{ path('app_manager_settings') }}">
+                <input type="hidden" name="_section" value="my_account">
+
+                <div class="grid-cols-2">
+                    <div class="form-group">
+                        <label class="form-label" for="my_first">First Name</label>
+                        <input type="text" name="first_name" id="my_first" class="form-control"
+                               value="{{ app.user.firstName }}" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="my_last">Last Name</label>
+                        <input type="text" name="last_name" id="my_last" class="form-control"
+                               value="{{ app.user.lastName }}" required>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="my_email">Email Address</label>
+                    <input type="email" name="email" id="my_email" class="form-control"
+                           value="{{ app.user.email }}" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="my_phone">Phone</label>
+                    <input type="tel" name="my_phone" id="my_phone" class="form-control" value="{{ app.user.phone|default('') }}"
+                           data-controller="intl-tel-input" 
+                           data-intl-tel-input-allowed-countries-value="{{ app_config('allowed_phone_countries', ['us'])|json_encode|e('html_attr') }}">
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="my_pwd">
+                        New Password
+                        <span class="fw-400 text-muted" style="font-size:0.68rem">(leave blank to keep current)</span>
+                    </label>
+                    <input type="password" name="password" id="my_pwd" class="form-control"
+                           placeholder="Min. 8 characters" autocomplete="new-password">
+                </div>
+
+                <div class="settings-tab-footer">
+                    <button type="submit" class="btn btn-primary">
+                        <span class="material-icons fs-md">save</span> Save Account
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <!-- ── Tab: Policies ────────────────────────────────────────── -->
+        <div id="tab-policies" class="settings-tab-pane">
+            <form method="post" action="{{ path('app_manager_settings') }}">
+                <input type="hidden" name="_section" value="policies">
+
+                <!-- Toggle rows -->
+                <div class="d-flex flex-column gap-2 mb-4">
+
+                    <div class="toggle-row p-0 rounded-sm bg-primary-soft-bordered" style=" .75rem">
+                        <div>
+                            <div class="fs-sm fw-600 text-purple-500"><span class="material-icons fs-md mr-1" style="vertical-align: middle">auto_renew</span> Kiosk URL Rotation</div>
+                            <div class="fs-xs text-secondary mt-1">
+                                Your Kiosk URL rotates automatically every <strong>{{ app.user.organization.kioskTokenRotationHours }} hours</strong> as per system policy. This enhances security. Please contact the administrator if you need to change this schedule.
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="toggle-row">
+                        <div>
+                            <div class="fs-sm fw-600">Require PIN on Kiosk</div>
+                            <div class="fs-xs text-secondary">Secure mode — orgUsers must enter their PIN</div>
+                        </div>
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="secure_mode_toggle"
+                                   {% if org.accessMode == 'secure' %}checked{% endif %}
+                                   onchange="$('#access_mode_input').val(this.checked ? 'secure' : 'open')">
+                            <span class="toggle-track"></span>
+                        </label>
+                        <input type="hidden" name="access_mode" id="access_mode_input" value="{{ org.accessMode }}">
+                    </div>
+
+                    <div class="toggle-row">
+                        <div>
+                            <div class="fs-sm fw-600">Mask OrgUser Last Name</div>
+                            <div class="fs-xs text-secondary">Show"Giselle A****o" instead of full name on kiosk</div>
+                        </div>
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="mask_toggle"
+                                   {% if org.maskLastName %}checked{% endif %}
+                                   onchange="$('#mask_last_name_input').val(this.checked ? '1' : '0')">
+                            <span class="toggle-track"></span>
+                        </label>
+                        <input type="hidden" name="mask_last_name" id="mask_last_name_input" value="{{ org.maskLastName ? '1' : '0' }}">
+                    </div>
+                </div>
+
+                <!-- Session limit -->
+                <div class="form-group">
+                    <label class="form-label" for="session_limit_hours">Max Session Duration (Hours)</label>
+                    <input type="number" name="session_limit_hours" id="session_limit_hours"
+                           class="form-control" value="{{ org.sessionLimitHours }}" min="1" max="24">
+                    <span class="form-text">
+                        Plan max: {% if org.plan.name == 'gold' %}24 h{% elseif org.plan.name == 'silver' %}8 h{% else %}2 h (fixed){% endif %}
+                    </span>
+                </div>
+
+                <!-- Check-in window -->
+                <div class="text-uppercase text-muted d-flex align-items-center gap-1 m-0 pt-3 border-t tracking-wide" style="padding: .75rem 0 0.5rem 0; ; font-size:0.72rem">
+                    <span class="material-icons fs-sm text-primary">date_range</span> Check-In Time Window
+                </div>
+                <div class="grid-cols-2">
+                    <div class="form-group">
+                        <label class="form-label" for="window_start">Start Time</label>
+                        <input type="time" name="window_start" id="window_start" class="form-control"
+                               value="{% if org.checkInWindowStart %}{{ org.checkInWindowStart|date('H:i') }}{% endif %}">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="window_end">End Time</label>
+                        <input type="time" name="window_end" id="window_end" class="form-control"
+                               value="{% if org.checkInWindowEnd %}{{ org.checkInWindowEnd|date('H:i') }}{% endif %}">
+                    </div>
+                </div>
+                <span class="form-text d-block mb-0" style="margin-top:-0.4rem; .6rem">Leave blank for 24/7 access.</span>
+
+                {% if org.plan.name != 'basic' %}
+                    <div class="text-uppercase text-muted d-flex align-items-center gap-1 m-0 pt-3 border-t tracking-wide" style="padding: .75rem 0 0.5rem 0; ; font-size:0.72rem">
+                        <span class="material-icons fs-sm text-primary">more_time</span> Overtime Rules
+                    </div>
+                    <div class="grid-cols-2">
+                        <div class="form-group">
+                            <label class="form-label" for="overtime_grace">Grace Period (min)</label>
+                            <input type="number" name="overtime_grace" id="overtime_grace"
+                                   class="form-control" value="{{ org.overtimeGraceMinutes }}" min="0">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="overtime_multiplier">OT Multiplier</label>
+                            <input type="number" name="overtime_multiplier" id="overtime_multiplier"
+                                   class="form-control" value="{{ org.overtimeMultiplier }}" step="0.05" min="1.00" max="3.00">
+                        </div>
+                    </div>
+                {% endif %}
+
+                <div class="settings-tab-footer">
+                    <button type="submit" class="btn btn-primary">
+                        <span class="material-icons fs-md">save</span> Save Policies
+                    </button>
+                </div>
+            </form>
+        </div>
+
+    </div>{# /glass-panel #}
+
+    <!-- Right: Kiosk URL (always visible) -->
+    <div class="glass-panel">
+        <h3 class="fs-sm d-flex align-items-center gap-1 mb-3">
+            <span class="material-icons fs-md text-primary">link</span> Kiosk URL
+        </h3>
+        <p class="text-secondary mb-0" style="font-size: 0.72rem; .85rem">
+            Display this private link on a tablet placed at your entrance.
+        </p>
+
+        <div class="bg-input mb-0 p-0 rounded-md border" >
+            <code class="text-primary" style="word-break: break-all; font-size: 0.68rem">
+                /org/{{ org.slug }}/kiosk/{{ org.checkInLinkToken }}
+            </code>
+        </div>
+
+        <div class="d-flex flex-column" style="gap:0.45rem">
+            <a href="/org/{{ org.slug }}/kiosk/{{ org.checkInLinkToken }}" target="_blank"
+               class="btn btn-secondary btn-sm justify-content-center w-100">
+                <span class="material-icons fs-md">open_in_new</span> Launch Kiosk
+            </a>
+            <form action="{{ path('app_manager_rotate_token') }}" method="post"
+                  class="confirm-form" data-confirm="Rotate the Kiosk link? This will immediately invalidate the current screen.">
+                <button type="submit" class="btn btn-danger btn-sm justify-content-center w-100">
+                    <span class="material-icons fs-md">sync</span> Rotate Token
+                </button>
+            </form>
+        </div>
+    </div>
+
+</div>
+
+
+
+<script>
+$(function () {
+    // ── Tab switching ──────────────────────────────────────────────────
+    $('.settings-tab').on('click', function () {
+        var target = $(this).data('tab');
+
+        // Update tab buttons
+        $('.settings-tab').removeClass('active');
+        $(this).addClass('active');
+
+        // Show the correct pane with a quick fade
+        $('.settings-tab-pane').hide().removeClass('active');
+        $('#' + target).fadeIn(150).addClass('active');
+
+        // Persist active tab in sessionStorage so it survives a page reload/redirect
+        sessionStorage.setItem('settings-active-tab', target);
+    });
+
+    // ── Restore last active tab (e.g. after form submit + redirect) ────
+    var saved = sessionStorage.getItem('settings-active-tab');
+    if (saved && $('#' + saved).length) {
+        $('.settings-tab[data-tab="' + saved + '"]').trigger('click');
+    }
+});
+</script>
+
+{% endblock %}
+
+

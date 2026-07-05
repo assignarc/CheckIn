@@ -1,0 +1,178 @@
+{% extends 'admin/layout.html.twig' %}
+
+{% block title %}Manager Maintenance - TimeFlow Admin{% endblock %}
+
+{% block admin_content %}
+<div class="content-header d-flex align-items-center justify-content-between mb-6">
+    <div>
+        <h1 class="fs-2xl fw-700 mb-1">Manager Maintenance</h1>
+        <p class="fs-md text-secondary m-0">Search and manage tenant administrators across the platform.</p>
+    </div>
+</div>
+
+<div class="d-grid gap-8" style="grid-template-columns: 2.2fr 1fr">
+    <!-- Left Column: Search & List -->
+    <div class="d-flex flex-column gap-6">
+        <div class="card m-0">
+            <div class="card-body">
+                <form method="get" class="d-flex align-items-center gap-4">
+                    <div class="form-group flex-1 m-0">
+                        <div class="input-icon-wrapper position-relative">
+                            <span class="material-icons text-muted position-absolute" style="left:1rem; top:50%; transform:translateY(-50%)">search</span>
+                            <input type="text" name="q" value="{{ search }}" class="form-control" placeholder="Search by name, email, phone, or org..." style="padding-left:2.75rem;">
+                        </div>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Search</button>
+                    {% if search %}
+                        <a href="{{ path('app_admin_managers') }}" class="btn btn-secondary">Clear</a>
+                    {% endif %}
+                </form>
+            </div>
+        </div>
+
+        <div class="card m-0">
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Manager Name</th>
+                                <th>Email</th>
+                                <th>Organization</th>
+                                <th>Joined Date</th>
+                                <th class="text-right">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for manager in managers %}
+                                <tr>
+                                    <td>
+                                        <div class="fw-600">{{ manager.firstName }} {{ manager.lastName }}</div>
+                                    </td>
+                                    <td>{{ manager.email }}</td>
+                                    <td>
+                                        {% if manager.organization %}
+                                            <span class="badge badge-info">{{ manager.organization.name }}</span>
+                                        {% else %}
+                                            <span class="badge badge-warning">Unassigned</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ manager.createdAt|date('M d, Y') }}</td>
+                                    <td class="text-right">
+                                        <button type="button" class="btn btn-secondary btn-sm" title="Edit manager" onclick="openEditManager({{ manager.id }}, '{{ manager.firstName|e('js') }}', '{{ manager.lastName|e('js') }}', '{{ manager.email|e('js') }}', '{{ manager.phone|default('')|e('js') }}', '{{ manager.role|e('js') }}', {{ manager.isActive ? 'true' : 'false' }}, '{{ manager.organization ? manager.organization.name|e('js') : 'Unassigned' }}')">
+                                            <span class="material-icons fs-md">edit</span>
+                                        </button>
+                                    </td>
+                                </tr>
+                            {% else %}
+                                <tr>
+                                    <td colspan="5" class="text-center text-muted" style="padding:3rem 1rem">
+                                        <span class="material-icons fs-4xl mb-4" style="opacity:0.5">manage_search</span>
+                                        <div>No managers found matching your search.</div>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Right Column: Edit Form -->
+    <div class="glass-panel p-6 position-relative" style="height: fit-content">
+        <!-- Default State (No selection) -->
+        <div id="default-state-container" class="text-center text-muted" style="padding: 4rem 1rem">
+            <span class="material-icons fs-4xl mb-4" style="opacity:0.3">person_search</span>
+            <div class="fs-md">Select a manager from the list to view and edit details.</div>
+        </div>
+
+        <!-- Edit Form -->
+        <div id="edit-manager-container" class="d-none">
+            <h3 class="fs-lg d-flex align-items-center gap-2 mb-4">
+                <span class="material-icons text-primary">edit</span> Edit Manager
+            </h3>
+            
+            <form method="post" id="editManagerForm">
+                <div class="form-group">
+                    <label class="form-label">Organization</label>
+                    <input type="text" id="em_org" class="form-control" readonly disabled style="opacity: 0.7; cursor: not-allowed;">
+                </div>
+
+                <div class="grid-cols-2 gap-4 mt-4">
+                    <div class="form-group">
+                        <label class="form-label" for="em_first">First Name</label>
+                        <input type="text" name="first_name" id="em_first" class="form-control" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="em_last">Last Name</label>
+                        <input type="text" name="last_name" id="em_last" class="form-control" required>
+                    </div>
+                </div>
+                
+                <div class="form-group mt-4">
+                    <label class="form-label" for="em_email">Email Address</label>
+                    <input type="email" name="email" id="em_email" class="form-control" required>
+                </div>
+                
+                <div class="form-group mt-4">
+                <label class="form-label" for="em_phone">Phone Number</label>
+                <input type="tel" name="phone" id="em_phone" class="form-control" required data-controller="intl-tel-input" data-intl-tel-input-allowed-countries-value="{{ app_config('allowed_phone_countries', ['us'])|json_encode|e('html_attr') }}">
+                </div>
+
+                <div class="form-group mt-4">
+                    <label class="form-label" for="em_role">Role</label>
+                    <select name="role" id="em_role" class="form-control">
+                        <option value="ROLE_ORG_MANAGER">Organization Manager</option>
+                        <option value="ROLE_SYSTEM_ADMIN">System Administrator</option>
+                    </select>
+                </div>
+
+                <div class="form-group mt-4">
+                    <label class="d-flex align-items-center gap-2 cursor-pointer">
+                        <input type="checkbox" name="is_active" id="em_active" value="1">
+                        <span class="fs-md">Account is Active</span>
+                    </label>
+                    <span class="form-text d-block ms-4 mt-1" style="font-size: 0.75rem;">If unchecked, this manager will not be able to log in.</span>
+                </div>
+
+                <div class="form-group mt-4">
+                    <label class="form-label" for="em_pwd">Reset Password (Optional)</label>
+                    <input type="password" name="password" id="em_pwd" class="form-control" placeholder="Leave blank to keep current" minlength="8">
+                </div>
+
+                <div class="d-flex justify-content-end gap-2 mt-6">
+                    <button type="button" class="btn btn-secondary flex-1" onclick="cancelEditManager()">Cancel</button>
+                    <button type="submit" class="btn btn-primary" style="flex:2;">
+                        <span class="material-icons fs-md">save</span> Save Changes
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    function openEditManager(id, first, last, email, phone, role, isActive, orgName) {
+        document.getElementById('default-state-container').classList.add('d-none');
+        document.getElementById('edit-manager-container').classList.remove('d-none');
+        
+        const form = document.getElementById('editManagerForm');
+        form.action = `/admin/managers/${id}/edit`;
+        
+        document.getElementById('em_org').value   = orgName;
+        document.getElementById('em_first').value = first;
+        document.getElementById('em_last').value  = last;
+        document.getElementById('em_email').value = email;
+        document.getElementById('em_phone').value = phone;
+        document.getElementById('em_role').value  = role;
+        document.getElementById('em_active').checked = isActive;
+        document.getElementById('em_pwd').value   = '';
+    }
+
+    function cancelEditManager() {
+        document.getElementById('edit-manager-container').classList.add('d-none');
+        document.getElementById('default-state-container').classList.remove('d-none');
+    }
+</script>
+{% endblock %}

@@ -1,0 +1,44 @@
+{% extends 'admin/layout.html.twig' %}
+
+{% block title %}Demo Leads - Platform Admin{% endblock %}
+{% block header_title %}Demo Requests{% endblock %}
+
+{% block admin_content %}
+<div class="glass-panel">
+    <div class="d-flex align-items-center justify-content-between mb-6">
+        <h3 class="m-0">Recent Demo Requests (Leads)</h3>
+    </div>
+
+    <div class="table-responsive">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Date</th>
+                    <th>Name</th>
+                    <th>Email</th>
+                    <th>Phone</th>
+                    <th>Company</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for lead in leads %}
+                    <tr>
+                        <td>{{ lead.createdAt|date('Y-m-d H:i') }}</td>
+                        <td class="fw-600">{{ lead.name }}</td>
+                        <td>{{ lead.email }}</td>
+                        <td>{{ lead.phone|default('—') }}</td>
+                        <td>{{ lead.company|default('—') }}</td>
+                    </tr>
+                {% else %}
+                    <tr>
+                        <td colspan="5" class="text-center text-muted" style="padding: 2.5rem 0">
+                            <span class="material-icons mb-0" style="font-size: 2.5rem; .5rem">group_add</span>
+                            <p>No demo leads found.</p>
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,149 @@
+{% extends 'manager/layout.html.twig' %}
+
+{% block title %}Billing & Subscription - TimeFlow{% endblock %}
+{% block header_title %}Billing & Subscription Management{% endblock %}
+
+{% block manager_content %}
+<div class="d-grid gap-8" style="grid-template-columns: 2fr 1.2fr">
+
+    <!-- Left: Subscription Management -->
+    <div class="d-flex flex-column gap-8">
+        
+        <!-- Current Subscription Plan details -->
+        <div class="glass-panel" style="padding: 1.75rem;">
+            <div class="d-flex justify-content-between mb-6" style="align-items:flex-start">
+                <div>
+                    <h3 class="fs-xl m-0">Subscription Overview</h3>
+                    <p class="fs-sm text-secondary mt-1">Stripe reference ID: <code>cus_StripeMockTenant_{{ org.id }}</code></p>
+                </div>
+                <span class="badge {% if org.plan.name == 'gold' %}badge-success{% elseif 'silver' %}badge-info{% else %}badge-warning{% endif %} fs-sm p-0" >
+                    {{ org.plan.name|upper }} Plan
+                </span>
+            </div>
+
+            <div class="d-grid gap-6 mb-8 pt-6 border-t" style="grid-template-columns: 1fr 1fr">
+                <div>
+                    <div class="fs-sm text-uppercase text-muted">Subscription Status</div>
+                    <div class="fs-lg fw-700 d-flex align-items-center gap-1 mt-1">
+                        {% if org.isSubscriptionActive %}
+                            <span class="material-icons fs-xl text-success">check_circle</span>
+                            <span class="text-success">Active & Paid</span>
+                        {% else %}
+                            <span class="material-icons fs-xl text-danger">error</span>
+                            <span class="text-danger">Suspended (Payment Failed)</span>
+                        {% endif %}
+                    </div>
+                </div>
+                <div>
+                    <div class="fs-sm text-uppercase text-muted">Next Invoice Date</div>
+                    <div class="fs-lg fw-700 text-white mt-1">
+                        {{"now"|date_modify("+1 month")|date("M d, Y") }}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Simulated Upgrade/Downgrade Actions -->
+            <div class="d-grid gap-4" style="grid-template-columns: repeat(3, 1fr)">
+                {% for p in plans %}
+                    <form method="post" class="w-100">
+                        <input type="hidden" name="plan" value="{{ p.name }}">
+                        {% if p.name == 'basic' %}
+                            <input type="hidden" name="billing_action" value="downgrade">
+                            <button type="submit" class="btn btn-secondary btn-sm w-100" {% if org.plan.name == 'basic' %}disabled{% endif %}>
+                                Downgrade to Basic (Free)
+                            </button>
+                        {% elseif p.name == 'silver' %}
+                            <input type="hidden" name="billing_action" value="upgrade">
+                            <button type="submit" class="btn btn-primary btn-sm w-100" style="background: #4f46e5; border-color: #4f46e5" {% if org.plan.name == 'silver' %}disabled{% endif %}>
+                                Upgrade to Silver (${{ p.priceMonthly|round }}/mo)
+                            </button>
+                        {% elseif p.name == 'gold' %}
+                            <input type="hidden" name="billing_action" value="upgrade">
+                            <button type="submit" class="btn btn-success btn-sm w-100" {% if org.plan.name == 'gold' %}disabled{% endif %}>
+                                Upgrade to Gold (${{ p.priceMonthly|round }}/mo)
+                            </button>
+                        {% endif %}
+                    </form>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Invoices list -->
+        <div class="glass-panel p-6">
+            <h3 class="fs-lg mb-5">Payment History</h3>
+            
+            <div class="table-responsive">
+                <table class="table fs-sm">
+                    <thead>
+                        <tr>
+                            <th>Invoice ID</th>
+                            <th>Amount</th>
+                            <th>Billing Period</th>
+                            <th>Paid At</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for pay in payments %}
+                            <tr>
+                                <td class="text-primary font-mono">{{ pay.stripeInvoiceId }}</td>
+                                <td class="fw-700 text-white">${{ pay.amount }}</td>
+                                <td>{{ pay.periodStart|date('M d, Y') }} - {{ pay.periodEnd|date('M d, Y') }}</td>
+                                <td>{{ pay.paidAt|date('M d, Y, h:i A') }}</td>
+                                <td>
+                                    <span class="badge badge-success">{{ pay.status }}</span>
+                                </td>
+                            </tr>
+                        {% else %}
+                            <tr>
+                                <td colspan="5" class="text-center text-muted p-8" >
+                                    <span class="material-icons mb-0" style="font-size: 2.5rem; .5rem">receipt</span>
+                                    <p class="fs-sm">No payments registered. (Basic Free plan doesn't trigger invoices).</p>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Right: Stripe Test Console -->
+    <div class="glass-panel p-6" style="height: fit-content; border-color: rgba(239, 68, 68, 0.2)">
+        <h3 class="fs-lg text-danger d-flex align-items-center gap-2 mb-2">
+            <span class="material-icons">terminal</span> Stripe Sandbox Console
+        </h3>
+        <p class="fs-sm text-secondary mb-6">
+            Simulate webhooks, renewal failures, and dunning workflows to test application behaviors.
+        </p>
+
+        <div class="d-flex flex-column gap-3">
+            {% if org.isSubscriptionActive %}
+                <form method="post" class="w-100">
+                    <input type="hidden" name="billing_action" value="fail_payment">
+                    <button type="submit" class="btn btn-danger btn-sm w-100">
+                        <span class="material-icons fs-lg">credit_card_off</span> Trigger Payment Failure (Lock)
+                    </button>
+                </form>
+            {% else %}
+                <form method="post" class="w-100">
+                    <input type="hidden" name="billing_action" value="restore_payment">
+                    <button type="submit" class="btn btn-success btn-sm w-100">
+                        <span class="material-icons fs-lg">replay</span> Resolve Payment (Unlock)
+                    </button>
+                </form>
+            {% endif %}
+            
+            <div class="fs-xs text-muted mt-0 border-t" style="padding-top:1rem; .5rem">
+                <strong>Dunning Escalation workflow:</strong><br>
+                1. Stripe payment fails.<br>
+                2. Webhook triggers suspension.<br>
+                3. Features disable automatically.<br>
+                4. Organization metrics retain history but cannot check in/out.
+            </div>
+        </div>
+    </div>
+
+</div>
+{% endblock %}

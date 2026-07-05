@@ -1,0 +1,134 @@
+{% extends 'manager/layout.html.twig' %}
+
+{% block manager_title %}Reports by User{% endblock %}
+
+{% block manager_content %}
+    <!-- Header & Filter Bar -->
+    <div class="d-flex align-items-center justify-content-between flex-wrap gap-4 mb-8">
+        <div>
+            <h2 class="mb-1">Reports by User</h2>
+            <p class="text-secondary m-0">View check-in activity for a specific user.</p>
+        </div>
+        
+        <form method="get" class="d-flex align-items-center gap-4">
+            <input type="hidden" name="month" value="{{ currentMonth }}">
+            
+            <div class="m-0" style="min-width: 200px">
+                <select name="org_user_id" id="org_user_id" class="form-control" onchange="this.form.submit()">
+                    <option value="">-- Select a User --</option>
+                    {% for u in orgUsers %}
+                        <option value="{{ u.id }}" {% if selectedUser and selectedUser.id == u.id %}selected{% endif %}>
+                            {{ u.firstName }} {{ u.lastName }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+            
+            <noscript>
+                <button type="submit" class="btn btn-primary">Load</button>
+            </noscript>
+            
+            <a href="{{ path('app_manager_reports') }}" class="btn btn-secondary" title="Back to List">
+                <span class="material-icons">list</span>
+            </a>
+        </form>
+    </div>
+
+    {% if selectedUser %}
+        {% set totalHours = (totalMonthSeconds / 3600)|round(0, 'floor') %}
+        {% set totalMins = ((totalMonthSeconds % 3600) / 60)|round(0, 'floor') %}
+        
+        <div class="d-flex align-items-center justify-content-between mb-6">
+            <a href="?org_user_id={{ selectedUser.id }}&month={{ prevMonth }}" class="btn btn-secondary" >
+                <span class="material-icons fs-xl">chevron_left</span> Prev
+            </a>
+            <div class="text-center">
+                <h3 class="m-0 mb-0" >{{ monthName }}</h3>
+                <span class="fs-md fw-500 text-secondary">
+                    Total Time: <strong style="color: var(--text-primary);">{{ totalHours }}h {{"%02d"|format(totalMins) }}m</strong>
+                </span>
+            </div>
+            <a href="?org_user_id={{ selectedUser.id }}&month={{ nextMonth }}" class="btn btn-secondary" >
+                Next <span class="material-icons fs-xl">chevron_right</span>
+            </a>
+        </div>
+
+        <div class="bg-card rounded-lg border" style="overflow: hidden">
+            <!-- Calendar Header -->
+            <div class="fs-sm fw-600 text-center text-secondary bg-input d-grid p-0 border-b" style="grid-template-columns: repeat(7, 1fr); ; ; ; .5rem 0">
+                <div>Sun</div>
+                <div>Mon</div>
+                <div>Tue</div>
+                <div>Wed</div>
+                <div>Thu</div>
+                <div>Fri</div>
+                <div>Sat</div>
+            </div>
+            
+            <!-- Calendar Grid -->
+            <div class="d-grid" style="grid-template-columns: repeat(7, 1fr); auto-rows: minmax(80px, auto)">
+                {# Padding for start day of week #}
+                {% for i in 0..(startDayOfWeek - 1) %}
+                    {% if startDayOfWeek > 0 and i < startDayOfWeek %}
+                        <div class="border-b" style="border-right: 1px solid var(--border-color); background: rgba(0,0,0,0.2)"></div>
+                    {% endif %}
+                {% endfor %}
+
+                {# Days #}
+                {% for key, dayData in calendarData %}
+                    <div class="p-0 border-b" style="border-right: 1px solid var(--border-color); .4rem; min-height: 80px">
+                        <div class="d-flex justify-content-between mb-0" style="align-items: flex-start; .4rem">
+                            <span class="fs-md fw-600 text-primary" style="color: var(--text-primary); {% if dayData.sessions|length > 0 %};{% endif %}">{{ dayData.day }}</span>
+                            {% if dayData.totalSeconds > 0 %}
+                                {% set hours = (dayData.totalSeconds / 3600)|round(0, 'floor') %}
+                                {% set mins = ((dayData.totalSeconds % 3600) / 60)|round(0, 'floor') %}
+                                <span class="fs-xs fw-600 text-secondary bg-input p-0 rounded-sm" >
+                                    {{ hours }}h{{"%02d"|format(mins) }}m
+                                </span>
+                            {% endif %}
+                        </div>
+
+                        <div class="d-flex flex-column gap-1">
+                            {% for session in dayData.sessions %}
+                                {% set sHours = (session.durationSeconds / 3600)|round(0, 'floor') %}
+                                {% set sMins = ((session.durationSeconds % 3600) / 60)|round(0, 'floor') %}
+                                {% set catColor = session.category ? session.category.color : 'var(--primary)' %}
+                                {% set catName = session.category ? session.category.name : 'None' %}
+                                {% set timeRange = session.startedAt|date('H:i') ~ ' - ' ~ (session.endedAt ? session.endedAt|date('H:i') : 'Now') %}
+                                
+                                <div class="fw-600 d-inline-flex align-items-center justify-content-center rounded position-relative custom-popover-trigger" 
+                                     style="font-size: 0.65rem; padding: 0.3rem 0.5rem; background-color: var(--bg-card); color: var(--text-primary); border: 1px solid var(--border-color); border-left: 4px solid {{ catColor }}; cursor: pointer; white-space: nowrap; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+                                    {{ sHours }}h{{"%02d"|format(sMins) }}m
+                                    
+                                    <div class="custom-popover-content shadow-lg rounded p-2" style="border-top: 3px solid {{ catColor }};">
+                                        <div class="fw-bold mb-1">{{ catName }}</div>
+                                        <div class="text-muted" style="font-size: 0.65rem;">{{ timeRange }}</div>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                {% endfor %}
+                
+                {# Padding for end of grid #}
+                {% set totalCells = startDayOfWeek + daysInMonth %}
+                {% set remainingCells = (7 - (totalCells % 7)) % 7 %}
+                {% for i in 0..(remainingCells - 1) %}
+                    {% if remainingCells > 0 %}
+                        <div class="border-b" style="border-right: 1px solid var(--border-color); background: rgba(0,0,0,0.2)"></div>
+                    {% endif %}
+                {% endfor %}
+            </div>
+        </div>
+    {% else %}
+        <div class="text-center text-muted bg-card rounded-md" style="padding: 4rem 2rem; ; border: 1px dashed var(--border-color)">
+            <span class="material-icons fs-4xl mb-4">person_search</span>
+            <p>Please select a user from the dropdown above to view their check-in calendar.</p>
+        </div>
+    {% endif %}
+{% endblock %}
+
+{% block stylesheets %}
+{{ parent() }}
+
+{% endblock %}

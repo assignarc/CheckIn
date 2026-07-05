@@ -1,0 +1,446 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}TimeFlow - Multi-Tenant Time Tracking & Check-In Platform{% endblock %}
+{% block stylesheets %}
+
+    
+{% endblock %}
+
+{% block body %}
+<header class="dashboard-header" style="background: rgba(11, 15, 25, 0.7); border-bottom: 1px solid rgba(255,255,255,0.06); position: sticky; top:0; backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); z-index: 100;">
+    <div class="d-flex align-items-center gap-3">
+        <span class="material-icons fs-3xl text-primary">alarm</span>
+        <h1 class="fs-2xl fw-800 m-0" style="letter-spacing: -0.02em">TimeFlow</h1>
+    </div>
+    <div class="d-flex align-items-center gap-4">
+        <div class="theme-selector">
+            <button type="button" class="theme-option" data-value="light" onclick="setTheme('light')" title="Light Mode">
+                <span class="material-icons">light_mode</span>
+            </button>
+            <button type="button" class="theme-option" data-value="dark" onclick="setTheme('dark')" title="Dark Mode">
+                <span class="material-icons">dark_mode</span>
+            </button>
+            <button type="button" class="theme-option" data-value="system" onclick="setTheme('system')" title="System Theme">
+                <span class="material-icons">settings_brightness</span>
+            </button>
+        </div>
+        <a href="{{ path('app_login') }}" class="btn btn-secondary fs-sm" >Login</a>
+        <a href="{{ path('app_signup') }}" class="btn btn-primary fs-sm" >Start Free Trial</a>
+    </div>
+</header>
+
+<!-- Main Container -->
+<main class="app-container d-flex flex-column home-main-container">
+    
+    <!-- Hero Section -->
+    <section class="hero-grid align-items-center gap-16">
+        <div>
+            <div class="d-inline-flex align-items-center gap-2 mb-6 p-0 rounded-full" style="padding: .35rem 1rem; background: var(--primary-glow); border: 1px solid rgba(99,102,241,0.2)">
+                <span class="material-icons fs-md text-primary">bolt</span>
+                <span class="fs-sm fw-600 text-uppercase text-indigo-200 tracking-wide">Multi-Tenant Time Kiosk</span>
+            </div>
+            <h1 class="fs-5xl mb-6" style="line-height: 1.15; letter-spacing: -0.03em">
+                Next-Gen <span class="text-gradient">Time Tracking</span><br>For Modern Teams.
+            </h1>
+            <p class="fs-lg text-secondary mb-10 max-w-600" style="line-height: 1.6">
+                Streamline user check-ins with secure PIN entries, custom data fields, customizable time windows, and robust manager-level reporting. Built to scale with multi-tenant logical separation.
+            </p>
+            <div class="d-flex flex-wrap gap-4">
+                <a href="{{ path('app_signup') }}" class="btn btn-primary fs-lg" >
+                    Create Organization <span class="material-icons">arrow_forward</span>
+                </a>
+                <a href="{{ path('app_demo') }}" class="btn btn-secondary fs-lg">
+                    Request Live Demo
+                </a>
+            </div>
+        </div>
+        
+        <div class="glass-panel d-flex flex-column gap-6 p-8">
+            <h3 class="fs-xl d-flex align-items-center gap-2 mb-2">
+                <span class="material-icons text-primary">tablet_mac</span> Interactive Kiosk Preview
+            </h3>
+            <div class="text-center bg-input p-5 rounded-md border" style="zoom: 0.7;">
+                <div class="fs-sm text-uppercase text-muted mb-2">Acme Corp Check-In</div>
+                <div class="fs-2xl fw-700 mb-4">Enter Security PIN</div>
+                <div class="d-flex justify-content-center gap-3 mb-5">
+                    <div class="pin-dot filled"></div>
+                    <div class="pin-dot filled"></div>
+                    <div class="pin-dot"></div>
+                    <div class="pin-dot"></div>
+                </div>
+                <div class="pin-grid">
+                    <div class="pin-btn pin-btn-special">A</div>
+                    <div class="pin-btn pin-btn-special">B</div>
+                    <div class="pin-btn pin-btn-special">C</div>
+                    <div class="pin-btn">1</div>
+                    <div class="pin-btn">2</div>
+                    <div class="pin-btn">3</div>
+                    <div class="pin-btn">4</div>
+                    <div class="pin-btn">5</div>
+                    <div class="pin-btn">6</div>
+                    <div class="pin-btn">7</div>
+                    <div class="pin-btn">8</div>
+                    <div class="pin-btn">9</div>
+                    <div class="pin-btn pin-btn-clear" style="font-size: 0.9rem;">Clear</div>
+                    <div class="pin-btn">0</div>
+                    <div class="pin-btn"><span class="material-icons">backspace</span></div>
+                </div>
+            </div>
+            <p class="fs-sm text-center text-secondary m-0">
+                Kiosk can be locked with a 4-char PIN or toggleable open list mode.
+            </p>
+        </div>
+    </section>
+
+    <!-- Key Platform Benefits Section -->
+    <section class="d-flex flex-column gap-12">
+        <div class="text-center">
+            <h2 class="fs-3xl">Engineered for <span class="text-gradient">Precision</span> and Control</h2>
+            <p class="fs-lg text-secondary mt-2 ml-auto mr-auto max-w-700">
+                TimeFlow provides managers with high-fidelity control over shifts logs, auditing, and compliance constraints.
+            </p>
+        </div>
+
+        <div class="grid-cols-3 gap-6 mb-6">
+            <div class="glass-panel p-6">
+                <span class="material-icons text-primary mb-4 fs-3xl">gavel</span>
+                <h4 class="fs-lg mb-2">Time Window Enforcement</h4>
+                <p class="fs-md text-secondary lh-base">
+                    Set specific windows for clocking in and out (including overnight shifts support) and automatically flag violations in manager dashboards.
+                </p>
+            </div>
+            <div class="glass-panel p-6">
+                <span class="material-icons text-success mb-4 fs-3xl">cloud_sync</span>
+                <h4 class="fs-lg mb-2">Onboarding & Fuzzy Matching</h4>
+                <p class="fs-md text-secondary lh-base">
+                    Upload existing rosters via CSV. Map custom columns and run fuzzy matching checks to prevent duplicates while merging updates.
+                </p>
+            </div>
+            <div class="glass-panel p-6">
+                <span class="material-icons text-warning mb-4 fs-3xl">security</span>
+                <h4 class="fs-lg mb-2">Anti-Brute Force Lockout</h4>
+                <p class="fs-md text-secondary lh-base">
+                    Protects the workplace kiosk by automatically locking user accounts after 3 incorrect PIN attempts. Managers can clear blocks in a click.
+                </p>
+            </div>
+        </div>
+        <div class="grid-cols-3 gap-6">
+            <div class="glass-panel p-6">
+                <span class="material-icons text-info mb-4 fs-3xl">category</span>
+                <h4 class="fs-lg mb-2">Custom Category Limits</h4>
+                <p class="fs-md text-secondary lh-base">
+                    Override organization-wide limits with custom max session durations per category, giving you granular control.
+                </p>
+            </div>
+            <div class="glass-panel p-6">
+                <span class="material-icons text-indigo mb-4 fs-3xl">payments</span>
+                <h4 class="fs-lg mb-2">Advanced Overtime Rules</h4>
+                <p class="fs-md text-secondary lh-base">
+                    Configure overtime multipliers and grace periods to accurately track and calculate shift overages.
+                </p>
+            </div>
+            <div class="glass-panel p-6">
+                <span class="material-icons text-danger mb-4 fs-3xl">verified_user</span>
+                <h4 class="fs-lg mb-2">Math Captcha Security</h4>
+                <p class="fs-md text-secondary lh-base">
+                    Built-in mathematical captchas on sensitive operations to prevent automated abuse and enhance platform security.
+                </p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Pricing Section -->
+    <section id="pricing-section" class="d-flex flex-column gap-12">
+        <div class="text-center">
+            <h2 class="fs-3xl">Simple, Transparent <span class="text-gradient">Subscription Tiers</span></h2>
+            <p class="fs-lg text-secondary mt-2 ml-auto mr-auto max-w-700">
+                Choose the best fit for your team. Start basic or unlock premium limits and audit exports.
+            </p>
+        </div>
+
+        <div class="grid-cols-3 align-items-stretch gap-6">
+            {% for plan in plans %}
+                <div class="glass-panel text-primary d-flex flex-column justify-content-between position-relative" style="padding: 2.25rem; {% if plan.name == 'silver' %}border-; box-shadow: var(--shadow-glow);{% else %}border-color: rgba(255,255,255,0.06);{% endif %}">
+                    {% if plan.name == 'silver' %}
+                        <div class="fs-sm fw-700 text-uppercase text-white rounded-full position-absolute" style="top: -15px; right: 2rem; background: var(--primary); padding: 0.35rem 1rem; box-shadow: var(--shadow-glow);">
+                            Best Value
+                        </div>
+                    {% endif %}
+                    <div>
+                        <h3 class="fs-xl text-indigo-200 d-flex align-items-center gap-2" style="text-transform: capitalize">
+                            <span class="material-icons text-primary">{% if plan.name == 'basic' %}tag{% elseif plan.name == 'silver' %}stars{% else %}military_tech{% endif %}</span> {{ plan.name }} Plan
+                        </h3>
+                        <div style="margin: 1.5rem 0;">
+                            <span class="fw-800 text-white fs-3xl">${{ plan.priceMonthly|round }}</span>
+                            <span class="fs-md text-muted"> / month</span>
+                        </div>
+                        <ul class="fs-md text-secondary d-flex flex-column gap-3 mb-8 p-0" >
+                            <li class="d-flex align-items-center gap-2">
+                                <span class="material-icons fs-lg text-success">check_circle</span>
+                                Up to {{ plan.maxOrgUsers|number_format }} Users
+                            </li>
+                            <li class="d-flex align-items-center gap-2">
+                                <span class="material-icons fs-lg text-success">check_circle</span>
+                                {% if plan.maxManagers >= 9999 %}Unlimited{% else %}{{ plan.maxManagers }}{% endif %} Manager{% if plan.maxManagers != 1 %}s{% endif %} limit
+                            </li>
+                            <li class="d-flex align-items-center gap-2">
+                                <span class="material-icons fs-lg text-success">check_circle</span>
+                                Up to {{ plan.maxCategories }} Categories & {{ plan.maxFields }} Custom Fields
+                            </li>
+                            <li class="d-flex align-items-center gap-2">
+                                <span class="material-icons fs-lg text-success">check_circle</span>
+                                {{ plan.sessionLimitHours }}-hour max sessions
+                            </li>
+                            <li class="d-flex align-items-center gap-2">
+                                <span class="material-icons fs-lg text-success">check_circle</span>
+                                {{ plan.retentionDays }} days history retention
+                            </li>
+                            <li class="d-flex align-items-center gap-2">
+                                <span class="material-icons fs-lg text-success">check_circle</span>
+                                Open Kiosk (Dropdown list)
+                            </li>
+                            <li class="{% if not plan.hasSecureKiosk %}text-muted {% endif %}d-flex align-items-center gap-2">
+                                <span class="material-icons fs-lg {% if plan.hasSecureKiosk %}text-success{% else %}text-muted{% endif %}">
+                                    {% if plan.hasSecureKiosk %}check_circle{% else %}cancel{% endif %}
+                                </span>
+                                Secure Kiosk (PIN verification)
+                            </li>
+                            <li class="text-muted d-flex align-items-center gap-2" >
+                                <span class="material-icons fs-lg text-muted {% if plan.hasCustomSessionDurations %}text-success{% endif %}" >
+                                    {% if plan.hasCustomSessionDurations %}check_circle{% else %}cancel{% endif %}
+                                </span>
+                                Custom Session Limits
+                            </li>
+                            <li class="text-muted d-flex align-items-center gap-2" >
+                                <span class="material-icons fs-lg text-muted {% if plan.hasOvertimeRules %}text-success{% endif %}" >
+                                    {% if plan.hasOvertimeRules %}check_circle{% else %}cancel{% endif %}
+                                </span>
+                                Overtime Rules & Multipliers
+                            </li>
+                            <li class="text-muted d-flex align-items-center gap-2" >
+                                <span class="material-icons fs-lg text-muted text-success" >
+                                    {% if plan.exportsEnabled %}check_circle{% else %}cancel{% endif %}
+                                </span>
+                                Excel / CSV logs downloads
+                            </li>
+                        </ul>
+                    </div>
+                    <a href="{{ path('app_signup', {plan: plan.name}) }}" class="btn {% if plan.name == 'silver' %}btn-primary{% else %}btn-secondary{% endif %} w-100">
+                        {% if plan.name == 'basic' %}Get Started Free{% else %}Start {{ plan.name|capitalize }} Trial{% endif %}
+                    </a>
+                </div>
+            {% endfor %}
+        </div>
+    </section>
+
+    <!-- Plan Settings Comparison Matrix -->
+    <section class="d-flex flex-column gap-12">
+        <div class="text-center">
+            <h2 class="fs-3xl">Detailed Plan <span class="text-gradient">Comparison</span></h2>
+            <p class="fs-lg text-secondary mt-2">
+                Compare specs side-by-side. Remember that platform admins can override limits individually.
+            </p>
+        </div>
+
+        <div class="glass-panel p-6">
+            <div class="table-responsive">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Feature specs</th>
+                            {% for plan in plans %}
+                                <th>{{ plan.name }}</th>
+                            {% endfor %}
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td class="fw-600 text-white">Base Price</td>
+                            {% for plan in plans %}
+                                <td>${{ plan.priceMonthly|round }}/mo</td>
+                            {% endfor %}
+                        </tr>
+                        <tr>
+                            <td class="fw-600 text-white">Max Registered Users</td>
+                            {% for plan in plans %}
+                                <td>{{ plan.maxOrgUsers|number_format }} Users</td>
+                            {% endfor %}
+                        </tr>
+                        <tr>
+                            <td class="fw-600 text-white">Authorized Managers</td>
+                            {% for plan in plans %}
+                                <td>{% if plan.maxManagers >= 9999 %}Unlimited{% else %}{{ plan.maxManagers }}{% endif %}</td>
+                            {% endfor %}
+                        </tr>
+                        <tr>
+                            <td class="fw-600 text-white">Maximum Shift Duration</td>
+                            {% for plan in plans %}
+                                <td>{{ plan.sessionLimitHours }} Hours</td>
+                            {% endfor %}
+                        </tr>
+                        <tr>
+                            <td class="fw-600 text-white">Kiosk Mode</td>
+                            {% for plan in plans %}
+                                <td>{% if plan.hasSecureKiosk %}Secure (PIN Block){% else %}Open (Click List){% endif %}</td>
+                            {% endfor %}
+                        </tr>
+                        <tr>
+                            <td class="fw-600 text-white">Custom Category Durations</td>
+                            {% for plan in plans %}
+                                <td>
+                                    {% if plan.hasCustomSessionDurations %}
+                                        <span class="text-success">Yes</span>
+                                    {% else %}
+                                        <span class="text-danger">No</span>
+                                    {% endif %}
+                                </td>
+                            {% endfor %}
+                        </tr>
+                        <tr>
+                            <td class="fw-600 text-white">Overtime Multipliers</td>
+                            {% for plan in plans %}
+                                <td>
+                                    {% if plan.hasOvertimeRules %}
+                                        <span class="text-success">Yes</span>
+                                    {% else %}
+                                        <span class="text-danger">No</span>
+                                    {% endif %}
+                                </td>
+                            {% endfor %}
+                        </tr>
+                        <tr>
+                            <td class="fw-600 text-white">Audit Logs exports</td>
+                            {% for plan in plans %}
+                                <td>
+                                    {% if plan.exportsEnabled %}
+                                        <span class="text-success">Yes</span>
+                                    {% else %}
+                                        <span class="text-danger">No</span>
+                                    {% endif %}
+                                </td>
+                            {% endfor %}
+                        </tr>
+                        <tr>
+                            <td class="fw-600 text-white">Roster CSV upload</td>
+                            {% for plan in plans %}
+                                <td><span class="text-success">Yes</span></td>
+                            {% endfor %}
+                        </tr>
+                        <tr>
+                            <td class="fw-600 text-white">Data Retention</td>
+                            {% for plan in plans %}
+                                <td>{{ plan.retentionDays }} Days</td>
+                            {% endfor %}
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </section>
+
+    <!-- Interactive Demos Sandbox Section -->
+    <section id="demo-section" class="pt-20 border-t">
+        <h2 class="fs-3xl text-center mb-12">Explore Pre-Seeded <span class="text-gradient">Sandbox Environments</span></h2>
+        
+        <div class="grid-cols-3 gap-6">
+            <!-- Demo 1: Acme Kiosk -->
+            <div class="glass-panel d-flex flex-column justify-content-between h-100">
+                <div>
+                    <div class="text-success d-inline-flex align-items-center justify-content-center mb-5 rounded-sm icon-44 bg-success-glow">
+                        <span class="material-icons">kiosk_mode</span>
+                    </div>
+                    <h3 class="fs-xl mb-2">Acme Corp Kiosk</h3>
+                    <p class="fs-md text-secondary mb-6">
+                        A Gold Plan workspace demonstrating a secure PIN-based check-in page.
+                    </p>
+                    <div class="fs-sm text-secondary bg-input mb-6 p-4 rounded-sm text-center" >
+                        <span class="material-icons text-muted mb-2">lock</span><br>
+                        <strong>Credentials Locked</strong><br>
+                        Unlock to view mock user PINs.
+                    </div>
+                </div>
+                <a href="{{ path('app_demo') }}" class="btn btn-secondary w-100">Unlock Demo Access</a>
+            </div>
+
+            <!-- Demo 2: Basic Demo Kiosk -->
+            <div class="glass-panel d-flex flex-column justify-content-between h-100">
+                <div>
+                    <div class="text-warning d-inline-flex align-items-center justify-content-center mb-5 rounded-sm icon-44 bg-warning-glow">
+                        <span class="material-icons">lock_open</span>
+                    </div>
+                    <h3 class="fs-xl mb-2">Basic Demo Kiosk</h3>
+                    <p class="fs-md text-secondary mb-6">
+                        A Basic Plan workspace demonstrating Open mode check-in, where users select their name from a list.
+                    </p>
+                    <div class="fs-sm text-secondary bg-input mb-6 p-0 rounded-sm" >
+                        <strong>Settings:</strong><br>
+                        • Mode: Open (No PIN)<br>
+                        • Plan limits: {{ basic_plan.sessionLimitHours }}-hour max sessions<br>
+                        • Export: Disabled
+                    </div>
+                </div>
+                <a href="{{ path('app_demo') }}" class="btn btn-secondary w-100">Unlock Demo Access</a>
+            </div>
+
+            <!-- Demo 3: Console logins -->
+            <div class="glass-panel d-flex flex-column justify-content-between h-100">
+                <div>
+                    <div class="text-primary d-inline-flex align-items-center justify-content-center mb-5 rounded-sm icon-44 bg-primary-glow">
+                        <span class="material-icons">admin_panel_settings</span>
+                    </div>
+                    <h3 class="fs-xl mb-2">Manager Consoles</h3>
+                    <p class="fs-md text-secondary mb-6">
+                        Log in as an Organization Manager.
+                    </p>
+                    <div class="fs-sm text-secondary bg-input mb-6 p-4 rounded-sm text-center" >
+                        <span class="material-icons text-muted mb-2">lock</span><br>
+                        <strong>Credentials Locked</strong><br>
+                        Unlock to view manager login details.
+                    </div>
+                </div>
+                <a href="{{ path('app_demo') }}" class="btn btn-primary w-100">Unlock Demo Access</a>
+            </div>
+        </div>
+    </section>
+
+    <!-- FAQ Section -->
+    <section class="d-flex flex-column gap-12 mb-8">
+        <div class="text-center">
+            <h2 class="fs-3xl">Frequently Asked <span class="text-gradient">Questions</span></h2>
+            <p class="fs-lg text-secondary mt-2">
+                Common questions regarding multi-tenant time clocks and manager policy options.
+            </p>
+        </div>
+
+        <div class="d-flex flex-column gap-6 m-0 w-100 max-w-800" >
+            <div class="glass-panel p-5" >
+                <h4 class="fs-lg text-white mb-2">How do custom overrides work?</h4>
+                <p class="fs-md text-secondary lh-base">
+                    If a tenant requires more capacity than their standard plan permits (e.g. extra user seats or categories limits), the platform super-administrator can add individual overrides from the Organizations controller, storing only overridden parameters at the database level.
+                </p>
+            </div>
+            <div class="glass-panel p-5" >
+                <h4 class="fs-lg text-white mb-2">What happens when a subscription payment fails?</h4>
+                <p class="fs-md text-secondary lh-base">
+                    The Stripe payment sandbox allows managers to simulate credit card transaction failures. If a renewal fails, the subscription changes to overdue, locking premium manager actions and block kiosk access screens until resolved.
+                </p>
+            </div>
+            <div class="glass-panel p-5" >
+                <h4 class="fs-lg text-white mb-2">Can orgUsers check in outside schedule hours?</h4>
+                <p class="fs-md text-secondary lh-base">
+                    Managers can configure absolute time windows. If a user clocks in outside this period, their check-in transaction completes successfully but is flagged immediately in audit records and dashboard reports.
+                </p>
+            </div>
+        </div>
+    </section>
+
+</main>
+
+<footer class="fs-sm text-center text-muted mt-auto p-8 border-t">
+    <div class="app-container">
+        <p>&copy; 2026 TimeFlow. Powered by PHP Symfony and MySQL. All rights reserved.</p>
+    </div>
+</footer>
+{% endblock %}
+
+

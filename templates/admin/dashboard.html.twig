@@ -1,0 +1,115 @@
+{% extends 'admin/layout.html.twig' %}
+
+{% block title %}Admin Dashboard - TimeFlow{% endblock %}
+
+{% block admin_content %}
+<div class="grid-cols-4 mb-8">
+    <!-- Org count -->
+    <div class="metric-card">
+        <div class="metric-icon indigo text-purple-500" style="background: rgba(139, 92, 246, 0.1)">
+            <span class="material-icons">business</span>
+        </div>
+        <div class="metric-info">
+            <h3>{{ orgCount }}</h3>
+            <p>Total Organizations</p>
+        </div>
+    </div>
+
+    <!-- Manager count -->
+    <div class="metric-card">
+        <div class="metric-icon emerald">
+            <span class="material-icons">manage_accounts</span>
+        </div>
+        <div class="metric-info">
+            <h3>{{ mgrCount }}</h3>
+            <p>Active Managers</p>
+        </div>
+    </div>
+
+    <!-- OrgUser count -->
+    <div class="metric-card">
+        <div class="metric-icon amber">
+            <span class="material-icons">people</span>
+        </div>
+        <div class="metric-info">
+            <h3>{{ empCount }}</h3>
+            <p>Registered Workers</p>
+        </div>
+    </div>
+
+    <!-- Sessions count -->
+    <div class="metric-card">
+        <div class="metric-icon rose">
+            <span class="material-icons">history</span>
+        </div>
+        <div class="metric-info">
+            <h3>{{ sessionCount }}</h3>
+            <p>Accumulated Shift Logs</p>
+        </div>
+    </div>
+</div>
+
+<div class="grid-cols-2 gap-8">
+    <!-- Subscription breakdown -->
+    <div class="glass-panel p-6">
+        <h3 class="fs-lg text-purple-300 mb-6">Subscription Distribution</h3>
+        
+        <div class="d-flex flex-column gap-5">
+            <!-- Gold -->
+            <div>
+                {% set goldPercent = orgCount > 0 ? (goldCount / orgCount * 100)|round : 0 %}
+                <div class="fs-sm fw-600 d-flex justify-content-between">
+                    <span class="d-flex align-items-center gap-1"><span class="material-icons fs-lg text-success">military_tech</span> Gold ($99/mo)</span>
+                    <span>{{ goldCount }} orgs ({{ goldPercent }}%)</span>
+                </div>
+                <div class="quota-bar" style="height:8px;">
+                    <div class="quota-progress" style="width:{{ goldPercent }}%; background:var(--success);"></div>
+                </div>
+            </div>
+
+            <!-- Silver -->
+            <div>
+                {% set silverPercent = orgCount > 0 ? (silverCount / orgCount * 100)|round : 0 %}
+                <div class="fs-sm fw-600 d-flex justify-content-between">
+                    <span class="d-flex align-items-center gap-1"><span class="material-icons fs-lg text-primary">workspace_premium</span> Silver ($29/mo)</span>
+                    <span>{{ silverCount }} orgs ({{ silverPercent }}%)</span>
+                </div>
+                <div class="quota-bar" style="height:8px;">
+                    <div class="quota-progress" style="width:{{ silverPercent }}%; background:var(--primary);"></div>
+                </div>
+            </div>
+
+            <!-- Basic -->
+            <div>
+                {% set basicPercent = orgCount > 0 ? (basicCount / orgCount * 100)|round : 0 %}
+                <div class="fs-sm fw-600 d-flex justify-content-between">
+                    <span class="d-flex align-items-center gap-1"><span class="material-icons fs-lg text-warning">stars</span> Basic (Free)</span>
+                    <span>{{ basicCount }} orgs ({{ basicPercent }}%)</span>
+                </div>
+                <div class="quota-bar" style="height:8px;">
+                    <div class="quota-progress" style="width:{{ basicPercent }}%; background:var(--warning);"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Administrative Quick Access -->
+    <div class="glass-panel d-flex flex-column justify-content-between p-6">
+        <div>
+            <h3 class="fs-lg text-primary mb-2">Superuser Quick Actions</h3>
+            <p class="fs-sm text-secondary mb-6">
+                Common support override workflows to troubleshoot tenant and manager issues.
+            </p>
+        </div>
+
+        <div class="d-flex flex-column gap-3">
+            <a href="{{ path('app_admin_organizations') }}" class="btn btn-primary">
+                <span class="material-icons">settings_accessibility</span> Manage Tenant Limits & Overrides
+            </a>
+            <a href="{{ path('app_admin_audit_logs') }}" class="btn btn-secondary">
+                <span class="material-icons">security</span> Open Audit Log Trail
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}

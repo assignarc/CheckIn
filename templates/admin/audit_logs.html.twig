@@ -1,0 +1,77 @@
+{% extends 'admin/layout.html.twig' %}
+
+{% block title %}System Audit Logs - Platform Admin{% endblock %}
+{% block header_title %}Audit Logs{% endblock %}
+
+{% block admin_content %}
+<div class="glass-panel mb-8 p-6">
+    <h3 class="fs-lg text-purple-300 mb-5">System-wide Audit Trail</h3>
+
+    <form method="get" action="{{ path('app_admin_audit_logs') }}" class="d-flex gap-4 mb-6" style="align-items:flex-end">
+        <div class="form-group flex-1 m-0">
+            <label class="form-label" for="org_filter">Organization</label>
+            <select name="org" id="org_filter" class="form-control">
+                <option value="">All Organizations</option>
+                {% for o in organizations %}
+                    <option value="{{ o.id }}" {% if app.request.query.get('org') == o.id %}selected{% endif %}>{{ o.name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="form-group flex-1 m-0">
+            <label class="form-label" for="action_filter">Action</label>
+            <input type="text" name="action" id="action_filter" class="form-control" value="{{ app.request.query.get('action') }}" placeholder="e.g. USER_CREATE">
+        </div>
+        <button type="submit" class="btn btn-secondary">
+            <span class="material-icons">filter_list</span> Filter
+        </button>
+        <a href="{{ path('app_admin_audit_logs', app.request.query.all|merge({'export': 'csv'})) }}" class="btn btn-primary">
+            <span class="material-icons">download</span> Export CSV
+        </a>
+    </form>
+
+    <div class="table-responsive">
+        <table class="table fs-md">
+            <thead>
+                <tr>
+                    <th>Timestamp</th>
+                    <th>Org</th>
+                    <th>Actor</th>
+                    <th>Action</th>
+                    <th>Details</th>
+                    <th>IP</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for log in logs %}
+                    <tr>
+                        <td class="white-space-nowrap">{{ log.createdAt|date('Y-m-d H:i:s') }}</td>
+                        <td class="fw-600">{{ log.organization ? log.organization.name : 'System' }}</td>
+                        <td>
+                            {% if log.manager %}
+                                {{ log.manager.email }}
+                            {% else %}
+                                System
+                            {% endif %}
+                        </td>
+                        <td>
+                            <span class="badge badge-secondary">{{ log.action }}</span>
+                        </td>
+                        <td>
+                            <div class="fs-xs p-0" style="max-height: 80px; overflow-y: auto; font-family: monospace; background: rgba(0,0,0,0.2); .5rem; border-radius: 4px">
+                                {{ log.detailsJson|json_encode(constant('JSON_PRETTY_PRINT')) }}
+                            </div>
+                        </td>
+                        <td class="text-muted">{{ log.ipAddress|default('—') }}</td>
+                    </tr>
+                {% else %}
+                    <tr>
+                        <td colspan="6" class="text-center text-muted p-8">
+                            No audit logs match criteria.
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

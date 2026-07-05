@@ -1,0 +1,228 @@
+{% extends 'base.html.twig' %}
+
+{% block body %}
+<div class="dashboard-layout">
+    <!-- Sidebar Navigation -->
+    <aside class="sidebar" id="sidebar">
+        <div class="sidebar-logo">
+            <span class="material-icons text-primary">alarm</span>
+            <span>Time<span class="accent">Flow</span></span>
+        </div>
+        
+        <nav class="sidebar-nav">
+            <a href="{{ path('app_manager_dashboard') }}" class="sidebar-link {% if app.request.attributes.get('_route') == 'app_manager_dashboard' %}active{% endif %}">
+                <span class="material-icons">dashboard</span> Dashboard
+            </a>
+            <a href="{{ path('app_manager_users') }}" class="sidebar-link {% if 'app_manager_user' in app.request.attributes.get('_route') %}active{% endif %}">
+                <span class="material-icons">people</span> Users & Managers
+            </a>
+            <a href="{{ path('app_manager_categories') }}" class="sidebar-link {% if app.request.attributes.get('_route') == 'app_manager_categories' %}active{% endif %}">
+                <span class="material-icons">category</span> Categories
+            </a>
+            <a href="{{ path('app_manager_reports') }}" class="sidebar-link {% if app.request.attributes.get('_route') == 'app_manager_reports' %}active{% endif %}">
+                <span class="material-icons">bar_chart</span> Reporting & Logs
+            </a>
+            <a href="{{ path('app_manager_reports_by_user') }}" class="sidebar-link {% if app.request.attributes.get('_route') == 'app_manager_reports_by_user' %}active{% endif %}">
+                <span class="material-icons">calendar_month</span> Reports by User
+            </a>
+            <a href="{{ path('app_manager_settings') }}" class="sidebar-link {% if app.request.attributes.get('_route') == 'app_manager_settings' %}active{% endif %}">
+                <span class="material-icons">settings</span> Settings
+            </a>
+            <a href="{{ path('app_manager_audit_logs') }}" class="sidebar-link {% if app.request.attributes.get('_route') == 'app_manager_audit_logs' %}active{% endif %}">
+                <span class="material-icons">history</span> Audit Logs
+            </a>
+            <a href="{{ path('app_manager_billing') }}" class="sidebar-link {% if app.request.attributes.get('_route') == 'app_manager_billing' %}active{% endif %}">
+                <span class="material-icons">credit_card</span> Billing & Subscription
+            </a>
+        </nav>
+    </aside>
+
+    <!-- Main Content Frame -->
+    <main class="main-content">
+        <!-- Top Header Bar -->
+        <header class="dashboard-header">
+            <div class="d-flex align-items-center gap-3">
+                <button class="sidebar-toggle" id="sidebarToggle" onclick="toggleSidebar()" aria-label="Toggle sidebar">
+                    <span class="material-icons">menu</span>
+                </button>
+                <h2 class="fs-lg fw-600 m-0">{% block header_title %}Manager Portal{% endblock %}</h2>
+            </div>
+            
+            <div class="header-actions-menu" id="headerActionsMenu">
+                <button type="button" class="header-actions-toggle" id="headerActionsToggle" onclick="toggleHeaderMenu()" aria-label="User menu">
+                    <div class="user-avatar fs-xs icon-28">{{ app.user.firstName|slice(0, 1) }}{{ app.user.lastName|slice(0, 1) }}</div>
+                    <span class="material-icons fs-md">expand_more</span>
+                </button>
+
+                <div class="header-actions-dropdown" id="headerActionsDropdown">
+                    <!-- User Info -->
+                    <div class="header-dropdown-section">
+                        <div class="d-flex align-items-center gap-3 p-4">
+                            <div class="user-avatar fs-xs icon-36">{{ app.user.firstName|slice(0, 1) }}{{ app.user.lastName|slice(0, 1) }}</div>
+                            <div class="lh-sm">
+                                <div class="fw-600 fs-sm">{{ app.user.firstName }} {{ app.user.lastName }}</div>
+                                <div class="fs-xs text-muted">{{ app.user.organization.name }}</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Status Badges -->
+                    <div class="header-dropdown-section d-flex align-items-center gap-2 p-3">
+                        <span class="badge {% if app.user.organization.plan.name == 'gold' %}badge-success{% elseif app.user.organization.plan.name == 'silver' %}badge-info{% else %}badge-warning{% endif %}">
+                            {{ app.user.organization.plan.name|capitalize }} Plan
+                        </span>
+                        {% if not app.user.organization.isSubscriptionActive %}
+                            <span class="badge badge-danger">Payment Overdue</span>
+                        {% endif %}
+                    </div>
+
+                    <!-- Theme Selector -->
+                    <div class="header-dropdown-section p-3 d-flex align-items-center justify-content-between gap-3">
+                        <span class="fs-xs text-muted">Theme</span>
+                        <div class="theme-selector">
+                            <button type="button" class="theme-option" data-value="light" onclick="setTheme('light')" title="Light Mode">
+                                <span class="material-icons">light_mode</span>
+                            </button>
+                            <button type="button" class="theme-option" data-value="dark" onclick="setTheme('dark')" title="Dark Mode">
+                                <span class="material-icons">dark_mode</span>
+                            </button>
+                            <button type="button" class="theme-option" data-value="system" onclick="setTheme('system')" title="System Theme">
+                                <span class="material-icons">settings_brightness</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Action Links -->
+                    <div class="header-dropdown-section">
+                        <a href="/org/{{ app.user.organization.slug }}/kiosk/{{ app.user.organization.checkInLinkToken }}" target="_blank" class="header-dropdown-item">
+                            <span class="material-icons fs-lg text-primary">tablet_mac</span>
+                            <span>Launch Kiosk</span>
+                        </a>
+                        <a href="{{ path('app_manager_settings') }}" class="header-dropdown-item">
+                            <span class="material-icons fs-lg text-muted">settings</span>
+                            <span>Settings</span>
+                        </a>
+                        <a href="{{ path('app_logout') }}" class="header-dropdown-item text-danger">
+                            <span class="material-icons fs-lg">logout</span>
+                            <span>Sign Out</span>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Dashboard Content Body -->
+        <section class="dashboard-body">
+            {% for type, messages in app.flashes %}
+                {% for message in messages %}
+                    <div class="alert alert-{{ type }}">
+                        <span class="material-icons">
+                            {% if type == 'danger' %}error{% elseif type == 'warning' %}warning{% else %}check_circle{% endif %}
+                        </span>
+                        <span>{{ message }}</span>
+                    </div>
+                {% endfor %}
+            {% endfor %}
+
+            {% block manager_content %}{% endblock %}
+        </section>
+    </main>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        function updateTickingTimers() {
+            const now = new Date();
+            document.querySelectorAll('.ticking-timer').forEach(timer => {
+                const startedStr = timer.getAttribute('data-started');
+                if (!startedStr) return;
+                
+                const startedDate = new Date(startedStr);
+                const diffMs = now - startedDate;
+                const diffSecs = diffMs > 0 ? Math.floor(diffMs / 1000) : 0;
+
+                const maxSecs = parseInt(timer.getAttribute('data-max-duration'), 10) || 0;
+                const terminate = timer.getAttribute('data-terminate') === 'true';
+
+                const textEl = timer.querySelector('.timer-text');
+                const dot = timer.querySelector('.ticking-dot');
+
+                if (maxSecs > 0 && diffSecs >= maxSecs) {
+                    if (terminate) {
+                        if (textEl) textEl.textContent = 'Auto End';
+                        timer.classList.remove('badge-success');
+                        timer.classList.add('badge-secondary');
+                        timer.style.background = 'rgba(107, 114, 128, 0.15)';
+                        timer.style.color = '#6B7280';
+                        if (dot) dot.style.display = 'none';
+                        return;
+                    } else {
+                        // Exceeded and not terminating -> show in RED as overtime
+                        timer.classList.remove('badge-success');
+                        timer.classList.add('badge-danger');
+                        timer.style.background = 'var(--danger-glow)';
+                        timer.style.color = 'var(--danger)';
+                        if (dot) {
+                            dot.style.display = 'inline-block';
+                            dot.style.backgroundColor = 'var(--danger)';
+                        }
+                    }
+                } else {
+                    // Normal under limit
+                    timer.classList.add('badge-success');
+                    timer.classList.remove('badge-danger', 'badge-secondary');
+                    timer.style.background = 'var(--success-glow)';
+                    timer.style.color = 'var(--success)';
+                    if (dot) {
+                        dot.style.display = 'inline-block';
+                        dot.style.backgroundColor = 'var(--success)';
+                    }
+                }
+                
+                const hours = Math.floor(diffSecs / 3600);
+                const minutes = Math.floor((diffSecs % 3600) / 60);
+                const seconds = diffSecs % 60;
+                
+                const formatted = 
+                    String(hours).padStart(2, '0') + ':' + 
+                    String(minutes).padStart(2, '0') + ':' + 
+                    String(seconds).padStart(2, '0');
+                
+                if (textEl) {
+                    textEl.textContent = formatted;
+                }
+            });
+        }
+        
+        updateTickingTimers();
+        setInterval(updateTickingTimers, 1000);
+    });
+
+    function toggleSidebar() {
+        const sidebar = document.getElementById('sidebar');
+        sidebar.classList.toggle('sidebar-open');
+    }
+
+    function toggleHeaderMenu() {
+        const dropdown = document.getElementById('headerActionsDropdown');
+        dropdown.classList.toggle('open');
+    }
+
+    // Close sidebar and header menu when clicking outside
+    document.addEventListener('click', function(e) {
+        const sidebar = document.getElementById('sidebar');
+        const toggle = document.getElementById('sidebarToggle');
+        if (window.innerWidth <= 768 && sidebar.classList.contains('sidebar-open')
+            && !sidebar.contains(e.target) && !toggle.contains(e.target)) {
+            sidebar.classList.remove('sidebar-open');
+        }
+
+        // Close header dropdown when clicking outside
+        const menu = document.getElementById('headerActionsMenu');
+        const dropdown = document.getElementById('headerActionsDropdown');
+        if (dropdown && dropdown.classList.contains('open') && !menu.contains(e.target)) {
+            dropdown.classList.remove('open');
+        }
+    });
+</script>
+{% endblock %}

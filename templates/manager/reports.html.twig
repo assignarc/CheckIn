@@ -1,0 +1,202 @@
+{% extends 'manager/layout.html.twig' %}
+
+{% block title %}Reporting & Logs - TimeFlow{% endblock %}
+{% block header_title %}Timesheets & Reporting Logs{% endblock %}
+
+{% block manager_content %}
+<!-- Search & Filter Card -->
+<div class="glass-panel mb-8 p-6">
+    <form method="get" class="d-grid gap-4" style="grid-template-columns: repeat(4, 1fr) auto; align-items: flex-end">
+        <div class="form-group m-0">
+            <label class="form-label" for="start_date">Start Date</label>
+            <input type="date" name="start_date" id="start_date" class="form-control" value="{{ app.request.query.get('start_date') }}">
+        </div>
+
+        <div class="form-group m-0">
+            <label class="form-label" for="end_date">End Date</label>
+            <input type="date" name="end_date" id="end_date" class="form-control" value="{{ app.request.query.get('end_date') }}">
+        </div>
+
+        <div class="form-group m-0">
+            <label class="form-label" for="orgUser_filter">User</label>
+            <select name="org_user_id" id="orgUser_filter" class="form-control">
+                <option value="">All Users</option>
+                {% for emp in orgUsers %}
+                    <option value="{{ emp.id }}" {% if app.request.query.get('org_user_id') == emp.id %}selected{% endif %}>{{ emp.firstName }} {{ emp.lastName }}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="form-group m-0">
+            <label class="form-label" for="category_filter">Category</label>
+            <select name="category_id" id="category_filter" class="form-control">
+                <option value="">All Categories</option>
+                {% for cat in categories %}
+                    <option value="{{ cat.id }}" {% if app.request.query.get('category_id') == cat.id %}selected{% endif %}>{{ cat.name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="d-flex gap-2">
+            <a href="{{ path('app_manager_reports_by_user') }}" class="btn btn-secondary"  title="Calendar View by User">
+                <span class="material-icons">calendar_month</span>
+            </a>
+            <button type="submit" class="btn btn-primary" >
+                <span class="material-icons">filter_alt</span> Filter
+            </button>
+            <a href="{{ path('app_manager_reports') }}" class="btn btn-secondary"  title="Reset filters">
+                <span class="material-icons">restart_alt</span>
+            </a>
+        </div>
+    </form>
+</div>
+
+<!-- Summaries & Exports Row -->
+<div class="grid-cols-4 mb-8">
+    <div class="metric-card p-4" >
+        <div class="metric-icon indigo" style="width:36px; height:36px;"><span class="material-icons fs-xl">timer</span></div>
+        <div class="metric-info">
+            <h3 class="fs-xl">{{ totalHours }}</h3>
+            <p class="fs-xs">Total Hours Worked</p>
+        </div>
+    </div>
+    
+    <div class="metric-card p-4" >
+        <div class="metric-icon rose" style="width:36px; height:36px;"><span class="material-icons fs-xl">more_time</span></div>
+        <div class="metric-info">
+            <h3 class="fs-xl">{{ overtimeCount }}</h3>
+            <p class="fs-xs">Overtime Instances</p>
+        </div>
+    </div>
+
+    <div class="metric-card p-4" >
+        <div class="metric-icon amber" style="width:36px; height:36px;"><span class="material-icons fs-xl">warning</span></div>
+        <div class="metric-info">
+            <h3 class="fs-xl">{{ outOfWindowCount }}</h3>
+            <p class="fs-xs">Out-of-Window Logs</p>
+        </div>
+    </div>
+
+    <!-- Export Action Card (gated by subscription limits) -->
+    <div class="glass-panel d-flex align-items-center justify-content-center p-0" >
+        {% if limitsData.limits.exports %}
+            <a href="{{ path('app_manager_reports_export', app.request.query.all) }}" class="btn btn-success btn-sm fs-sm w-100" >
+                <span class="material-icons fs-lg">download</span> Export Spreadsheet (CSV)
+            </a>
+        {% else %}
+            <div class="text-center w-100">
+                <button type="button" class="btn btn-secondary btn-sm fs-sm w-100" style="padding: .6rem; opacity:0.5; cursor:not-allowed" title="Exporting is disabled on the Basic plan. Upgrade to Silver or Gold to unlock.">
+                    <span class="material-icons fs-lg text-danger">lock</span> Export Locked
+                </button>
+                <div class="fs-xs text-muted mt-0" >Upgrade to Silver or Gold to export</div>
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Logs Table -->
+<div class="glass-panel p-6">
+    <h3 class="fs-lg mb-5">Shift Logs</h3>
+
+    <div class="table-responsive">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>User</th>
+                    <th>Category</th>
+                    <th>Started At</th>
+                    <th>Ended At</th>
+                    <th>Total Worked</th>
+                    <th>Verif. Mode</th>
+                    <th>Violations / Alerts</th>
+                    <th>Details</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for session in sessions %}
+                    <tr>
+                        <td class="fw-600">{{ session.orgUser.firstName }} {{ session.orgUser.lastName }}</td>
+                        <td>
+                            <span class="d-inline-flex align-items-center gap-1">
+                                <span class="material-icons fs-md text-secondary">
+                                    {{ session.category.icon|default('work') }}
+                                </span>
+                                {{ session.category.name|default('General') }}
+                            </span>
+                        </td>
+                        <td>{{ session.startedAt|date('Y-m-d h:i A') }}</td>
+                        <td>
+                            {% if session.endedAt %}
+                                {% if session.endMethod == 'Auto End' %}
+                                    <span class="badge fs-xs bg-muted-soft" style="; color: #6B7280">Auto End</span>
+                                {% else %}
+                                    {{ session.endedAt|date('Y-m-d h:i A') }}
+                                {% endif %}
+                            {% else %}
+                                {% if org.plan.name != 'basic' and session.category and session.category.maxSessionDurationMinutes is not null %}
+                                    {% set maxDurationSeconds = session.category.maxSessionDurationMinutes * 60 %}
+                                {% else %}
+                                    {% set maxDurationSeconds = org.sessionLimitHours * 3600 %}
+                                {% endif %}
+
+                                {% set shouldTerminate = false %}
+                                {% if org.plan.name == 'basic' %}
+                                    {% set shouldTerminate = true %}
+                                {% elseif session.category and session.category.terminateAtMaxDuration %}
+                                    {% set shouldTerminate = true %}
+                                {% endif %}
+
+                                <span class="badge badge-success ticking-timer" 
+                                      data-started="{{ session.startedAt|date('c') }}" 
+                                      data-max-duration="{{ maxDurationSeconds }}"
+                                      data-terminate="{{ shouldTerminate ? 'true' : 'false' }}" class="fs-sm d-inline-flex align-items-center gap-1 p-0 tracking-wide" style="font-family: monospace; ; .35rem 0.6rem; ; text-transform: none" 
+                                      title="Active Session">
+                                    <span class="ticking-dot"></span>
+                                    <span class="timer-text">00:00:00</span>
+                                </span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if session.durationSeconds %}
+                                {% set hours = (session.durationSeconds / 3600)|round(0, 'floor') %}
+                                {% set mins = ((session.durationSeconds % 3600) / 60)|round(0, 'floor') %}
+                                {{ hours }}h {{ mins }}m
+                            {% else %}
+                                --
+                            {% endif %}
+                        </td>
+                        <td>
+                            <span class="badge badge-info">{{ session.startMethod }}</span>
+                        </td>
+                        <td>
+                            {% if session.endMethod == 'Auto End' %}
+                                <span class="badge badge-secondary fs-xs bg-muted-soft" style="; color: #6B7280; border: 1px solid rgba(107, 114, 128, 0.3)">Auto End</span>
+                            {% else %}
+                                {% if session.isOvertime %}
+                                    <span class="badge badge-danger mr-1">Overtime</span>
+                                {% endif %}
+                                {% if session.isOutOfWindow %}
+                                    <span class="badge badge-warning">Out of Window</span>
+                                {% endif %}
+                                {% if not session.isOvertime and not session.isOutOfWindow %}
+                                    <span class="fs-sm text-muted">Normal</span>
+                                {% endif %}
+                            {% endif %}
+                        </td>
+                        <td class="fs-xs text-secondary" style="max-width:200px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap" title="{{ session.deviceInfo }}">
+                            {{ session.deviceInfo|default('N/A') }}
+                        </td>
+                    </tr>
+                {% else %}
+                    <tr>
+                        <td colspan="8" class="text-center text-muted" style="padding: 4rem 0">
+                            <span class="material-icons fs-4xl mb-2">find_in_page</span>
+                            <p class="fs-sm">No time logs match the selected filter parameters.</p>
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

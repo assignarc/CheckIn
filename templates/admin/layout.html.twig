@@ -1,0 +1,153 @@
+{% extends 'base.html.twig' %}
+
+{% block body %}
+<div class="dashboard-layout">
+    <!-- Admin Sidebar -->
+    <aside class="sidebar" style="border-right: 1px solid var(--sidebar-border);">
+        <a href="{{ path('app_home') }}" class="sidebar-logo text-decoration-none text-inherit">
+            <span class="material-icons text-purple-500">admin_panel_settings</span>
+            <span>TimeFlow</span>
+        </a>
+        
+        <nav class="sidebar-nav">
+            <a href="{{ path('app_admin_dashboard') }}" class="sidebar-link {% if app.request.attributes.get('_route') == 'app_admin_dashboard' %}active{% endif %}">
+                <span class="material-icons">analytics</span> Platform Overview
+            </a>
+            <a href="{{ path('app_admin_organizations') }}" class="sidebar-link {% if app.request.attributes.get('_route') == 'app_admin_organizations' %}active{% endif %}">
+                <span class="material-icons">business</span> Manage Tenants
+            </a>
+            <a href="{{ path('app_admin_plans') }}" class="sidebar-link {% if app.request.attributes.get('_route') == 'app_admin_plans' %}active{% endif %}">
+                <span class="material-icons">card_membership</span>
+                Subscription Plans
+            </a>
+            <a href="{{ path('app_admin_audit_logs') }}" class="sidebar-link {% if app.request.attributes.get('_route') == 'app_admin_audit_logs' %}active{% endif %}">
+                <span class="material-icons">history</span>
+                Audit Logs
+            </a>
+            
+            <a href="{{ path('app_admin_scheduled_jobs') }}" class="sidebar-link {% if app.request.attributes.get('_route') == 'app_admin_scheduled_jobs' %}active{% endif %}">
+                <span class="material-icons">schedule</span>
+                Scheduled Jobs
+            </a>
+            <a href="{{ path('app_admin_settings') }}" class="sidebar-link {% if app.request.attributes.get('_route') == 'app_admin_settings' %}active{% endif %}">
+                <span class="material-icons">settings</span>
+                Global Settings
+            </a>
+
+            <div class="sidebar-divider"></div>
+            
+            <form action="{{ path('app_admin_demo_reset') }}" method="post" style="padding: 0.75rem 1rem;" class="confirm-form" data-confirm="Are you sure you want to wipe and reset all Demo Data? This cannot be undone.">
+                <button type="submit" class="btn btn-outline-danger w-100 d-flex align-items-center justify-content-center gap-2">
+                    <span class="material-icons">restart_alt</span>
+                    Reset Demo Data
+                </button>
+            </form>
+            
+            <a href="{{ path('app_admin_demo_leads') }}" class="sidebar-link {% if app.request.attributes.get('_route') == 'app_admin_demo_leads' %}active{% endif %}">
+                <span class="material-icons">campaign</span>
+                Demo Leads
+            </a>
+            <a href="{{ path('app_admin_managers') }}" class="sidebar-link {% if app.request.attributes.get('_route') == 'app_admin_managers' %}active{% endif %}">
+                <span class="material-icons">manage_accounts</span> Manager Maintenance
+            </a>
+            <a href="{{ path('app_admin_audit_logs') }}" class="sidebar-link {% if app.request.attributes.get('_route') == 'app_admin_audit_logs' %}active{% endif %}">
+                <span class="material-icons">receipt_long</span> System Audit Logs
+            </a>
+        </nav>
+    </aside>
+
+    <!-- Admin Main Body Frame -->
+    <main class="main-content">
+        <header class="dashboard-header" style="border-bottom-color: var(--sidebar-border);">
+            <div>
+                <h2 class="fs-lg fw-600 text-purple-300 m-0">Platform Administrator Panel</h2>
+            </div>
+            
+            <div class="header-actions-menu" id="headerActionsMenu">
+                <button type="button" class="header-actions-toggle" id="headerActionsToggle" onclick="toggleHeaderMenu()" aria-label="User menu">
+                    <div class="user-avatar fs-xs icon-28 bg-purple-500">SA</div>
+                    <span class="material-icons fs-md">expand_more</span>
+                </button>
+
+                <div class="header-actions-dropdown" id="headerActionsDropdown">
+                    <!-- User Info -->
+                    <div class="header-dropdown-section">
+                        <div class="d-flex align-items-center gap-3 p-4">
+                            <div class="user-avatar fs-xs icon-36 bg-purple-500">SA</div>
+                            <div class="lh-sm">
+                                <div class="fw-600 fs-sm">{{ app.user.email ?? 'admin@platform.com' }}</div>
+                                <div class="fs-xs text-muted">Platform Administrator</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Status Badges -->
+                    <div class="header-dropdown-section d-flex align-items-center gap-2 p-3">
+                        <span class="badge" style="background: var(--sidebar-active-bg); color: var(--text-accent); border: 1px solid var(--sidebar-border);">
+                            Superuser Access
+                        </span>
+                    </div>
+
+                    <!-- Theme Selector -->
+                    <div class="header-dropdown-section p-3 d-flex align-items-center justify-content-between gap-3">
+                        <span class="fs-xs text-muted">Theme</span>
+                        <div class="theme-selector">
+                            <button type="button" class="theme-option" data-value="light" onclick="setTheme('light')" title="Light Mode">
+                                <span class="material-icons">light_mode</span>
+                            </button>
+                            <button type="button" class="theme-option" data-value="dark" onclick="setTheme('dark')" title="Dark Mode">
+                                <span class="material-icons">dark_mode</span>
+                            </button>
+                            <button type="button" class="theme-option" data-value="system" onclick="setTheme('system')" title="System Theme">
+                                <span class="material-icons">settings_brightness</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Action Links -->
+                    <div class="header-dropdown-section">
+                        <a href="{{ path('app_admin_profile') }}" class="header-dropdown-item">
+                            <span class="material-icons fs-lg text-muted">account_circle</span>
+                            <span>Profile</span>
+                        </a>
+                        <a href="{{ path('app_logout') }}" class="header-dropdown-item text-danger">
+                            <span class="material-icons fs-lg">logout</span>
+                            <span>Sign Out</span>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <section class="dashboard-body">
+            {% for type, messages in app.flashes %}
+                {% for message in messages %}
+                    <div class="alert alert-{{ type }}">
+                        <span class="material-icons">
+                            {% if type == 'danger' %}error{% elseif type == 'warning' %}warning{% else %}check_circle{% endif %}
+                        </span>
+                        <span>{{ message }}</span>
+                    </div>
+                {% endfor %}
+            {% endfor %}
+
+            {% block admin_content %}{% endblock %}
+        </section>
+    </main>
+</div>
+
+<script>
+    function toggleHeaderMenu() {
+        const dropdown = document.getElementById('headerActionsDropdown');
+        dropdown.classList.toggle('open');
+    }
+
+    document.addEventListener('click', function(e) {
+        const menu = document.getElementById('headerActionsMenu');
+        const dropdown = document.getElementById('headerActionsDropdown');
+        if (dropdown && dropdown.classList.contains('open') && !menu.contains(e.target)) {
+            dropdown.classList.remove('open');
+        }
+    });
+</script>
+{% endblock %}

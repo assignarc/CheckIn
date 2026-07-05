@@ -1,0 +1,103 @@
+{% extends 'admin/layout.html.twig' %}
+
+{% block title %}Global Settings - TimeFlow Admin{% endblock %}
+
+{% block admin_content %}
+<div class="glass-panel m-0 max-w-800" >
+    <h3 class="fs-xl d-flex align-items-center gap-2 mb-6">
+        <span class="material-icons text-primary">settings</span> Global Application Settings
+    </h3>
+
+    <form action="{{ path('app_admin_settings') }}" method="post">
+        
+        <div class="mb-6 p-6 rounded-md border" style="background: rgba(255,255,255,0.03)">
+            <h4 class="fs-md mt-0 mb-4">Phone Number Formatting</h4>
+            <p class="fs-sm text-secondary mb-4">
+                Select which countries are allowed for phone number inputs across the platform (Sign Up, Organization Settings, User Management). 
+                We use the standard 2-letter ISO country codes.
+            </p>
+
+            <div class="form-group">
+                <label class="form-label">Allowed Countries</label>
+                <div class="d-flex flex-column gap-2">
+                    {# Simple checkbox list for top countries, could be expanded to a select2 in the future #}
+                    {% set popular_countries = {
+                        'us': 'United States',
+                        'ca': 'Canada',
+                        'gb': 'United Kingdom',
+                        'au': 'Australia',
+                        'in': 'India',
+                        'de': 'Germany',
+                        'fr': 'France',
+                        'za': 'South Africa',
+                        'mx': 'Mexico',
+                        'br': 'Brazil'
+                    } %}
+
+                    <div class="d-grid gap-3" style="grid-template-columns: repeat(auto-fill, minmax(200px, 1fr))">
+                        {% for code, name in popular_countries %}
+                            <label class="fs-md d-flex align-items-center gap-2 cursor-pointer">
+                                <input type="checkbox" name="allowed_phone_countries[]" value="{{ code }}" 
+                                       {% if code in allowedPhoneCountries %}checked{% endif %}>
+                                {{ name }} ({{ code|upper }})
+                            </label>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+            
+            <div class="alert alert-info fs-sm mt-4 mb-3 p-0">
+                <span class="material-icons fs-md">info</span>
+                <span>If no country is selected, it will automatically fall back to just the United States (US).</span>
+            </div>
+        </div>
+
+        <div class="mb-6 p-6 rounded-md border" style="background: rgba(255,255,255,0.03)">
+            <h4 class="fs-md mt-0 mb-4">Data Limits</h4>
+            
+            <div class="form-group mb-4">
+                <label class="form-label" for="max_import_records">Maximum CSV Import Records</label>
+                <input type="number" class="form-control" name="max_import_records" id="max_import_records" value="{{ maxImportRecords|default(100) }}" min="1">
+                <span class="form-text d-block" style="margin-top:-0.3rem">
+                    The maximum number of rows allowed in a single CSV import. If a file exceeds this limit, the manager will be prompted to split the file into smaller batches. Default is 100.
+                </span>
+            </div>
+
+            <div class="form-group mb-0">
+                <label class="form-label" for="demo_rotation_hours">Demo Credentials Rotation (Hours)</label>
+                <input type="number" class="form-control" name="demo_rotation_hours" id="demo_rotation_hours" value="{{ demoRotationHours|default(12) }}" min="1">
+                <span class="form-text d-block" style="margin-top:-0.3rem">
+                    The number of hours before passwords and kiosk tokens are automatically rotated for all demo organizations. Default is 12 hours.
+                </span>
+            </div>
+        <div class="mb-6 p-6 rounded-md border" style="background: rgba(255,255,255,0.03)">
+            <h4 class="fs-md mt-0 mb-4">Security & Verification</h4>
+            <p class="fs-sm text-secondary mb-4">
+                Configure when mathematical captchas are required to protect console operations and prevent automated abuse.
+            </p>
+
+            <div class="form-group mb-4">
+                <label class="fs-md d-flex align-items-center gap-2 cursor-pointer">
+                    <input type="hidden" name="captcha_login_enabled" value="0">
+                    <input type="checkbox" name="captcha_login_enabled" value="1" {% if captchaLoginEnabled %}checked{% endif %}>
+                    Enable Captcha for Console Login (Manager & Admin login)
+                </label>
+            </div>
+
+            <div class="form-group mb-0">
+                <label class="fs-md d-flex align-items-center gap-2 cursor-pointer">
+                    <input type="hidden" name="captcha_demo_enabled" value="0">
+                    <input type="checkbox" name="captcha_demo_enabled" value="1" {% if captchaDemoEnabled %}checked{% endif %}>
+                    Enable Captcha for Requesting Demo Access
+                </label>
+            </div>
+        </div>
+
+        <div class="d-flex justify-content-end">
+            <button type="submit" class="btn btn-primary">
+                <span class="material-icons">save</span> Save Global Settings
+            </button>
+        </div>
+    </form>
+</div>
+{% endblock %}

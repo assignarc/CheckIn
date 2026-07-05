@@ -1,0 +1,408 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Sign Up - Create Organization{% endblock %}
+
+{% block stylesheets %}
+
+    
+{% endblock %}
+
+{% block body %}
+<div class="position-absolute" style="top: 1.5rem; right: 1.5rem; z-index: 1000;">
+    <div class="theme-selector">
+        <button type="button" class="theme-option" data-value="light" onclick="setTheme('light')" title="Light Mode">
+            <span class="material-icons">light_mode</span>
+        </button>
+        <button type="button" class="theme-option" data-value="dark" onclick="setTheme('dark')" title="Dark Mode">
+            <span class="material-icons">dark_mode</span>
+        </button>
+        <button type="button" class="theme-option" data-value="system" onclick="setTheme('system')" title="System Theme">
+            <span class="material-icons">settings_brightness</span>
+        </button>
+    </div>
+</div>
+
+<div class="p-0 w-100 max-w-800" style="margin: 3rem auto;  1.5rem">
+    <div class="text-center mb-8">
+        <h2 class="fs-3xl fw-800">Set Up Your <span class="text-gradient">Organization</span></h2>
+        <p class="text-secondary mt-1">Onboard in minutes with our quick-start wizard</p>
+    </div>
+
+    <!-- Wizard Steps Indicator (4 Steps) -->
+    <div class="wizard-steps mb-10">
+        <div class="wizard-step active" id="indicator-1">1</div>
+        <div class="wizard-step" id="indicator-2">2</div>
+        <div class="wizard-step" id="indicator-3">3</div>
+        <div class="wizard-step" id="indicator-4">4</div>
+    </div>
+
+    {% for type, messages in app.flashes %}
+        {% for message in messages %}
+            <div class="alert alert-{{ type }}">
+                <span class="material-icons">
+                    {% if type == 'danger' %}error{% else %}check_circle{% endif %}
+                </span>
+                <span>{{ message }}</span>
+            </div>
+        {% endfor %}
+    {% endfor %}
+
+    <form id="signup-form" method="post" class="glass-panel" style="padding: 2.5rem;">
+        <!-- STEP 1: Organization Details Only -->
+        <div class="step-content" id="step-1">
+            <h3 class="fs-xl d-flex align-items-center gap-2 mb-6">
+                <span class="material-icons text-primary">business</span> Organization Information
+            </h3>
+            
+            <div class="grid-cols-2">
+                <div class="form-group">
+                    <label class="form-label" for="org_name">Organization Name</label>
+                    <input type="text" name="org_name" id="org_name" class="form-control" placeholder="Acme Corp" required value="{{ org_name|default('') }}">
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="org_slug">Kiosk URL Slug</label>
+                    <input type="text" name="org_slug" id="org_slug" class="form-control" placeholder="acme-corp" required value="{{ org_slug|default('') }}">
+                    <span class="form-text">Your login link: <code>/org/<span id="slug-preview">acme-corp</span>/kiosk/...</code></span>
+                </div>
+            </div>
+
+            <div class="grid-cols-2">
+                <div class="form-group">
+                    <label class="form-label" for="org_street">Street Address</label>
+                    <input type="text" name="org_street" id="org_street" class="form-control" placeholder="123 Main St" required value="{{ org_street|default('') }}">
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="org_suite">Suite / Unit</label>
+                    <input type="text" name="org_suite" id="org_suite" class="form-control" placeholder="Suite 400 (Optional)" value="{{ org_suite|default('') }}">
+                </div>
+            </div>
+
+            <div class="grid-cols-3">
+                <div class="form-group">
+                    <label class="form-label" for="org_city">City</label>
+                    <input type="text" name="org_city" id="org_city" class="form-control" placeholder="New York" required value="{{ org_city|default('') }}">
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="org_state">State</label>
+                    <input type="text" name="org_state" id="org_state" class="form-control" placeholder="NY" required value="{{ org_state|default('') }}">
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="org_zip">ZIP Code</label>
+                    <input type="text" name="org_zip" id="org_zip" class="form-control" placeholder="10001" required value="{{ org_zip|default('') }}">
+                </div>
+            </div>
+
+            <div class="form-group" style="max-width: 400px;">
+                <label class="form-label" for="org_phone">Organization Phone</label>
+                <input type="tel" class="form-control" id="org_phone" name="org_phone" data-controller="intl-tel-input" data-intl-tel-input-allowed-countries-value="{{ app_config('allowed_phone_countries', ['us'])|json_encode|e('html_attr') }}" placeholder="(555) 123-4567" required value="{{ org_phone|default('') }}">
+            </div>
+
+            <div class="d-flex justify-content-end mt-8">
+                <button type="button" class="btn btn-primary" onclick="goToStep(2)">
+                    Next: Manager Details <span class="material-icons">arrow_forward</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- STEP 2: First Manager Details Only -->
+        <div class="step-content" id="step-2" style="display: none;">
+            <h3 class="fs-xl d-flex align-items-center gap-2 mb-6">
+                <span class="material-icons text-primary">person</span> Primary Manager Account
+            </h3>
+
+            <div class="grid-cols-2">
+                <div class="form-group">
+                    <label class="form-label" for="first_name">Manager First Name</label>
+                    <input type="text" name="first_name" id="first_name" class="form-control" placeholder="Jane" required value="{{ first_name|default('') }}">
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="last_name">Manager Last Name</label>
+                    <input type="text" name="last_name" id="last_name" class="form-control" placeholder="Doe" required value="{{ last_name|default('') }}">
+                </div>
+            </div>
+
+            <div class="grid-cols-2">
+                <div class="form-group">
+                    <label class="form-label" for="email">Manager Email Address</label>
+                    <input type="email" name="email" id="email" class="form-control" placeholder="manager@company.com" required value="{{ email|default('') }}">
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="manager_phone">Manager Phone Number</label>
+                    <input type="tel" class="form-control" id="manager_phone" name="manager_phone" data-controller="intl-tel-input" data-intl-tel-input-allowed-countries-value="{{ app_config('allowed_phone_countries', ['us'])|json_encode|e('html_attr') }}" placeholder="(555) 987-6543" required value="{{ manager_phone|default('') }}">
+                </div>
+            </div>
+
+            <div class="form-group" style="max-width: 400px;">
+                <label class="form-label" for="password">Create Password</label>
+                <input type="password" name="password" id="password" class="form-control" placeholder="Min. 8 characters" required>
+            </div>
+
+            <div class="d-flex justify-content-between mt-8">
+                <button type="button" class="btn btn-secondary" onclick="goToStep(1)">
+                    <span class="material-icons">arrow_back</span> Back
+                </button>
+                <button type="button" class="btn btn-primary" onclick="goToStep(3)">
+                    Next: Choose Plan <span class="material-icons">arrow_forward</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- STEP 3: Plan Selection -->
+        <div class="step-content" id="step-3" style="display: none;">
+            <h3 class="fs-xl d-flex align-items-center gap-2 mb-6">
+                <span class="material-icons text-primary">card_membership</span> Select a Subscription Plan
+            </h3>
+
+            <input type="hidden" name="plan" id="selected-plan" value="{{ plan|default('basic') }}">
+
+            <div class="grid-cols-3 gap-4 mb-8">
+                {% for p in plans %}
+                    <div class="category-option-card plan-card {% if plan|default('basic') == p.name %}selected{% endif %}" onclick="selectPlan('{{ p.name }}')" id="plan-{{ p.name }}-card">
+                        <span class="material-icons fs-3xl" style="{% if p.name == 'gold' %}color: #f59e0b;{% elseif p.name == 'silver' %}color: #cbd5e1;{% endif %}">
+                            {% if p.name == 'basic' %}stars{% elseif p.name == 'silver' %}workspace_premium{% else %}military_tech{% endif %}
+                        </span>
+                        <span class="fs-lg fw-700 mt-0" style="padding: .5rem; text-transform: capitalize">{{ p.name }}</span>
+                        <span class="fs-2xl fw-800 text-white m-0" >
+                            {% if p.priceMonthly == 0 %}Free{% else %}${{ p.priceMonthly|round }}<span class="fs-sm fw-400">/mo</span>{% endif %}
+                        </span>
+                        <ul class="fs-sm text-center text-secondary d-flex flex-column gap-1 w-100" >
+                            <li>Up to {{ p.maxOrgUsers|number_format }} users</li>
+                            <li>{% if p.maxManagers >= 9999 %}Unlimited{% else %}{{ p.maxManagers }}{% endif %} Manager limit</li>
+                            <li>{{ p.sessionLimitHours }}-hour max sessions</li>
+                            <li>{{ p.retentionDays }} days retention</li>
+                            <li>{% if p.name == 'basic' %}Open kiosk mode{% else %}Secure PIN kiosk{% endif %}</li>
+                            <li class="text-muted" >
+                                {% if p.exportsEnabled %}Excel/CSV exports{% else %}No data exports{% endif %}
+                            </li>
+                        </ul>
+                    </div>
+                {% endfor %}
+            </div>
+
+            <div class="d-flex justify-content-between mt-8">
+                <button type="button" class="btn btn-secondary" onclick="goToStep(2)">
+                    <span class="material-icons">arrow_back</span> Back
+                </button>
+                <button type="button" class="btn btn-primary" onclick="goToStep(4)">
+                    Next: Payment <span class="material-icons">arrow_forward</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- STEP 4: Payment Details -->
+        <div class="step-content" id="step-4" style="display: none;">
+            <h3 class="fs-xl d-flex align-items-center gap-2 mb-6">
+                <span class="material-icons text-primary">payment</span> Stripe Payment Details
+            </h3>
+
+            <div id="no-payment-needed" class="text-center d-none mb-8 p-6 rounded-md" style="background: rgba(16,185,129,0.05); border: 1px solid rgba(16,185,129,0.2)">
+                <span class="material-icons fs-4xl text-success mb-2">check_circle</span>
+                <h4>No payment required!</h4>
+                <p class="fs-md text-secondary mt-1">You selected the Basic Free plan. Click submit below to complete onboarding.</p>
+            </div>
+
+            <div id="stripe-form" class="d-block">
+                <div class="d-flex align-items-center gap-2 mb-6 p-0 rounded-sm" style="padding: .75rem 1rem; background: rgba(99,102,241,0.05); border: 1px solid rgba(99,102,241,0.15)">
+                    <span class="material-icons text-primary">info</span>
+                    <span class="fs-sm text-secondary">
+                        Payment processing is securely simulated via Stripe SDK wrapper. Enter any valid mock credit card info to test.
+                    </span>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="card_name">Name on Card</label>
+                    <input type="text" id="card_name" class="form-control" placeholder="Jane Doe">
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="card_number">Card Number</label>
+                    <div class="position-relative">
+                        <input type="text" id="card_number" class="form-control" placeholder="4242 4242 4242 4242" maxlength="19">
+                        <span class="material-icons text-muted position-absolute" style="right: 12px; top: 10px">credit_card</span>
+                    </div>
+                </div>
+
+                <div class="grid-cols-2">
+                    <div class="form-group">
+                        <label class="form-label" for="card_expiry">Expiry Date</label>
+                        <input type="text" id="card_expiry" class="form-control" placeholder="MM/YY" maxlength="5">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="card_cvv">CVV</label>
+                        <input type="text" id="card_cvv" class="form-control" placeholder="123" maxlength="4">
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-group mt-6 p-4 rounded-md border" style="background: var(--bg-body)">
+                <label class="form-label" for="captcha_answer" class="d-flex align-items-center gap-2 mb-2">
+                    <span class="material-icons text-primary">security</span>
+                    Security Verification: What is {{ captcha_question }}?
+                </label>
+                <input type="number" name="captcha_answer" id="captcha_answer" class="form-control" required placeholder="Enter the result">
+            </div>
+
+            <div class="d-flex justify-content-between mt-8">
+                <button type="button" class="btn btn-secondary" onclick="goToStep(3)">
+                    <span class="material-icons">arrow_back</span> Back
+                </button>
+                <button type="submit" class="btn btn-success">
+                    <span class="material-icons">check_circle</span> Create Account
+                </button>
+            </div>
+        </div>
+    </form>
+</div>
+{% endblock %}
+
+{% block javascripts %}
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Realtime Slug preview
+            const orgNameInput = document.getElementById('org_name');
+            const orgSlugInput = document.getElementById('org_slug');
+            const slugPreview = document.getElementById('slug-preview');
+
+            orgNameInput.addEventListener('input', function() {
+                if (!orgSlugInput.dataset.edited) {
+                    const slug = slugify(orgNameInput.value);
+                    orgSlugInput.value = slug;
+                    slugPreview.textContent = slug;
+                }
+            });
+
+            orgSlugInput.addEventListener('input', function() {
+                orgSlugInput.dataset.edited ="true";
+                orgSlugInput.value = slugify(orgSlugInput.value);
+                slugPreview.textContent = orgSlugInput.value;
+            });
+
+            function slugify(text) {
+                return text.toString().toLowerCase()
+                    .replace(/\s+/g, '-')           // Replace spaces with -
+                    .replace(/[^\w\-]+/g, '')       // Remove all non-word chars
+                    .replace(/\-\-+/g, '-')         // Replace multiple - with single -
+                    .replace(/^-+/, '')             // Trim - from start
+                    .replace(/-+$/, '');            // Trim - from end
+            }
+        });
+
+        // Step Transitions
+        let currentStep = 1;
+
+        function goToStep(step) {
+            // Form validation when advancing forward
+            if (step > currentStep) {
+                for (let s = currentStep; s < step; s++) {
+                    const requiredFields = document.querySelectorAll(`#step-${s} [required]`);
+                    let valid = true;
+                    requiredFields.forEach(field => {
+                        if (!field.value.trim()) {
+                            field.classList.add('error');
+                            valid = false;
+                        } else {
+                            field.classList.remove('error');
+                        }
+                    });
+                    if (!valid) {
+                        $.alert({
+                            title: 'Validation Error',
+                            content: 'Please fill in all required fields before proceeding.',
+                            theme: 'modern',
+                            type: 'red',
+                            buttons: {
+                                ok: {
+                                    text: 'OK',
+                                    btnClass: 'btn-red'
+                                }
+                            }
+                        });
+                        return;
+                    }
+                }
+            }
+
+            // Hide all steps
+            document.querySelectorAll('.step-content').forEach(el => el.style.display = 'none');
+            // Show current step
+            document.getElementById(`step-${step}`).style.display = 'block';
+
+            // Update indicators
+            document.querySelectorAll('.wizard-step').forEach((el, index) => {
+                if (index + 1 < step) {
+                    el.className = 'wizard-step completed';
+                    el.innerHTML = '<span class="material-icons fs-lg" style="vertical-align: middle">check</span>';
+                } else if (index + 1 === step) {
+                    el.className = 'wizard-step active';
+                    el.textContent = step;
+                } else {
+                    el.className = 'wizard-step';
+                    el.textContent = index + 1;
+                }
+            });
+
+            // Toggle payment elements depending on plan in Step 4
+            if (step === 4) {
+                const selectedPlan = document.getElementById('selected-plan').value;
+                const stripeForm = document.getElementById('stripe-form');
+                const noPaymentDiv = document.getElementById('no-payment-needed');
+                
+                const cardName = document.getElementById('card_name');
+                const cardNum = document.getElementById('card_number');
+                const cardExp = document.getElementById('card_expiry');
+                const cardCvv = document.getElementById('card_cvv');
+
+                if (selectedPlan === 'basic') {
+                    stripeForm.style.display = 'none';
+                    noPaymentDiv.style.display = 'block';
+                    cardName.required = false;
+                    cardNum.required = false;
+                    cardExp.required = false;
+                    cardCvv.required = false;
+                } else {
+                    stripeForm.style.display = 'block';
+                    noPaymentDiv.style.display = 'none';
+                    cardName.required = true;
+                    cardNum.required = true;
+                    cardExp.required = true;
+                    cardCvv.required = true;
+                }
+            }
+
+            currentStep = step;
+        }
+
+        function selectPlan(plan) {
+            document.getElementById('selected-plan').value = plan;
+            document.querySelectorAll('.plan-card').forEach(el => el.classList.remove('selected'));
+            document.getElementById(`plan-${plan}-card`).classList.add('selected');
+        }
+
+        // CC Input Mask helpers
+        document.getElementById('card_number')?.addEventListener('input', function (e) {
+            let val = e.target.value.replace(/\s+/g, '').replace(/[^0-9]/gi, '');
+            let matches = val.match(/\d{4,16}/g);
+            let match = matches && matches[0] || '';
+            let parts = [];
+
+            for (let i=0, len=match.length; i<len; i+=4) {
+                parts.push(match.substring(i, i+4));
+            }
+
+            if (parts.length > 0) {
+                e.target.value = parts.join(' ');
+            } else {
+                e.target.value = val;
+            }
+        });
+
+        document.getElementById('card_expiry')?.addEventListener('input', function (e) {
+            let val = e.target.value.replace(/\s+/g, '').replace(/[^0-9]/gi, '');
+            if (val.length >= 2) {
+                e.target.value = val.substring(0, 2) + '/' + val.substring(2, 4);
+            } else {
+                e.target.value = val;
+            }
+        });
+    </script>
+{% endblock %}

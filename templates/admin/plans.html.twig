@@ -1,0 +1,125 @@
+{% extends 'admin/layout.html.twig' %}
+
+{% block title %}Manage Plans - TimeFlow{% endblock %}
+
+{% block admin_content %}
+<div class="glass-panel mb-8 p-6">
+    <h3 class="fs-lg text-purple-300 mb-5">Global Plan Tier Settings</h3>
+
+    <div class="table-responsive">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Plan Name</th>
+                    <th>Price</th>
+                    <th>Users</th>
+                    <th>Managers</th>
+                    <th>Custom Fields</th>
+                    <th>Categories</th>
+                    <th>Max Shift</th>
+                    <th>Retention</th>
+                    <th>Exports</th>
+                    <th class="text-right">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for plan in plans %}
+                    <tr>
+                        <td class="fs-lg fw-700 text-white" style="text-transform:capitalize">{{ plan.name }}</td>
+                        <td class="fw-600 text-primary">${{ plan.priceMonthly }}/mo</td>
+                        <td>{{ plan.maxOrgUsers }}</td>
+                        <td>{% if plan.maxManagers >= 9999 %}Unlimited{% else %}{{ plan.maxManagers }}{% endif %}</td>
+                        <td>{{ plan.maxFields }}</td>
+                        <td>{{ plan.maxCategories }}</td>
+                        <td>{{ plan.sessionLimitHours }} hrs</td>
+                        <td>{{ plan.retentionDays }} days</td>
+                        <td>
+                            {% if plan.exportsEnabled %}
+                                <span class="badge badge-success">Yes</span>
+                            {% else %}
+                                <span class="badge badge-danger">No</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-right">
+                            <button type="button" class="btn btn-secondary btn-sm" onclick="toggleDetails('plan-edit-{{ plan.id }}')">
+                                <span class="material-icons fs-md" style="vertical-align:middle">edit</span> Edit Base
+                            </button>
+                        </td>
+                    </tr>
+                    
+                    <!-- Action drawer (Plan settings editor form) -->
+                    <tr id="plan-edit-{{ plan.id }}" class="d-none" style="background:rgba(20,27,45,0.35)">
+                        <td colspan="10" class="p-6" style="2rem; border-left: 3px solid #8b5cf6">
+                            <h4 class="fs-md text-purple-300 d-flex align-items-center gap-1 mb-5">
+                                <span class="material-icons fs-lg">settings</span> Configure {{ plan.name|capitalize }} Default Limits
+                            </h4>
+                            <form method="post" class="d-flex flex-column gap-5">
+                                <input type="hidden" name="plan_id" value="{{ plan.id }}">
+                                
+                                <div class="grid-cols-4 gap-4">
+                                    <div class="form-group m-0">
+                                        <label class="form-label fs-sm">Monthly Price ($)</label>
+                                        <input type="number" name="price_monthly" class="form-control" value="{{ plan.priceMonthly }}" step="0.01" required>
+                                    </div>
+                                    <div class="form-group m-0">
+                                        <label class="form-label fs-sm">Max Users</label>
+                                        <input type="number" name="max_orgUsers" class="form-control" value="{{ plan.maxOrgUsers }}" required>
+                                    </div>
+                                    <div class="form-group m-0">
+                                        <label class="form-label fs-sm">Max Managers</label>
+                                        <input type="number" name="max_managers" class="form-control" value="{{ plan.maxManagers }}" required>
+                                    </div>
+                                    <div class="form-group m-0">
+                                        <label class="form-label fs-sm">Custom Fields</label>
+                                        <input type="number" name="max_fields" class="form-control" value="{{ plan.maxFields }}" required>
+                                    </div>
+                                </div>
+
+                                <div class="grid-cols-4 gap-4">
+                                    <div class="form-group m-0">
+                                        <label class="form-label fs-sm">Max Categories</label>
+                                        <input type="number" name="max_categories" class="form-control" value="{{ plan.maxCategories }}" required>
+                                    </div>
+                                    <div class="form-group m-0">
+                                        <label class="form-label fs-sm">Max Session (Hours)</label>
+                                        <input type="number" name="session_limit_hours" class="form-control" value="{{ plan.sessionLimitHours }}" min="1" max="24" required>
+                                    </div>
+                                    <div class="form-group m-0">
+                                        <label class="form-label fs-sm">Retention Days</label>
+                                        <input type="number" name="retention_days" class="form-control" value="{{ plan.retentionDays }}" required>
+                                    </div>
+                                    <div class="form-group m-0">
+                                        <label class="form-label fs-sm">Exports Enabled</label>
+                                        <select name="exports_enabled" class="form-control" required>
+                                            <option value="yes" {% if plan.exportsEnabled %}selected{% endif %}>Yes</option>
+                                            <option value="no" {% if not plan.exportsEnabled %}selected{% endif %}>No</option>
+                                        </select>
+                                    </div>
+                                </div>
+
+                                <div class="d-flex justify-content-end gap-2">
+                                    <button type="button" class="btn btn-secondary btn-sm" onclick="toggleDetails('plan-edit-{{ plan.id }}')">Cancel</button>
+                                    <button type="submit" class="btn btn-primary btn-sm text-purple-500 bg-purple-500" >
+                                        <span class="material-icons fs-md" style="vertical-align:middle">save</span> Save Base Settings
+                                    </button>
+                                </div>
+                            </form>
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+    function toggleDetails(id) {
+        const row = document.getElementById(id);
+        if (row.style.display === 'none') {
+            row.style.display = 'table-row';
+        } else {
+            row.style.display = 'none';
+        }
+    }
+</script>
+{% endblock %}

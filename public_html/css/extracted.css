@@ -1,0 +1,249 @@
+/* Extracted from templates/home/signup.html.twig */
+/* Restyle the intl-tel-input container to be full width */
+        .iti {
+            width: 100%;
+            display: block;
+        }
+        /* Ensure input focus ring styles fit inside dark mode dropdown */
+        .iti__country-list {
+            background-color: #111827 !important;
+            border: 1px solid var(--border-color) !important;
+            color: var(--text-primary) !important;
+        }
+        .iti__country:hover, .iti__country.iti__highlight {
+            background-color: rgba(255,255,255,0.08) !important;
+        }
+
+/* Extracted from templates/home/index.html.twig */
+.iti { width: 100%; display: block; }
+        .iti__country-list {
+            background-color: #111827 !important;
+            border: 1px solid var(--border-color) !important;
+            color: var(--text-primary) !important;
+        }
+        .iti__country:hover, .iti__country.iti__highlight {
+            background-color: rgba(255,255,255,0.08) !important;
+        }
+
+/* Extracted from templates/admin/managers.html.twig */
+dialog::backdrop {
+    background: rgba(0,0,0,0.6);
+    backdrop-filter: blur(4px);
+}
+dialog[open] {
+    animation: slideInModal 0.2s ease;
+}
+@keyframes slideInModal {
+    from { opacity: 0; transform: translateY(-12px) scale(0.97); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+/* Extracted from templates/manager/reports_by_user.html.twig */
+.custom-popover-trigger .custom-popover-content {
+    visibility: hidden;
+    opacity: 0;
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%) translateY(10px);
+    background: var(--bg-body);
+    color: var(--text-primary);
+    min-width: 120px;
+    z-index: 1050;
+    transition: all 0.2s ease;
+    pointer-events: none;
+    text-align: center;
+    border: 1px solid var(--border-color);
+}
+.custom-popover-trigger:hover .custom-popover-content {
+    visibility: visible;
+    opacity: 1;
+    transform: translateX(-50%) translateY(-5px);
+}
+
+/* Extracted from templates/manager/categories.html.twig */
+dialog::backdrop {
+        background: rgba(15, 23, 42, 0.45);
+        backdrop-filter: blur(8px);
+    }
+    .icon-palette-btn {
+        border: 1px solid var(--border-color);
+        border-radius: var(--radius-sm);
+        background: var(--bg-input);
+        color: var(--text-secondary);
+        width: 44px;
+        height: 44px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: all 0.2s;
+        padding: 0;
+    }
+    .icon-palette-btn:hover {
+        background: var(--primary-glow) !important;
+        color: var(--primary) !important;
+        border-color: var(--primary) !important;
+    }
+    .icon-palette-btn.active {
+        background: var(--primary-glow) !important;
+        color: var(--primary) !important;
+        border-color: var(--primary) !important;
+        box-shadow: 0 0 0 2px var(--primary) !important;
+    }
+
+/* Extracted from templates/manager/users.html.twig */
+.iti { width: 100%; display: block; }
+        .iti__country-list {
+            background-color: #111827 !important;
+            border: 1px solid var(--border-color) !important;
+            color: var(--text-primary) !important;
+        }
+        .iti__country:hover, .iti__country.iti__highlight {
+            background-color: rgba(255,255,255,0.08) !important;
+        }
+
+/* Extracted from templates/manager/users.html.twig */
+dialog::backdrop {
+    background: rgba(0,0,0,0.6);
+    backdrop-filter: blur(4px);
+}
+dialog[open] {
+    animation: slideInModal 0.2s ease;
+}
+@keyframes slideInModal {
+    from { opacity: 0; transform: translateY(-12px) scale(0.97); }
+    to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+.tab-hidden {
+    position: absolute !important;
+    visibility: hidden !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+    z-index: -1 !important;
+    height: 0 !important;
+    overflow: hidden !important;
+}
+
+/* Extracted from templates/manager/settings.html.twig */
+.iti { width: 100%; display: block; }
+        .iti__country-list {
+            background-color: #111827 !important;
+            border: 1px solid var(--border-color) !important;
+            color: var(--text-primary) !important;
+        }
+        .iti__country:hover, .iti__country.iti__highlight {
+            background-color: rgba(255,255,255,0.08) !important;
+        }
+
+/* Extracted from templates/manager/settings.html.twig */
+/* ── Settings Tab Bar ─────────────────────────────────────────────────── */
+.settings-tab-bar {
+    display: flex;
+    border-bottom: 1px solid var(--border-color);
+    background: rgba(0,0,0,0.15);
+}
+.settings-tab {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.75rem 1.1rem;
+    background: none;
+    border: none;
+    border-bottom: 2px solid transparent;
+    color: var(--text-secondary);
+    font-family: var(--font-sans);
+    font-size: 0.8rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: color 0.15s ease, border-color 0.15s ease;
+    white-space: nowrap;
+}
+.settings-tab .material-icons { font-size: 1rem; }
+.settings-tab:hover { color: var(--text-primary); }
+.settings-tab.active {
+    color: var(--primary);
+    border-bottom-color: var(--primary);
+}
+
+/* ── Tab Pane ─────────────────────────────────────────────────────────── */
+.settings-tab-pane {
+    display: none;
+    padding: 1.25rem;
+}
+.settings-tab-pane.active { display: block; }
+
+/* ── Footer row inside tab ────────────────────────────────────────────── */
+.settings-tab-footer {
+    display: flex;
+    justify-content: flex-end;
+    padding-top: 0.9rem;
+    margin-top: 0.5rem;
+    border-top: 1px solid var(--border-color);
+}
+
+/* ── Toggle switch ────────────────────────────────────────────────────── */
+.toggle-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 0.6rem 0.75rem;
+    background: var(--bg-input);
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border-color);
+}
+.toggle-switch {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    cursor: pointer;
+    flex-shrink: 0;
+}
+.toggle-switch input { opacity: 0; width: 0; height: 0; position: absolute; }
+.toggle-track {
+    display: block;
+    width: 40px;
+    height: 22px;
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: 999px;
+    transition: background 0.2s ease, border-color 0.2s ease;
+    position: relative;
+}
+.toggle-track::after {
+    content: '';
+    position: absolute;
+    top: 2px; left: 2px;
+    width: 16px; height: 16px;
+    background: var(--text-muted);
+    border-radius: 50%;
+    transition: transform 0.2s ease, background 0.2s ease;
+}
+.toggle-switch input:checked + .toggle-track {
+    background: var(--primary);
+    border-color: var(--primary);
+}
+.toggle-switch input:checked + .toggle-track::after {
+    transform: translateX(18px);
+    background: #fff;
+}
+
+/* Extracted from templates/kiosk/index.html.twig */
+@keyframes pulse {
+        0% { transform: scale(1); }
+        50% { transform: scale(1.05); }
+        100% { transform: scale(1); }
+    }
+    .pin-btn:active {
+        transform: scale(0.92);
+        background: var(--bg-hover) !important;
+    }
+    .pin-btn {
+        transition: transform 0.1s ease, background-color 0.2s ease, border-color 0.2s ease;
+    }
+    .category-option-card.selected {
+        background: rgba(139, 92, 246, 0.15) !important;
+        border-color: var(--cat-color, var(--primary)) !important;
+        box-shadow: 0 0 0 2px var(--cat-color, var(--primary));
+    }
