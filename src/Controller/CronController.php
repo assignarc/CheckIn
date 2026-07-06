@@ -6,6 +6,7 @@ use App\Entity\Organization;
 use App\Entity\Manager;
 use App\Service\SessionSweeperService;
 use App\Service\AppConfigService;
+use App\Service\AuditArchiveService;
 use App\Message\RotateKioskTokenMessage;
 use App\Message\RotatePasswordMessage;
 use Doctrine\ORM\EntityManagerInterface;
@@ -24,7 +25,8 @@ class CronController extends AbstractController
         EntityManagerInterface $em,
         SessionSweeperService $sessionSweeper,
         AppConfigService $configService,
-        MessageBusInterface $messageBus
+        MessageBusInterface $messageBus,
+        AuditArchiveService $auditArchiveService
     ): Response {
         $token = $request->query->get('token');
         $expectedToken = $this->getParameter('cron_secret_token');
@@ -73,6 +75,10 @@ class CronController extends AbstractController
         } else {
             $results['demo_rotation'] = 'skipped (not enough time passed)';
         }
+
+        // 3. Archive Old Audit Logs
+        $archiveResult = $auditArchiveService->archiveLogs();
+        $results['audit_archival'] = $archiveResult;
 
         return new JsonResponse(['status' => 'success', 'results' => $results]);
     }

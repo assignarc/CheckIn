@@ -52,7 +52,8 @@ class KioskController extends AbstractController
         // Fetch active categories
         $categories = $entityManager->getRepository(Category::class)->findBy([
             'organization' => $org,
-            'isActive' => true
+            'isActive' => true,
+            'deletedAt' => null
         ]);
 
         return $this->render('kiosk/index.html.twig', [
@@ -183,7 +184,15 @@ class KioskController extends AbstractController
 
             $category = null;
             if ($categoryId) {
-                $category = $entityManager->getRepository(Category::class)->find($categoryId);
+                $category = $entityManager->getRepository(Category::class)->findOneBy([
+                    'id' => $categoryId,
+                    'organization' => $org,
+                    'isActive' => true,
+                    'deletedAt' => null
+                ]);
+                if (!$category) {
+                    return new JsonResponse(['success' => false, 'message' => 'Invalid or inactive category selected.'], 400);
+                }
             }
 
             $session = new WorkSession();

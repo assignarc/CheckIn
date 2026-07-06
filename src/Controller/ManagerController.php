@@ -35,9 +35,9 @@ class ManagerController extends AbstractController
 
     private function getOrgLimits(Organization $org, EntityManagerInterface $em): array
     {
-        $orgUserCount = $em->getRepository(OrgUser::class)->count(['organization' => $org]);
-        $managerCount = $em->getRepository(Manager::class)->count(['organization' => $org]);
-        $categoryCount = $em->getRepository(Category::class)->count(['organization' => $org]);
+        $orgUserCount = $em->getRepository(OrgUser::class)->count(['organization' => $org, 'isActive' => true]);
+        $managerCount = $em->getRepository(Manager::class)->count(['organization' => $org, 'isActive' => true]);
+        $categoryCount = $em->getRepository(Category::class)->count(['organization' => $org, 'deletedAt' => null]);
         
         return [
             'plan' => $org->getPlan()->getName(),
@@ -304,7 +304,15 @@ class ManagerController extends AbstractController
         $org = $manager->getOrganization();
 
         $limitsData = $this->getOrgLimits($org, $em);
-        $categories = $em->getRepository(Category::class)->findBy(['organization' => $org]);
+        $categories = $em->getRepository(Category::class)->findBy(['organization' => $org, 'deletedAt' => null]);
+        
+        $qb = $em->createQueryBuilder();
+        $qb->select('c')
+           ->from(Category::class, 'c')
+           ->where('c.organization = :org')
+           ->andWhere('c.deletedAt IS NOT NULL')
+           ->setParameter('org', $org);
+        $deletedCategories = $qb->getQuery()->getResult();
 
         if ($request->isMethod('POST')) {
             $name = $request->request->get('name');
@@ -362,6 +370,7 @@ class ManagerController extends AbstractController
 
         return $this->render('manager/categories.html.twig', [
             'categories' => $categories,
+            'deletedCategories' => $deletedCategories,
             'limitsData' => $limitsData,
             'org' => $org,
         ]);
@@ -441,6 +450,29 @@ class ManagerController extends AbstractController
                 $em->flush();
                 $this->logAudit($em, $org, 'CATEGORY_UPDATE', ['name' => $name], $request);
                 $this->addFlash('success', "Category '{$name}' updated successfully.");
+            }
+        }
+
+        return $this->redirectToRoute('app_manager_categories');
+    }
+
+    #[Route('/categories/{id}/delete', name: 'app_manager_category_delete', methods: ['POST'])]
+    public function deleteCategory(int $id, Request $request, EntityManagerInterface $em): Response
+    {
+        /** @var Manager $manager */
+        $manager = $this->getUser();
+        $org = $manager->getOrganization();
+
+        $category = $em->getRepository(Category::class)->find($id);
+        if ($category && $category->getOrganization()->getId() === $org->getId()) {
+            if ($category->getDeletedAt() === null) {
+                $category->setDeletedAt(new \DateTimeImmutable());
+                $category->setName($category->getName() . ' (Deleted)');
+                $category->setIsActive(false);
+
+                $em->flush();
+                $this->logAudit($em, $org, 'CATEGORY_DELETE', ['name' => $category->getName()], $request);
+                $this->addFlash('success', "Category has been deleted.");
             }
         }
 
@@ -823,6 +855,7 @@ class ManagerController extends AbstractController
                         $mappedCustomFields++;
                     }
                 }
+                $maxFields = $org->getMaxFields();
                 if (!$this->licenseService->isCustomFieldsCountAllowed($org, $mappedCustomFields)) {
                     $this->addFlash('danger', "Your plan limits custom fields to {$maxFields}. You mapped {$mappedCustomFields} custom fields. Please downgrade mapping or upgrade plan.");
                     return $this->render('manager/import_wizard.html.twig', [
@@ -1227,7 +1260,7 @@ class ManagerController extends AbstractController
         $mins = floor(($totalSeconds % 3600) / 60);
 
         // Fetch filter dropdown options
-        $orgUsers = $em->getRepository(OrgUser::class)->findBy(['organization' => $org]);
+        $orgUsers = $em->getRepository(OrgUser::class)->findBy(['organization' => $org], ['firstName' => 'ASC', 'lastName' => 'ASC']);
         $categories = $em->getRepository(Category::class)->findBy(['organization' => $org]);
 
         return $this->render('manager/reports.html.twig', [
@@ -1341,7 +1374,7 @@ class ManagerController extends AbstractController
         $orgUserId = $request->query->get('org_user_id');
         $monthStr = $request->query->get('month', date('Y-m'));
 
-        $orgUsers = $em->getRepository(OrgUser::class)->findBy(['organization' => $org]);
+        $orgUsers = $em->getRepository(OrgUser::class)->findBy(['organization' => $org], ['firstName' => 'ASC', 'lastName' => 'ASC']);
         
         $selectedUser = null;
         $calendarData = [];
@@ -1410,6 +1443,125 @@ class ManagerController extends AbstractController
             'totalMonthSeconds' => $totalMonthSeconds,
             'monthName' => $startOfMonth->format('F Y'),
         ]);
+    }
+
+    #[Route('/reports/by-user/export', name: 'app_manager_reports_by_user_export')]
+    public function exportUserReportCSV(Request $request, EntityManagerInterface $em): Response
+    {
+        /** @var Manager $manager */
+        $manager = $this->getUser();
+        $org = $manager->getOrganization();
+
+        // Enforce export policy gate (Silver/Gold only)
+        $limitsData = $this->getOrgLimits($org, $em);
+        if (!$limitsData['limits']['exports']) {
+            $this->addFlash('danger', 'Data export is not available on your plan. Upgrade to Silver or Gold to unlock.');
+            return $this->redirectToRoute('app_manager_reports_by_user');
+        }
+
+        $userId = $request->query->get('org_user_id');
+        $monthStr = $request->query->get('month'); // e.g., '2026-07'
+
+        if (!$userId || !$monthStr) {
+            $this->addFlash('danger', 'Invalid parameters for export.');
+            return $this->redirectToRoute('app_manager_reports_by_user');
+        }
+
+        $selectedUser = $em->getRepository(OrgUser::class)->findOneBy(['id' => $userId, 'organization' => $org]);
+        if (!$selectedUser) {
+            $this->addFlash('danger', 'User not found.');
+            return $this->redirectToRoute('app_manager_reports_by_user');
+        }
+
+        try {
+            $startDate = new \DateTime($monthStr . '-01 00:00:00');
+            $endDate = clone $startDate;
+            $endDate->modify('last day of this month')->setTime(23, 59, 59);
+        } catch (\Exception $e) {
+            $this->addFlash('danger', 'Invalid month format.');
+            return $this->redirectToRoute('app_manager_reports_by_user');
+        }
+
+        $qb = $em->createQueryBuilder();
+        $qb->select('s')
+           ->from(WorkSession::class, 's')
+           ->where('s.organization = :org')
+           ->andWhere('s.orgUser = :user')
+           ->andWhere('s.startedAt >= :start')
+           ->andWhere('s.startedAt <= :end')
+           ->setParameter('org', $org)
+           ->setParameter('user', $selectedUser)
+           ->setParameter('start', $startDate)
+           ->setParameter('end', $endDate)
+           ->orderBy('s.startedAt', 'ASC');
+
+        $sessions = $qb->getQuery()->getResult();
+
+        $rows = [];
+        $rows[] = [
+            'Day',
+            'Date',
+            'First Name',
+            'Last Name',
+            'Category',
+            'Start Time',
+            'End Time',
+            'Duration (HH:MM)',
+            'End Method',
+            'Overtime Flagged',
+            'Device Info'
+        ];
+
+        foreach ($sessions as $s) {
+            $durationStr = '00:00';
+            if ($s->getDurationSeconds()) {
+                $hours = floor($s->getDurationSeconds() / 3600);
+                $mins = floor(($s->getDurationSeconds() % 3600) / 60);
+                $durationStr = sprintf('%02d:%02d', $hours, $mins);
+            }
+
+            $rows[] = [
+                $s->getStartedAt()->format('l'),
+                $s->getStartedAt()->format('Y-m-d'),
+                $s->getOrgUser()->getFirstName(),
+                $s->getOrgUser()->getLastName(),
+                $s->getCategory() ? $s->getCategory()->getName() : 'General',
+                $s->getStartedAt()->format('H:i:s'),
+                $s->getEndedAt() ? $s->getEndedAt()->format('H:i:s') : 'Active',
+                $durationStr,
+                $s->getEndMethod() ?? 'Normal',
+                $s->isOvertime() ? 'Yes' : 'No',
+                $s->getDeviceInfo() ?? 'N/A'
+            ];
+        }
+
+        $tempFile = tempnam(sys_get_temp_dir(), 'export_user');
+        $fp = fopen($tempFile, 'w');
+        foreach ($rows as $row) {
+            fputcsv($fp, $row);
+        }
+        fclose($fp);
+
+        $filename = sprintf('user_report_%s_%s_%s.csv', 
+            strtolower(preg_replace('/[^a-zA-Z0-9]/', '', $selectedUser->getFirstName())),
+            strtolower(preg_replace('/[^a-zA-Z0-9]/', '', $selectedUser->getLastName())),
+            $startDate->format('Y_m')
+        );
+
+        $response = new Response(file_get_contents($tempFile));
+        unlink($tempFile);
+
+        $disposition = $response->headers->makeDisposition(
+            \Symfony\Component\HttpFoundation\HeaderUtils::DISPOSITION_ATTACHMENT,
+            $filename
+        );
+
+        $response->headers->set('Content-Type', 'text/csv');
+        $response->headers->set('Content-Disposition', $disposition);
+
+        $this->logAudit($em, $org, 'EXPORT_USER_REPORTS', ['user_id' => $selectedUser->getId(), 'month' => $monthStr], $request);
+
+        return $response;
     }
 
     #[Route('/billing', name: 'app_manager_billing', methods: ['GET', 'POST'])]

@@ -9,10 +9,10 @@
 
 {% block manager_content %}
 
-<div class="d-grid align-items-start gap-5" style="grid-template-columns: 1fr 260px">
+<div class="d-grid align-items-start gap-5 settings-grid-layout">
 
     <!-- Left: Tabbed settings panel -->
-    <div class="glass-panel p-0" style="overflow: hidden">
+    <div class="glass-panel p-0 overflow-hidden">
 
         <!-- Tab bar -->
         <div class="settings-tab-bar">
@@ -40,9 +40,11 @@
                     </div>
                     <div class="form-group">
                         <label class="form-label" for="org_phone">Phone</label>
-                        <input type="text" name="org_phone" id="org_phone" class="form-control"
+                        <input type="tel" name="org_phone" id="org_phone" class="form-control"
                                value="{{ app.user.organization.phone|default('') }}"
-                               placeholder="+1 (555) 000-0000">
+                               placeholder="+1 (555) 000-0000"
+                               data-controller="intl-tel-input" 
+                               data-intl-tel-input-allowed-countries-value="{{ app_config('allowed_phone_countries', ['us'])|json_encode|e('html_attr') }}">
                     </div>
                 </div>
                 <div class="grid-cols-2">
@@ -103,7 +105,7 @@
                 <div class="form-group">
                     <label class="form-label" for="my_pwd">
                         New Password
-                        <span class="fw-400 text-muted" style="font-size:0.68rem">(leave blank to keep current)</span>
+                        <span class="fw-400 text-muted fs-xs">(leave blank to keep current)</span>
                     </label>
                     <input type="password" name="password" id="my_pwd" class="form-control"
                            placeholder="Min. 8 characters" autocomplete="new-password">
@@ -127,7 +129,7 @@
 
                     <div class="toggle-row">
                         <div>
-                            <div class="fs-sm fw-600 text-purple-500"><span class="material-icons fs-md mr-1" style="vertical-align: middle">auto_renew</span> Auto Rotate Kiosk URL</div>
+                            <div class="fs-sm fw-600 text-purple-500"><span class="material-icons fs-md mr-1 align-middle">autorenew</span> Auto Rotate Kiosk URL</div>
                             <div class="fs-xs text-secondary mt-1">
                                 Rotates the kiosk URL automatically every <strong>{{ org.kioskTokenRotationHours }} hours</strong> to enhance security. If disabled, rely on manual rotation.
                             </div>
@@ -181,7 +183,7 @@
                 </div>
 
                 <!-- Check-in window -->
-                <div class="text-uppercase text-muted d-flex align-items-center gap-1 m-0 pt-3 border-t tracking-wide" style="padding: .75rem 0 0.5rem 0; ; font-size:0.72rem">
+                <div class="text-uppercase text-muted d-flex align-items-center gap-1 m-0 pt-3 border-t tracking-wide pb-2 fs-xs">
                     <span class="material-icons fs-sm text-primary">date_range</span> Check-In Time Window
                 </div>
                 <div class="grid-cols-2">
@@ -196,10 +198,10 @@
                                value="{% if org.checkInWindowEnd %}{{ org.checkInWindowEnd|date('H:i') }}{% endif %}">
                     </div>
                 </div>
-                <span class="form-text d-block mb-0" style="margin-top:-0.4rem; .6rem">Leave blank for 24/7 access.</span>
+                <span class="form-text d-block mb-2 mt-n1">Leave blank for 24/7 access.</span>
 
                 {% if org.plan.name != 'basic' %}
-                    <div class="text-uppercase text-muted d-flex align-items-center gap-1 m-0 pt-3 border-t tracking-wide" style="padding: .75rem 0 0.5rem 0; ; font-size:0.72rem">
+                    <div class="text-uppercase text-muted d-flex align-items-center gap-1 m-0 pt-3 pb-2 fs-xs border-t tracking-wide">
                         <span class="material-icons fs-sm text-primary">more_time</span> Overtime Rules
                     </div>
                     <div class="grid-cols-2">
@@ -231,17 +233,17 @@
         <h3 class="fs-sm d-flex align-items-center gap-1 mb-3">
             <span class="material-icons fs-md text-primary">link</span> Kiosk URL
         </h3>
-        <p class="text-secondary mb-0" style="font-size: 0.72rem; .85rem">
+        <p class="text-secondary mb-3 fs-xs">
             Display this private link on a tablet placed at your entrance.
         </p>
 
         <div class="bg-input mb-0 p-0 rounded-md border" >
-            <code class="text-primary" style="word-break: break-all; font-size: 0.68rem">
+            <code class="text-primary word-break-all fs-xs">
                 /org/{{ org.slug }}/kiosk/{{ org.checkInLinkToken }}
             </code>
         </div>
 
-        <div class="d-flex flex-column" style="gap:0.45rem">
+        <div class="d-flex flex-column gap-2">
             <a href="/org/{{ org.slug }}/kiosk/{{ org.checkInLinkToken }}" target="_blank"
                class="btn btn-secondary btn-sm justify-content-center w-100">
                 <span class="material-icons fs-md">open_in_new</span> Launch Kiosk

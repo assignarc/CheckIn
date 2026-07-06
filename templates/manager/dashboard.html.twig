@@ -40,7 +40,7 @@
     </div>
 </div>
 
-<div class="grid-cols-3 gap-8 mb-8" style="grid-template-columns: 2fr 1fr">
+<div class="grid-cols-3 gap-8 mb-8 grid-sidebar-layout">
     <!-- Plan Quota Gauges -->
     <div class="glass-panel p-6">
         <h3 class="fs-lg d-flex align-items-center gap-2 mb-6">
@@ -95,9 +95,9 @@
                             <span class="fw-500">{{ cat }}</span>
                             <span class="fw-600 text-secondary">{{ hrs }} hrs</span>
                         </div>
-                        <div class="bg-input mt-0 rounded-full" style="height: 6px; ; .25rem">
+                        <div class="bg-input mt-0 rounded-full progress-bar-thin">
                             <!-- Simulated percentage width for display -->
-                            <div class="h-100 rounded-full" style="background:var(--primary); width: {% if hrs > 100 %}100%{% else %}{{ hrs }}%{% endif %}"></div>
+                            <div class="h-100 rounded-full bg-primary" style="width: {% if hrs > 100 %}100%{% else %}{{ hrs }}%{% endif %}"></div>
                         </div>
                     </div>
                 {% endfor %}
@@ -201,7 +201,7 @@
                     </tr>
                 {% else %}
                     <tr>
-                        <td colspan="7" class="text-center text-muted" style="padding: 3rem 0">
+                        <td colspan="7" class="text-center text-muted empty-state-padding">
                             <span class="material-icons fs-4xl mb-2">history</span>
                             <p class="fs-sm">No historical sessions logged.</p>
                         </td>

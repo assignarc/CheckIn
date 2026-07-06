@@ -420,12 +420,16 @@ class AdminController extends AbstractController
             $captchaDemoEnabled = $request->request->get('captcha_demo_enabled') === '1';
             $configService->set('captcha_demo_enabled', $captchaDemoEnabled);
 
+            $auditLogArchiveDays = (int)$request->request->get('audit_log_archive_days', 180);
+            $configService->set('audit_log_archive_days', $auditLogArchiveDays);
+
             $this->logAdminAudit($em, 'SETTINGS_UPDATE', [
                 'allowed_phone_countries' => array_values($allowedCountries),
                 'max_import_records' => $maxImportRecords,
                 'demo_rotation_hours' => $demoRotationHours,
                 'captcha_login_enabled' => $captchaLoginEnabled,
                 'captcha_demo_enabled' => $captchaDemoEnabled,
+                'audit_log_archive_days' => $auditLogArchiveDays,
             ], $request);
 
             $this->addFlash('success', 'Global settings updated successfully.');
@@ -437,6 +441,7 @@ class AdminController extends AbstractController
         $demoRotationHours = $configService->get('demo_rotation_hours', 12);
         $captchaLoginEnabled = $configService->get('captcha_login_enabled', false);
         $captchaDemoEnabled = $configService->get('captcha_demo_enabled', false);
+        $auditLogArchiveDays = $configService->get('audit_log_archive_days', 180);
 
         return $this->render('admin/settings.html.twig', [
             'allowedPhoneCountries' => $allowedPhoneCountries,
@@ -444,6 +449,7 @@ class AdminController extends AbstractController
             'demoRotationHours' => $demoRotationHours,
             'captchaLoginEnabled' => $captchaLoginEnabled,
             'captchaDemoEnabled' => $captchaDemoEnabled,
+            'auditLogArchiveDays' => $auditLogArchiveDays,
         ]);
     }
 
@@ -475,6 +481,13 @@ class AdminController extends AbstractController
                 'command' => 'php bin/console app:rotate-demo-credentials',
                 'schedule' => '0 0,12 * * * (Every 12 hours)',
                 'description' => 'Rotates the manager passwords and kiosk URL tokens for the Demo organizations to prevent unauthorized prolonged access.',
+                'status' => 'Active'
+            ],
+            [
+                'name' => 'Audit Log Archival',
+                'command' => 'php bin/console app:archive-audit-logs',
+                'schedule' => '0 0 * * * (Daily)',
+                'description' => 'Archives audit logs older than the configured number of days to keep the database size manageable.',
                 'status' => 'Active'
             ]
         ];

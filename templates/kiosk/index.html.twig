@@ -14,7 +14,7 @@
     <div class="kiosk-panel">
         
         <!-- Wizard Flow Indicators -->
-        <div class="wizard-steps mb-6" id="kiosk-wizard" style="margin-top: 0.5rem; margin-bottom: 2rem;">
+        <div class="wizard-steps mt-2 mb-8" id="kiosk-wizard">
             <div class="wizard-step active" id="w-step-1" title="Search">1</div>
             <div class="wizard-step" id="w-step-2" title="Confirm">2</div>
             <div class="wizard-step" id="w-step-3" title="Check-In">3</div>
@@ -22,7 +22,7 @@
         
         <!-- STEP 1: Identification -->
         <div id="kiosk-step-auth" class="d-block">
-            <div id="kiosk-auth-header" class="mb-4" style="margin-right: 2rem;">
+            <div id="kiosk-auth-header" class="mb-4 me-8">
                 <h3 class="kiosk-step-title m-0">Identify Yourself</h3>
             </div>
             
@@ -30,7 +30,7 @@
                 <label class="form-label" for="orgUser-search">Type your name...</label>
                 <div class="position-relative">
                     <input type="text" id="orgUser-search" class="form-control" placeholder="Search user..." autocomplete="off">
-                    <span class="material-icons text-muted position-absolute" style="right: 12px; top: 10px">search</span>
+                    <span class="material-icons text-muted position-absolute search-icon-pos">search</span>
                 </div>
                 <div id="orgUser-dropdown" class="autocomplete-dropdown" style="display: none;"></div>
             </div>
@@ -173,14 +173,14 @@
         </div>
         
         <div class="kiosk-footer-clock">
-            <div id="digital-clock" class="digital-clock" style="box-shadow: none; border: none; background: transparent; padding: 0; font-size: 1.1rem;">
+            <div id="digital-clock" class="digital-clock clock-kiosk-header">
                 00:00:00 AM
             </div>
         </div>
 
         <div class="kiosk-footer-exit">
             <a href="#" id="exit-kiosk-btn" class="btn-exit-kiosk" title="Exit Kiosk">
-                <span class="material-icons" style="font-size: 1.1rem;">arrow_back</span> Exit Kiosk
+                <span class="material-icons fs-lg">arrow_back</span> Exit Kiosk
             </a>
         </div>
     </div>

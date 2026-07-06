@@ -15,7 +15,7 @@
 
 <!-- EMPLOYEES DIRECTORY TAB -->
 <div id="tab-content-orgUsers-tab" class="tab-pane d-block">
-    <div class="d-grid gap-5" style="grid-template-columns: 2.2fr 1fr">
+    <div class="grid-sidebar-layout">
         
         <!-- Left: Users List -->
         <div class="glass-panel">
@@ -25,12 +25,12 @@
                 <div class="d-flex align-items-center gap-2">
                     <form method="get" class="d-flex align-items-center gap-2 m-0">
                         <input type="text" name="q" placeholder="Search..." value="{{ searchQuery|default('') }}" class="form-control fs-sm" style="width: 150px; padding: 0.35rem 0.75rem;">
-                        <select name="status" class="form-control fs-sm" onchange="this.form.submit()" style="padding: 0.35rem 1.75rem 0.35rem 0.75rem; min-width: 120px;">
+                        <select name="status" class="form-control fs-sm form-select-sm-custom" onchange="this.form.submit()">
                             <option value="all" {% if statusFilter|default('all') == 'all' %}selected{% endif %}>All Status</option>
                             <option value="active" {% if statusFilter|default('all') == 'active' %}selected{% endif %}>Active</option>
                             <option value="inactive" {% if statusFilter|default('all') == 'inactive' %}selected{% endif %}>Inactive</option>
                         </select>
-                        <button type="submit" class="btn btn-primary btn-sm" title="Search" style="display: inline-flex; align-items: center; justify-content: center;">
+                        <button type="submit" class="btn btn-primary btn-sm d-inline-flex align-items-center justify-content-center" title="Search">
                             <span class="material-icons fs-md">search</span>
                         </button>
                     </form>
@@ -55,13 +55,13 @@
                     </thead>
                     <tbody>
                         {% for emp in orgUsers %}
-                            <tr style="{% if not emp.isActive %}opacity: 0.5;{% endif %}">
+                            <tr class="{{ not emp.isActive ? 'opacity-50' }}">
                                 <td class="fw-600">{{ emp.firstName }} {{ emp.lastName }}</td>
                                 <td>{{ emp.email|default('—') }}</td>
                                 <td>{{ emp.phone|default('—') }}</td>
                                 <td>
                                     {% if emp.pin %}
-                                        <span class="badge fs-sm text-primary p-0" style="background: rgba(99,102,241,0.15); font-family: monospace; letter-spacing: 0.1em; .25rem 0.55rem; border-radius: 6px; border: 1px solid rgba(99,102,241,0.3)">
+                                        <span class="badge fs-sm text-primary badge-pin">
                                             {{ emp.pin }}
                                         </span>
                                     {% else %}
@@ -69,7 +69,7 @@
                                     {% endif %}
                                 </td>
                                 <td>
-                                    <div class="d-flex flex-column" style="gap:0.2rem; font-size:0.72rem">
+                                    <div class="d-flex flex-column gap-1 fs-xs">
                                         {% for key, val in emp.customFieldsJson %}
                                             <span class="text-secondary"><strong>{{ key }}:</strong> {{ val }}</span>
                                         {% else %}
@@ -87,14 +87,14 @@
                                 <td class="text-right">
                                     <div class="d-flex justify-content-end gap-1">
                                         <!-- Edit -->
-                                        <button class="btn btn-secondary btn-sm" title="Edit User" class="p-0" 
+                                        <button class="btn btn-secondary btn-sm" title="Edit User" 
                                             onclick="openEditUserModal({{ emp.id }}, '{{ emp.firstName|e('js') }}', '{{ emp.lastName|e('js') }}', '{{ emp.email|default('')|e('js') }}', '{{ emp.phone|default('')|e('js') }}', '{{ emp.pin|default('')|e('js') }}')">
                                             <span class="material-icons fs-md">edit</span>
                                         </button>
 
                                         <!-- Reset PIN -->
-                                        <form action="{{ path('app_manager_user_reset_pin', {id: emp.id}) }}" method="post" class="confirm-form" data-confirm="Reset PIN for {{ emp.firstName }}? A new PIN will be auto-generated." class="d-inline">
-                                            <button type="submit" class="btn btn-secondary btn-sm" title="Reset PIN" class="p-0" >
+                                        <form action="{{ path('app_manager_user_reset_pin', {id: emp.id}) }}" method="post" class="confirm-form d-inline" data-confirm="Reset PIN for {{ emp.firstName }}? A new PIN will be auto-generated.">
+                                            <button type="submit" class="btn btn-secondary btn-sm" title="Reset PIN" >
                                                 <span class="material-icons fs-md">lock_reset</span>
                                             </button>
                                         </form>
@@ -110,8 +110,8 @@
                             </tr>
                         {% else %}
                             <tr>
-                                <td colspan="7" class="text-center text-muted" style="padding: 2.5rem 0">
-                                    <span class="material-icons mb-0" style="font-size: 2.5rem; .5rem">people</span>
+                                <td colspan="7" class="text-center text-muted empty-state-padding">
+                                    <span class="material-icons mb-0 fs-3xl">people</span>
                                     <p class="fs-sm">No users registered. Upload a CSV or add manually.</p>
                                 </td>
                             </tr>
@@ -122,7 +122,7 @@
         </div>
 
         <!-- Right: Manual Add Form -->
-        <div id="add-user-container" class="glass-panel" style="height: fit-content;">
+        <div id="add-user-container" class="glass-panel h-fit">
             <h3 class="fs-md d-flex align-items-center gap-1 mb-4">
                 <span class="material-icons fs-md text-primary">person_add</span> Register User
             </h3>
@@ -159,14 +159,14 @@
 
                         <!-- PIN display -->
                         <div class="mb-0">
-                            <div id="pin-display" class="fs-xl fw-700 text-center text-primary w-100" style="font-family: monospace; letter-spacing: 0.2em; background: rgba(99,102,241,0.08); border: 1px solid rgba(99,102,241,0.25); border-radius: 8px; padding: 0.5rem;">
-                                <span id="pin-prefix-display" style="opacity:0.35;">?</span><span id="pin-digits-display" style="opacity:0.35;">___</span>
+                            <div id="pin-display" class="fs-xl fw-700 text-center text-primary w-100 pin-display-box">
+                                <span id="pin-prefix-display" class="opacity-35">?</span><span id="pin-digits-display" class="opacity-35">___</span>
                             </div>
                             <input type="hidden" name="pin" id="pin">
                         </div>
 
                         <!-- Unified Pin Pad -->
-                        <div class="d-grid gap-1 mt-2" style="grid-template-columns: repeat(3, 1fr)">
+                        <div class="grid-cols-3 mt-2">
                             <button type="button" class="btn btn-outline-primary btn-sm pin-prefix-btn py-2" data-char="A" onclick="setPinPrefix('A')" class="fs-md fw-700 font-mono">A</button>
                             <button type="button" class="btn btn-outline-primary btn-sm pin-prefix-btn py-2" data-char="B" onclick="setPinPrefix('B')" class="fs-md fw-700 font-mono">B</button>
                             <button type="button" class="btn btn-outline-primary btn-sm pin-prefix-btn py-2" data-char="C" onclick="setPinPrefix('C')" class="fs-md fw-700 font-mono">C</button>
@@ -188,7 +188,7 @@
         </div>
 
         <!-- Right: Edit User Form -->
-        <div id="edit-user-container" class="glass-panel d-none" style="height: fit-content;">
+        <div id="edit-user-container" class="glass-panel d-none h-fit">
             <h3 class="fs-md d-flex align-items-center gap-1 mb-4">
                 <span class="material-icons fs-md text-primary">edit</span> Edit User
             </h3>
@@ -216,11 +216,11 @@
                 <div class="form-group">
                     <label class="form-label">PIN <span class="fs-xs text-muted">(leave unchanged if you don't want to reset)</span></label>
                     <div class="mb-0">
-                        <div id="edit-pin-display" class="fs-xl fw-700 text-center text-primary w-100" style="font-family:monospace; letter-spacing:0.2em; background:rgba(99,102,241,0.08); border:1px solid rgba(99,102,241,0.25); border-radius:8px; padding: 0.5rem;">
+                        <div id="edit-pin-display" class="fs-xl fw-700 text-center text-primary w-100 pin-display-box">
                             <span id="edit-pin-text">——</span>
                         </div>
                     </div>
-                    <div class="d-grid gap-1 mt-2" style="grid-template-columns:repeat(3,1fr)">
+                    <div class="grid-cols-3 mt-2">
                         <button type="button" class="btn btn-outline-primary btn-sm edit-prefix-btn py-2" data-char="A" onclick="setEditPinPrefix('A')" class="fs-md fw-700 font-mono">A</button>
                         <button type="button" class="btn btn-outline-primary btn-sm edit-prefix-btn py-2" data-char="B" onclick="setEditPinPrefix('B')" class="fs-md fw-700 font-mono">B</button>
                         <button type="button" class="btn btn-outline-primary btn-sm edit-prefix-btn py-2" data-char="C" onclick="setEditPinPrefix('C')" class="fs-md fw-700 font-mono">C</button>
@@ -249,7 +249,7 @@
 
 <!-- MANAGERS DIRECTORY TAB -->
 <div id="tab-content-managers-tab" class="tab-pane tab-hidden">
-    <div class="d-grid gap-5" style="grid-template-columns: 2.2fr 1fr">
+    <div class="grid-sidebar-layout">
         
         <!-- Left: Managers List -->
         <div class="glass-panel">
@@ -291,83 +291,50 @@
         </div>
 
         <!-- Right: Add / Edit Manager Form -->
-        <div class="glass-panel position-relative" style="height: fit-content">
+        <div class="glass-panel position-relative h-fit">
             
-            <div id="add-manager-container">
-                <h3 class="fs-md d-flex align-items-center gap-1 mb-4">
-                    <span class="material-icons fs-md text-primary">admin_panel_settings</span> Add Manager
-                </h3>
+            <h3 class="fs-md d-flex align-items-center gap-1 mb-4" id="manager-form-title">
+                <span class="material-icons fs-md text-primary">admin_panel_settings</span> Add Manager
+            </h3>
 
+            {% if limitsData.usage.managers >= limitsData.limits.max_managers %}
+                <div class="alert alert-warning alert-sm" id="manager-quota-warning">
+                    <span class="material-icons fs-md">info</span>
+                    <span>Active manager quota reached. New managers will be added as Inactive.</span>
+                </div>
+            {% endif %}
 
-
-                {% if limitsData.usage.managers >= limitsData.limits.max_managers %}
-                    <div class="alert alert-warning alert-sm">
-                        <span class="material-icons fs-md">info</span>
-                        <span>Active manager quota reached. New managers will be added as Inactive.</span>
-                    </div>
-                {% endif %}
-                    <form action="{{ path('app_manager_add_manager') }}" method="post">
-                        <div class="grid-cols-2">
-                            <div class="form-group">
-                                <label class="form-label" for="mgr_first">First Name</label>
-                                <input type="text" name="first_name" id="mgr_first" class="form-control" required placeholder="Alice">
-                            </div>
-                            <div class="form-group">
-                                <label class="form-label" for="mgr_last">Last Name</label>
-                                <input type="text" name="last_name" id="mgr_last" class="form-control" required placeholder="Smith">
-                            </div>
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label" for="mgr_email">Email Address</label>
-                            <input type="email" name="email" id="mgr_email" class="form-control" required placeholder="alice.smith@company.com">
-                        </div>
-                            <label class="form-label" for="mgr_phone">Phone Number</label>
-                            <input type="tel" name="phone" id="mgr_phone" class="form-control" required data-controller="intl-tel-input" data-intl-tel-input-allowed-countries-value="{{ app_config('allowed_phone_countries', ['us'])|json_encode|e('html_attr') }}">
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label" for="mgr_pwd">Password</label>
-                            <input type="password" name="password" id="mgr_pwd" class="form-control" required placeholder="Min. 8 characters">
-                        </div>
-
-                        <button type="submit" class="btn btn-primary mt-0 w-100" >
-                            <span class="material-icons fs-md">add_moderator</span> Create Manager
-                        </button>
-                    </form>
-            </div>
-
-            <div id="edit-manager-container" class="tab-hidden">
-                <h3 class="fs-md d-flex align-items-center gap-1 mb-4">
-                    <span class="material-icons fs-md text-primary">edit</span> Edit Manager
-                </h3>
-                
-                <form method="post" id="editManagerForm">
-                    <div class="grid-cols-2">
-                        <div class="form-group">
-                            <label class="form-label" for="em_first">First Name</label>
-                            <input type="text" name="first_name" id="em_first" class="form-control" required>
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label" for="em_last">Last Name</label>
-                            <input type="text" name="last_name" id="em_last" class="form-control" required>
-                        </div>
+            <form action="{{ path('app_manager_add_manager') }}" method="post" id="managerForm">
+                <div class="grid-cols-2">
+                    <div class="form-group">
+                        <label class="form-label" for="mgr_first">First Name</label>
+                        <input type="text" name="first_name" id="mgr_first" class="form-control" required placeholder="Alice">
                     </div>
                     <div class="form-group">
-                        <label class="form-label" for="em_email">Email Address</label>
-                        <input type="email" name="email" id="em_email" class="form-control" required>
+                        <label class="form-label" for="mgr_last">Last Name</label>
+                        <input type="text" name="last_name" id="mgr_last" class="form-control" required placeholder="Smith">
                     </div>
-                        <label class="form-label" for="em_phone">Phone Number</label>
-                        <input type="tel" name="em_phone" id="em_phone" class="form-control" required data-controller="intl-tel-input" data-intl-tel-input-allowed-countries-value="{{ app_config('allowed_phone_countries', ['us'])|json_encode|e('html_attr') }}">
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label" for="em_pwd">New Password <span class="fs-xs text-muted">(leave blank to keep current)</span></label>
-                        <input type="password" name="password" id="em_pwd" class="form-control" placeholder="Min. 8 characters" autocomplete="new-password">
-                    </div>
-                    <div class="d-flex justify-content-end gap-2 mt-6">
-                        <button type="button" onclick="cancelEditManager()" class="btn btn-secondary flex-1">Cancel</button>
-                        <button type="submit" class="btn btn-primary" style="flex:2;">Save Changes</button>
-                    </div>
-                </form>
-            </div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="mgr_email">Email Address</label>
+                    <input type="email" name="email" id="mgr_email" class="form-control" required placeholder="alice.smith@company.com">
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="mgr_phone">Phone Number</label>
+                    <input type="tel" name="phone" id="mgr_phone" class="form-control" required data-controller="intl-tel-input" data-intl-tel-input-allowed-countries-value="{{ app_config('allowed_phone_countries', ['us'])|json_encode|e('html_attr') }}">
+                </div>
+                <div class="form-group">
+                    <label class="form-label" id="mgr_pwd_label" for="mgr_pwd">Password</label>
+                    <input type="password" name="password" id="mgr_pwd" class="form-control" required placeholder="Min. 8 characters" autocomplete="new-password">
+                </div>
+
+                <div class="d-flex justify-content-end gap-2 mt-6">
+                    <button type="button" onclick="cancelEditManager()" class="btn btn-secondary flex-1 d-none" id="manager-form-cancel">Cancel</button>
+                    <button type="submit" class="btn btn-primary mt-0 w-100 flex-2" id="manager-form-submit">
+                        <span class="material-icons fs-md" id="manager-form-submit-icon">add_moderator</span> <span id="manager-form-submit-text">Create Manager</span>
+                    </button>
+                </div>
+            </form>
         </div>
 
     </div>
@@ -511,21 +478,47 @@
 
     // ── Edit Manager Modal ────────────────────────────────────────────────
     function openEditManagerModal(id, first, last, email, phone) {
-        document.getElementById('add-manager-container').classList.add('tab-hidden');
-        document.getElementById('edit-manager-container').classList.remove('tab-hidden');
-
-        const form = document.getElementById('editManagerForm');
+        const form = document.getElementById('managerForm');
         form.action = `/manager/users/edit-manager/${id}`;
-        document.getElementById('em_first').value = first;
-        document.getElementById('em_last').value  = last;
-        document.getElementById('em_email').value = email;
-        document.getElementById('em_phone').value = phone;
-        document.getElementById('em_pwd').value   = '';
+        
+        document.getElementById('mgr_first').value = first;
+        document.getElementById('mgr_last').value  = last;
+        document.getElementById('mgr_email').value = email;
+        document.getElementById('mgr_phone').value = phone;
+        
+        const pwdInput = document.getElementById('mgr_pwd');
+        pwdInput.value = '';
+        pwdInput.required = false;
+        
+        document.getElementById('mgr_pwd_label').innerHTML = 'New Password <span class="fs-xs text-muted">(leave blank to keep current)</span>';
+        document.getElementById('manager-form-title').innerHTML = '<span class="material-icons fs-md text-primary">edit</span> Edit Manager';
+        document.getElementById('manager-form-submit-icon').textContent = 'save';
+        document.getElementById('manager-form-submit-text').textContent = 'Save Changes';
+        
+        document.getElementById('manager-form-cancel').classList.remove('d-none');
+        document.getElementById('manager-form-submit').classList.remove('w-100');
+        
+        const warning = document.getElementById('manager-quota-warning');
+        if (warning) warning.classList.add('d-none');
     }
 
     function cancelEditManager() {
-        document.getElementById('edit-manager-container').classList.add('tab-hidden');
-        document.getElementById('add-manager-container').classList.remove('tab-hidden');
+        const form = document.getElementById('managerForm');
+        form.action = `/manager/users/add-manager`;
+        form.reset();
+        
+        document.getElementById('mgr_pwd').required = true;
+        document.getElementById('mgr_pwd_label').textContent = 'Password';
+        
+        document.getElementById('manager-form-title').innerHTML = '<span class="material-icons fs-md text-primary">admin_panel_settings</span> Add Manager';
+        document.getElementById('manager-form-submit-icon').textContent = 'add_moderator';
+        document.getElementById('manager-form-submit-text').textContent = 'Create Manager';
+        
+        document.getElementById('manager-form-cancel').classList.add('d-none');
+        document.getElementById('manager-form-submit').classList.add('w-100');
+        
+        const warning = document.getElementById('manager-quota-warning');
+        if (warning) warning.classList.remove('d-none');
     }
 
     // Close modals on backdrop click

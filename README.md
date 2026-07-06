@@ -276,3 +276,18 @@ APP_SECRET=2e3fa87bd87d890bf7c834bcde11219b
    symfony server:start
    ```
    Open your browser and navigate to [http://localhost:8000](http://localhost:8000).
+
+---
+
+## 6. Recent Feature Additions
+
+### 6.1 Soft Deletes for Historical Integrity
+To prevent historical data corruption, `Category` entities now implement soft deletes (`deleted_at`). When a manager deletes a category, it is hidden from the active Kiosk selection, but preserved in the database to ensure past `WorkSession` reports remain accurate.
+
+### 6.2 Advanced Reporting & Exports
+- **CSV Export Engine**: Managers on Silver or Gold plans can generate filtered CSV exports for payroll processing and auditing. Exports can be triggered across the whole organization or narrowed to specific users and months.
+- **Calendar & List Views**: The User Reports interface allows toggling between a visual Calendar overview and a chronological List View, accommodating different managerial auditing workflows.
+- **Dynamic Session Highlighting**: Managers can apply custom threshold filters (e.g., 30m, 45m, 1h, or custom inputs) to instantly highlight sessions that exceed expected durations, making overtime identification effortless.
+
+### 6.3 UI & Design System Stabilization
+- **Theme-Aware Utilities**: Extensive cleanup of legacy inline styles, transitioning them into centralized utility and component classes (`.grid-sidebar-layout`, `.pin-display-box`, `.badge-pin`, etc.). This guarantees consistent visual rendering across both Light and Dark mode user preferences, particularly inside `glass-panel` containers.

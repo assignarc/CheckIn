@@ -11,7 +11,8 @@
 <div class="d-grid gap-8" style="grid-template-columns: 2.2fr 1fr">
 
     <!-- Left: Categories List -->
-    <div class="glass-panel p-6">
+    <div class="d-flex flex-column gap-6">
+        <div class="glass-panel p-6">
         <h3 class="fs-lg mb-5">Custom Categories</h3>
         
         <div class="table-responsive">
@@ -71,6 +72,14 @@
                                             onclick="openEditModal('{{ cat.id }}', '{{ cat.name|escape('js') }}', '{{ cat.icon|escape('js') }}', '{{ cat.color|default('#8b5cf6') }}', '{{ cat.getFormattedMaxDuration() }}', '{{ cat.terminateAtMaxDuration ? 'true' : 'false' }}')">
                                         <span class="material-icons fs-md">edit</span>
                                     </button>
+                                    
+                                    <!-- Delete Button -->
+                                    <form action="{{ path('app_manager_category_delete', {id: cat.id}) }}" method="post" class="confirm-form d-inline"
+                                          data-confirm="Are you sure you want to delete this category? It will be hidden but kept for historical records.">
+                                        <button type="submit" class="btn btn-danger btn-sm" title="Delete category">
+                                            <span class="material-icons fs-md">delete</span>
+                                        </button>
+                                    </form>
 
                                     <!-- Toggle Active Button -->
                                     <form action="{{ path('app_manager_category_toggle_active', {id: cat.id}) }}" method="post" class="confirm-form d-inline"
@@ -99,6 +108,43 @@
                 </tbody>
             </table>
         </div>
+        </div>
+        
+        {% if deletedCategories|length > 0 %}
+        <div class="glass-panel p-6" style="opacity: 0.85;">
+            <h3 class="fs-lg mb-2 text-muted d-flex align-items-center gap-2">
+                <span class="material-icons">delete_outline</span> Deleted Categories
+            </h3>
+            <p class="fs-sm text-secondary mb-4">These categories have been soft-deleted and are kept solely for historical reporting. They are read-only and cannot be used for new sessions.</p>
+            
+            <div class="table-responsive">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th style="width: 70px;">Icon</th>
+                            <th>Name</th>
+                            <th>Deleted On</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for cat in deletedCategories %}
+                            <tr class="bg-muted-soft">
+                                <td>
+                                    <div class="d-inline-flex align-items-center justify-content-center rounded-sm" style="width: 40px; height: 40px; background: #eee; color: #999;">
+                                        <span class="material-icons fs-xl">{{ cat.icon }}</span>
+                                    </div>
+                                </td>
+                                <td class="fw-600 text-muted">{{ cat.name }}</td>
+                                <td class="text-secondary fs-sm">
+                                    {{ cat.deletedAt|date('M j, Y g:i A') }}
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        {% endif %}
     </div>
 
     <!-- Right Column: Add/Edit Category Form -->

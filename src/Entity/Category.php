@@ -7,7 +7,6 @@ use Gedmo\Mapping\Annotation as Gedmo;
 
 #[ORM\Entity]
 #[ORM\Table(name: "categories")]
-#[Gedmo\SoftDeleteable(fieldName: 'deletedAt', timeAware: false)]
 class Category
 {
     #[ORM\Id]

@@ -35,8 +35,8 @@
             <li>In the Command box, paste exactly this:</li>
         </ol>
         <div class="bg-input mt-3 p-3 rounded-md border">
-            <code class="text-white" style="word-break: break-all; font-size: 0.75rem">
-                wget -q -O /dev/null"{{ url('app_cron_run', { 'token': cronToken }) }}"
+            <code class="text-primary" style="word-break: break-all; font-size: 0.75rem">
+                wget -q -O /dev/null "{{ url('app_cron_run', { 'token': cronToken }) }}"
             </code>
         </div>
     </div>
@@ -50,6 +50,21 @@
         <div class="p-4 rounded-md border" style="background: rgba(255,255,255,0.02)">
             <div class="fw-bold fs-sm mb-1">2. Rotate Demo Credentials</div>
             <div class="fs-xs text-muted">Automatically rotates passwords and kiosk tokens for public Demo organizations every {{ demoRotationHours|default(12) }} hours. The cron endpoint checks the elapsed time dynamically.</div>
+        </div>
+        <div class="p-4 rounded-md border" style="background: rgba(255,255,255,0.02)">
+            <div class="fw-bold fs-sm mb-1">3. Archive Audit Logs</div>
+            <div class="fs-xs text-muted">Automatically archives logs older than the configured global retention period to a JSON zipped file on the server.</div>
+        </div>
+        <div class="alert alert-info mt-4">
+            <span class="material-icons text-info">info</span>
+            <div class="ms-2">
+                <strong>Wait, isn't there another way?</strong><br>
+                Yes! If you have direct CLI access to the server, you can trigger these manually or set them up in standard server crontab:
+                <ul class="mb-0 mt-2 text-primary fs-sm">
+                    <li>Sweep Sessions: <code>php bin/console app:sweep-sessions</code></li>
+                    <li>Archive Audit Logs: <code>php bin/console app:archive-audit-logs</code></li>
+                </ul>
+            </div>
         </div>
     </div>
 </div>

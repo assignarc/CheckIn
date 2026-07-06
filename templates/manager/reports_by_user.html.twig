@@ -4,17 +4,16 @@
 
 {% block manager_content %}
     <!-- Header & Filter Bar -->
-    <div class="d-flex align-items-center justify-content-between flex-wrap gap-4 mb-8">
+    <div class="d-flex align-items-center justify-content-between flex-wrap gap-4 mb-6">
         <div>
             <h2 class="mb-1">Reports by User</h2>
-            <p class="text-secondary m-0">View check-in activity for a specific user.</p>
+            <p class="text-secondary m-0 fs-sm">View check-in activity for a specific user.</p>
         </div>
         
-        <form method="get" class="d-flex align-items-center gap-4">
-            <input type="hidden" name="month" value="{{ currentMonth }}">
-            
-            <div class="m-0" style="min-width: 200px">
-                <select name="org_user_id" id="org_user_id" class="form-control" onchange="this.form.submit()">
+        <div class="d-flex align-items-center gap-3">
+            <form method="get" class="d-flex align-items-center m-0 gap-2">
+                <input type="hidden" name="month" value="{{ currentMonth }}">
+                <select name="org_user_id" id="org_user_id" class="form-control form-control-sm m-0" onchange="this.form.submit()" style="min-width: 200px">
                     <option value="">-- Select a User --</option>
                     {% for u in orgUsers %}
                         <option value="{{ u.id }}" {% if selectedUser and selectedUser.id == u.id %}selected{% endif %}>
@@ -22,57 +21,80 @@
                         </option>
                     {% endfor %}
                 </select>
-            </div>
+                <noscript>
+                    <button type="submit" class="btn btn-primary btn-sm">Load</button>
+                </noscript>
+            </form>
             
-            <noscript>
-                <button type="submit" class="btn btn-primary">Load</button>
-            </noscript>
-            
-            <a href="{{ path('app_manager_reports') }}" class="btn btn-secondary" title="Back to List">
-                <span class="material-icons">list</span>
+            <a href="{{ path('app_manager_reports') }}" class="btn btn-secondary btn-sm d-flex align-items-center gap-1" title="Back to List">
+                <span class="material-icons fs-md">list</span> Back
             </a>
-        </form>
+        </div>
     </div>
 
     {% if selectedUser %}
         {% set totalHours = (totalMonthSeconds / 3600)|round(0, 'floor') %}
         {% set totalMins = ((totalMonthSeconds % 3600) / 60)|round(0, 'floor') %}
         
-        <div class="d-flex align-items-center justify-content-between mb-6">
-            <a href="?org_user_id={{ selectedUser.id }}&month={{ prevMonth }}" class="btn btn-secondary" >
-                <span class="material-icons fs-xl">chevron_left</span> Prev
-            </a>
-            <div class="text-center">
-                <h3 class="m-0 mb-0" >{{ monthName }}</h3>
-                <span class="fs-md fw-500 text-secondary">
-                    Total Time: <strong class="text-primary">{{ totalHours }}h {{"%02d"|format(totalMins) }}m</strong>
-                </span>
+        <!-- Controls Bar -->
+        <div class="glass-panel p-3 mb-6 d-flex flex-wrap align-items-center justify-content-between gap-4 border">
+            <!-- Left: Month Navigation -->
+            <div class="d-flex align-items-center gap-3">
+                <a href="?org_user_id={{ selectedUser.id }}&month={{ prevMonth }}" class="btn btn-sm btn-secondary p-1" >
+                    <span class="material-icons fs-md">chevron_left</span>
+                </a>
+                <h3 class="m-0 fs-md fw-600" style="min-width: 140px; text-align: center;">{{ monthName }}</h3>
+                <a href="?org_user_id={{ selectedUser.id }}&month={{ nextMonth }}" class="btn btn-sm btn-secondary p-1" >
+                    <span class="material-icons fs-md">chevron_right</span>
+                </a>
             </div>
-            <a href="?org_user_id={{ selectedUser.id }}&month={{ nextMonth }}" class="btn btn-secondary" >
-                Next <span class="material-icons fs-xl">chevron_right</span>
-            </a>
+            
+            <!-- Middle: Total Time -->
+            <div class="fs-sm fw-500 text-secondary bg-input px-4 py-2 rounded-full border d-flex align-items-center gap-2">
+                <span class="material-icons fs-md text-primary">schedule</span>
+                Total Time: <strong class="text-primary fs-md">{{ totalHours }}h {{"%02d"|format(totalMins) }}m</strong>
+            </div>
+
+            <!-- Right: View & Export -->
+            <div class="d-flex align-items-center gap-3">
+                <div class="btn-group bg-card rounded-md p-1 d-inline-flex" style="border: 1px solid var(--border-color);">
+                    <button type="button" class="btn btn-sm btn-light active fw-600 px-3" id="btn-view-calendar" onclick="toggleView('calendar')" style="background: var(--bg-color); color: var(--text-color); box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+                        <span class="material-icons fs-sm align-middle mr-1">calendar_month</span> Calendar
+                    </button>
+                    <button type="button" class="btn btn-sm text-secondary hover-text-primary px-3" id="btn-view-list" onclick="toggleView('list')" style="background: transparent;">
+                        <span class="material-icons fs-sm align-middle mr-1">list</span> List
+                    </button>
+                </div>
+                
+                <a href="{{ path('app_manager_reports_by_user_export', {org_user_id: selectedUser.id, month: currentMonth}) }}" class="btn btn-primary btn-sm d-flex align-items-center gap-1" title="Export CSV">
+                    <span class="material-icons fs-sm">download</span> Export
+                </a>
+            </div>
         </div>
 
-        <div class="d-flex align-items-center justify-content-between mb-4">
+        <div class="d-flex align-items-center justify-content-between mb-3 flex-wrap gap-3">
             <h4 class="fs-md text-secondary m-0">Daily Check-ins</h4>
             
             <!-- Highlight Filter UI -->
-            <div class="d-flex align-items-center gap-2">
-                <span class="fs-sm text-secondary fw-500">Highlight ></span>
-                <button type="button" class="btn btn-sm btn-outline-secondary highlight-filter-btn" data-seconds="1800">30m</button>
-                <button type="button" class="btn btn-sm btn-outline-secondary highlight-filter-btn" data-seconds="2700">45m</button>
-                <button type="button" class="btn btn-sm btn-outline-secondary highlight-filter-btn" data-seconds="3600">1h</button>
+            <div class="d-flex align-items-center flex-wrap gap-3 bg-card p-3 rounded-md border shadow-sm" id="highlight-filter-container">
+                <span class="fs-xs text-secondary fw-600 text-uppercase letter-spacing-1 me-1">Highlight ></span>
                 
-                <div class="d-flex align-items-center gap-1 ms-2">
-                    <input type="number" id="custom-highlight-mins" class="form-control form-control-sm" style="width: 70px" placeholder="Mins" min="1">
-                    <button type="button" class="btn btn-sm btn-outline-secondary" id="highlight-custom-btn">Apply</button>
+                <div class="d-flex align-items-center gap-2">
+                    <button type="button" class="btn btn-sm btn-outline-secondary highlight-filter-btn" onclick="applyHighlight(1800)">30m</button>
+                    <button type="button" class="btn btn-sm btn-outline-secondary highlight-filter-btn" onclick="applyHighlight(2700)">45m</button>
+                    <button type="button" class="btn btn-sm btn-outline-secondary highlight-filter-btn" onclick="applyHighlight(3600)">1h</button>
                 </div>
                 
-                <button type="button" class="btn btn-sm btn-ghost ms-2 text-danger" id="highlight-clear-btn" style="display:none;">Clear</button>
+                <div class="d-flex align-items-center gap-2 border-start ps-3 ms-1">
+                    <input type="number" id="custom-highlight-mins" class="form-control form-control-sm" style="width: 80px" placeholder="Mins" min="1">
+                    <button type="button" class="btn btn-sm btn-outline-secondary" id="highlight-custom-btn" onclick="applyCustomHighlight()">Apply</button>
+                </div>
+                
+                <button type="button" class="btn btn-sm btn-ghost text-danger fw-600 ms-auto" id="highlight-clear-btn" style="display:none;" onclick="clearHighlight()">Clear Highlight</button>
             </div>
         </div>
 
-        <div class="bg-card rounded-lg border">
+        <div id="calendar-view-container" class="bg-card rounded-lg border">
             <!-- Calendar Header -->
             <div class="fs-sm fw-600 text-center text-secondary bg-input d-grid border-b calendar-header">
                 <div>Sun</div>
@@ -123,6 +145,22 @@
                                     <div class="custom-popover-content shadow-lg rounded p-2" style="border-top: 3px solid {{ catColor }};">
                                         <div class="fw-bold mb-1">{{ catName }}</div>
                                         <div class="text-muted calendar-session-popover-text">{{ timeRange }}</div>
+                                        
+                                        {% if session.endMethod == 'Auto End' or session.endMethod == 'auto_checkout' %}
+                                            <div class="text-warning mt-1 fw-500" style="font-size: 0.65rem;">
+                                                <span class="material-icons" style="font-size: 0.75rem; vertical-align: middle;">timer_off</span> Auto-Ended
+                                            </div>
+                                        {% elseif session.endMethod == 'Force End' or session.endMethod == 'manager_checkout' %}
+                                            <div class="text-info mt-1 fw-500" style="font-size: 0.65rem;">
+                                                <span class="material-icons" style="font-size: 0.75rem; vertical-align: middle;">admin_panel_settings</span> Force Ended
+                                            </div>
+                                        {% endif %}
+
+                                        {% if session.isOvertime %}
+                                            <div class="text-danger mt-1 fw-500" style="font-size: 0.65rem;">
+                                                <span class="material-icons" style="font-size: 0.75rem; vertical-align: middle;">warning</span> Overtime Flagged
+                                            </div>
+                                        {% endif %}
                                     </div>
                                 </div>
                             {% endfor %}
@@ -140,6 +178,103 @@
                 {% endfor %}
             </div>
         </div>
+
+        <!-- LIST VIEW -->
+        <div id="list-view-container" class="d-none mt-6">
+            <div class="glass-panel p-0 overflow-hidden">
+                <div class="table-responsive">
+                    <table class="table mb-0">
+                        <thead>
+                            <tr>
+                                <th style="width: 25%;">Date</th>
+                                <th style="width: 25%;">Summary</th>
+                                <th style="width: 50%;">Session Details</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% set hasDaysWithSessions = false %}
+                            {% for dayData in calendarData %}
+                                {% if dayData.sessions|length > 0 %}
+                                    {% set hasDaysWithSessions = true %}
+                                    {% set totalDaySeconds = 0 %}
+                                    {% for s in dayData.sessions %}
+                                        {% set totalDaySeconds = totalDaySeconds + (s.durationSeconds|default(0)) %}
+                                    {% endfor %}
+                                    {% set dHours = (totalDaySeconds / 3600)|round(0, 'floor') %}
+                                    {% set dMins = ((totalDaySeconds % 3600) / 60)|round(0, 'floor') %}
+                                    
+                                    <tr>
+                                        <!-- Date Column -->
+                                        <td class="align-top">
+                                            <div class="fw-600">{{ monthName|split(' ')[0] }} {{ dayData.day }}</div>
+                                            <div class="text-secondary fs-sm">
+                                                {% set dateStr = currentMonth ~ '-' ~ ("%02d"|format(dayData.day)) %}
+                                                {{ dateStr|date('l') }}
+                                            </div>
+                                        </td>
+                                        
+                                        <!-- Summary Column -->
+                                        <td class="align-top">
+                                            <div class="d-flex align-items-center gap-2 mb-1">
+                                                <span class="badge badge-primary">{{ dayData.sessions|length }} Session{% if dayData.sessions|length != 1 %}s{% endif %}</span>
+                                            </div>
+                                            <div class="fs-sm fw-500 text-secondary">
+                                                Total: {{ dHours }}h {{"%02d"|format(dMins) }}m
+                                            </div>
+                                        </td>
+                                        
+                                        <!-- Details Column -->
+                                        <td class="align-top">
+                                            <div class="d-flex flex-column gap-3">
+                                                {% for session in dayData.sessions %}
+                                                    {% set sHours = (session.durationSeconds / 3600)|round(0, 'floor') %}
+                                                    {% set sMins = ((session.durationSeconds % 3600) / 60)|round(0, 'floor') %}
+                                                    {% set catColor = session.category ? session.category.color : 'var(--primary)' %}
+                                                    {% set catName = session.category ? session.category.name : 'None' %}
+                                                    {% set timeRange = session.startedAt|date('H:i') ~ ' - ' ~ (session.endedAt ? session.endedAt|date('H:i') : 'Now') %}
+                                                    
+                                                    <div class="p-3 rounded-sm border d-flex justify-content-between align-items-start gap-4 highlightable-session" data-duration="{{ session.durationSeconds|default(0) }}" style="border-left: 4px solid {{ catColor }} !important; transition: opacity 0.2s, background-color 0.2s;">
+                                                        <div>
+                                                            <div class="fw-600 mb-1 d-flex align-items-center gap-2">
+                                                                {{ catName }}
+                                                                {% if session.endMethod == 'Auto End' or session.endMethod == 'auto_checkout' %}
+                                                                    <span class="badge badge-warning fs-xs px-2 py-0"><span class="material-icons" style="font-size:11px">timer_off</span> Auto</span>
+                                                                {% elseif session.endMethod == 'Force End' or session.endMethod == 'manager_checkout' %}
+                                                                    <span class="badge badge-info fs-xs px-2 py-0"><span class="material-icons" style="font-size:11px">admin_panel_settings</span> Force</span>
+                                                                {% endif %}
+                                                                {% if session.isOvertime %}
+                                                                    <span class="badge badge-danger fs-xs px-2 py-0"><span class="material-icons" style="font-size:11px">warning</span> Overtime</span>
+                                                                {% endif %}
+                                                            </div>
+                                                            <div class="text-secondary fs-sm d-flex align-items-center gap-1">
+                                                                <span class="material-icons fs-sm">schedule</span> {{ timeRange }}
+                                                            </div>
+                                                        </div>
+                                                        <div class="fw-600 fs-md">
+                                                            {{ sHours }}h {{"%02d"|format(sMins) }}m
+                                                        </div>
+                                                    </div>
+                                                {% endfor %}
+                                            </div>
+                                        </td>
+                                    </tr>
+                                {% endif %}
+                            {% endfor %}
+                            
+                            {% if not hasDaysWithSessions %}
+                                <tr>
+                                    <td colspan="3" class="text-center text-muted" style="padding: 3rem 0;">
+                                        <span class="material-icons fs-3xl mb-2">event_busy</span>
+                                        <p class="m-0">No sessions recorded in this month.</p>
+                                    </td>
+                                </tr>
+                            {% endif %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        
     {% else %}
         <div class="text-center text-muted bg-card rounded-md empty-state-card">
             <span class="material-icons fs-4xl mb-4">person_search</span>
@@ -148,54 +283,85 @@
     {% endif %}
 
     <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            // Highlight logic
+        // Use global functions so they work with Turbo navigation
+        window.applyHighlight = function(minSeconds) {
             const sessionElements = document.querySelectorAll('.highlightable-session');
             const clearBtn = document.getElementById('highlight-clear-btn');
-            const customBtn = document.getElementById('highlight-custom-btn');
+            
+            sessionElements.forEach(el => {
+                const duration = parseInt(el.getAttribute('data-duration') || 0, 10);
+                if (duration > minSeconds) {
+                    el.classList.add('session-highlight');
+                    el.classList.remove('session-dimmed');
+                } else {
+                    el.classList.remove('session-highlight');
+                    el.classList.add('session-dimmed');
+                }
+            });
+            if (clearBtn) clearBtn.style.display = 'inline-block';
+        };
+        
+        window.clearHighlight = function() {
+            const sessionElements = document.querySelectorAll('.highlightable-session');
+            const clearBtn = document.getElementById('highlight-clear-btn');
             const customInput = document.getElementById('custom-highlight-mins');
             
-            function applyHighlight(minSeconds) {
-                sessionElements.forEach(el => {
-                    const duration = parseInt(el.getAttribute('data-duration') || 0, 10);
-                    if (duration > minSeconds) {
-                        el.classList.add('session-highlight');
-                        el.classList.remove('session-dimmed');
-                    } else {
-                        el.classList.remove('session-highlight');
-                        el.classList.add('session-dimmed');
-                    }
-                });
-                clearBtn.style.display = 'inline-block';
-            }
-            
-            function clearHighlight() {
-                sessionElements.forEach(el => {
-                    el.classList.remove('session-highlight', 'session-dimmed');
-                });
-                clearBtn.style.display = 'none';
-                customInput.value = '';
-            }
-            
-            document.querySelectorAll('.highlight-filter-btn').forEach(btn => {
-                btn.addEventListener('click', function() {
-                    applyHighlight(parseInt(this.getAttribute('data-seconds'), 10));
-                });
+            sessionElements.forEach(el => {
+                el.classList.remove('session-highlight', 'session-dimmed');
             });
             
-            if (customBtn) {
-                customBtn.addEventListener('click', function() {
-                    const mins = parseInt(customInput.value, 10);
-                    if (!isNaN(mins) && mins > 0) {
-                        applyHighlight(mins * 60);
-                    }
-                });
+            if (clearBtn) clearBtn.style.display = 'none';
+            if (customInput) customInput.value = '';
+        };
+        
+        window.applyCustomHighlight = function() {
+            const customInput = document.getElementById('custom-highlight-mins');
+            if (customInput) {
+                const mins = parseInt(customInput.value, 10);
+                if (!isNaN(mins) && mins > 0) {
+                    window.applyHighlight(mins * 60);
+                }
             }
+        };
+
+        // Expose logic to toggle View
+        window.toggleView = function(viewType) {
+            const calContainer = document.getElementById('calendar-view-container');
+            const listContainer = document.getElementById('list-view-container');
             
-            if (clearBtn) {
-                clearBtn.addEventListener('click', clearHighlight);
+            const btnCal = document.getElementById('btn-view-calendar');
+            const btnList = document.getElementById('btn-view-list');
+            
+            // Reset styles
+            const activeStyle = "background: var(--bg-color); color: var(--text-color); box-shadow: 0 1px 3px rgba(0,0,0,0.1);";
+            const inactiveStyle = "background: transparent; color: var(--text-secondary);";
+            
+            if (viewType === 'list') {
+                if(calContainer) calContainer.classList.add('d-none');
+                if(listContainer) listContainer.classList.remove('d-none');
+                
+                if(btnList) {
+                    btnList.classList.add('active', 'fw-600');
+                    btnList.style.cssText = activeStyle;
+                }
+                if(btnCal) {
+                    btnCal.classList.remove('active', 'fw-600');
+                    btnCal.style.cssText = inactiveStyle;
+                }
+            } else {
+                if(calContainer) calContainer.classList.remove('d-none');
+                if(listContainer) listContainer.classList.add('d-none');
+                
+                if(btnCal) {
+                    btnCal.classList.add('active', 'fw-600');
+                    btnCal.style.cssText = activeStyle;
+                }
+                if(btnList) {
+                    btnList.classList.remove('active', 'fw-600');
+                    btnList.style.cssText = inactiveStyle;
+                }
             }
-        });
+        };
     </script>
 {% endblock %}
 

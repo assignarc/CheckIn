@@ -93,6 +93,21 @@
             </div>
         </div>
 
+        <div class="mb-6 p-6 rounded-md border" style="background: rgba(255,255,255,0.03)">
+            <h4 class="fs-md mt-0 mb-4">Data Retention</h4>
+            <p class="fs-sm text-secondary mb-4">
+                Configure how long to keep audit logs in the database before archiving them to a zip file on the server.
+            </p>
+
+            <div class="form-group mb-0">
+                <label class="form-label" for="audit_log_archive_days">Audit Log Archival Duration (Days)</label>
+                <input type="number" class="form-control" name="audit_log_archive_days" id="audit_log_archive_days" value="{{ auditLogArchiveDays|default(180) }}" min="1">
+                <span class="form-text d-block" style="margin-top:-0.3rem">
+                    Logs older than this number of days will be exported to a JSON file, zipped, and removed from the active database. Default is 180.
+                </span>
+            </div>
+        </div>
+
         <div class="d-flex justify-content-end">
             <button type="submit" class="btn btn-primary">
                 <span class="material-icons">save</span> Save Global Settings

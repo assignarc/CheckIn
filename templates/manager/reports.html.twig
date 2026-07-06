@@ -6,7 +6,7 @@
 {% block manager_content %}
 <!-- Search & Filter Card -->
 <div class="glass-panel mb-8 p-6">
-    <form method="get" class="d-grid gap-4" style="grid-template-columns: repeat(4, 1fr) auto; align-items: flex-end">
+    <form method="get" class="report-filters-grid mb-6">
         <div class="form-group m-0">
             <label class="form-label" for="start_date">Start Date</label>
             <input type="date" name="start_date" id="start_date" class="form-control" value="{{ app.request.query.get('start_date') }}">
@@ -85,7 +85,7 @@
             </a>
         {% else %}
             <div class="text-center w-100">
-                <button type="button" class="btn btn-secondary btn-sm fs-sm w-100" style="padding: .6rem; opacity:0.5; cursor:not-allowed" title="Exporting is disabled on the Basic plan. Upgrade to Silver or Gold to unlock.">
+                <button type="button" class="btn btn-secondary btn-sm fs-sm w-100 p-2 btn-disabled-visual" title="Exporting is disabled on the Basic plan. Upgrade to Silver or Gold to unlock.">
                     <span class="material-icons fs-lg text-danger">lock</span> Export Locked
                 </button>
                 <div class="fs-xs text-muted mt-0" >Upgrade to Silver or Gold to export</div>
@@ -107,7 +107,7 @@
             <button type="button" class="btn btn-sm btn-outline-secondary highlight-filter-btn" data-seconds="3600">1h</button>
             
             <div class="d-flex align-items-center gap-1 ms-2">
-                <input type="number" id="custom-highlight-mins" class="form-control form-control-sm" style="width: 70px" placeholder="Mins" min="1">
+                <input type="number" id="custom-highlight-mins" class="form-control form-control-sm w-70px" placeholder="Mins" min="1">
                 <button type="button" class="btn btn-sm btn-outline-secondary" id="highlight-custom-btn">Apply</button>
             </div>
             
@@ -199,7 +199,7 @@
                         <td>
                             {% if not session.endedAt %}
                                 <form action="{{ path('app_manager_reports_force_end', {id: session.id}) }}" method="post" style="display:inline;">
-                                    <button type="button" class="btn btn-danger btn-sm force-end-btn" title="Force End Session" style="padding: 0.25rem 0.5rem;">
+                                    <button type="button" class="btn btn-danger btn-sm force-end-btn px-2 py-1" title="Force End Session">
                                         <span class="material-icons fs-sm">stop_circle</span> Stop
                                     </button>
                                 </form>
@@ -212,7 +212,7 @@
                     </tr>
                 {% else %}
                     <tr>
-                        <td colspan="8" class="text-center text-muted" style="padding: 4rem 0">
+                        <td colspan="8" class="text-center text-muted empty-state-padding">
                             <span class="material-icons fs-4xl mb-2">find_in_page</span>
                             <p class="fs-sm">No time logs match the selected filter parameters.</p>
                         </td>

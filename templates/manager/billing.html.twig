@@ -16,12 +16,12 @@
                     <h3 class="fs-xl m-0">Subscription Overview</h3>
                     <p class="fs-sm text-secondary mt-1">Stripe reference ID: <code>cus_StripeMockTenant_{{ org.id }}</code></p>
                 </div>
-                <span class="badge {% if org.plan.name == 'gold' %}badge-success{% elseif 'silver' %}badge-info{% else %}badge-warning{% endif %} fs-sm p-0" >
+                <span class="badge {% if org.plan.name == 'gold' %}badge-success{% elseif 'silver' %}badge-info{% else %}badge-warning{% endif %} fs-sm px-3 py-1 align-self-start mt-1">
                     {{ org.plan.name|upper }} Plan
                 </span>
             </div>
 
-            <div class="d-grid gap-6 mb-8 pt-6 border-t" style="grid-template-columns: 1fr 1fr">
+            <div class="grid-cols-2 gap-6 mb-8 pt-6 border-t">
                 <div>
                     <div class="fs-sm text-uppercase text-muted">Subscription Status</div>
                     <div class="fs-lg fw-700 d-flex align-items-center gap-1 mt-1">
