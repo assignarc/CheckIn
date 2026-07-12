@@ -7,7 +7,7 @@
 <!-- Overview Stats Grid -->
 <div class="grid-cols-3 mb-8">
     <!-- Stat 1: Active Sessions -->
-    <div class="metric-card">
+    <a href="{{ path('app_manager_users_checked_in') }}" class="metric-card" style="text-decoration: none; color: inherit;">
         <div class="metric-icon indigo">
             <span class="material-icons">directions_run</span>
         </div>
@@ -15,10 +15,10 @@
             <h3>{{ activeCount }}</h3>
             <p>Users Checked In Now</p>
         </div>
-    </div>
+    </a>
  
     <!-- Stat 2: Total Users -->
-    <div class="metric-card">
+    <a href="{{ path('app_manager_users') }}" class="metric-card" style="text-decoration: none; color: inherit;">
         <div class="metric-icon emerald">
             <span class="material-icons">people</span>
         </div>
@@ -26,10 +26,10 @@
             <h3>{{ limitsData.usage.orgUsers }} <span class="fs-md fw-400 text-muted">/ {{ limitsData.limits.max_orgUsers }}</span></h3>
             <p>Total Registered Users</p>
         </div>
-    </div>
+    </a>
 
     <!-- Stat 3: Organization Mode -->
-    <div class="metric-card">
+    <a href="{{ path('app_manager_settings') }}?tab=tab-kiosk" class="metric-card" style="text-decoration: none; color: inherit;">
         <div class="metric-icon {% if org.accessMode == 'secure' %}rose{% else %}amber{% endif %}">
             <span class="material-icons">{% if org.accessMode == 'secure' %}lock{% else %}lock_open{% endif %}</span>
         </div>
@@ -37,7 +37,7 @@
             <h3 class="fs-2xl text-uppercase">{{ org.accessMode }}</h3>
             <p>Kiosk Verification Mode</p>
         </div>
-    </div>
+    </a>
 </div>
 
 <div class="grid-cols-3 gap-8 mb-8 grid-sidebar-layout">

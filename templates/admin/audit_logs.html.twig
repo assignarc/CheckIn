@@ -24,6 +24,9 @@
         <button type="submit" class="btn btn-secondary">
             <span class="material-icons">filter_list</span> Filter
         </button>
+        <button type="button" onclick="window.location.reload();" class="btn btn-outline-secondary" title="Refresh Page">
+            <span class="material-icons">refresh</span> Refresh
+        </button>
         <a href="{{ path('app_admin_audit_logs', app.request.query.all|merge({'export': 'csv'})) }}" class="btn btn-primary">
             <span class="material-icons">download</span> Export CSV
         </a>
@@ -57,9 +60,25 @@
                             <span class="badge badge-secondary">{{ log.action }}</span>
                         </td>
                         <td>
-                            <div class="fs-xs p-0" style="max-height: 80px; overflow-y: auto; font-family: monospace; background: rgba(0,0,0,0.2); .5rem; border-radius: 4px">
-                                {{ log.detailsJson|json_encode(constant('JSON_PRETTY_PRINT')) }}
-                            </div>
+                            {% if log.detailsJson is iterable and log.detailsJson|length > 0 %}
+                                <details class="fs-xs">
+                                    <summary class="cursor-pointer text-purple-400 fw-600" style="outline: none; list-style: none;">
+                                        <span class="d-inline-flex align-items-center gap-1">
+                                            <span class="material-icons fs-sm" style="font-size: 0.9rem;">unfold_more</span> Show Details
+                                        </span>
+                                    </summary>
+                                    <div class="d-flex flex-column gap-1 mt-2 border-l pl-3" style="min-width: 220px; border-left: 2px solid var(--border-color);">
+                                        {% for key, val in log.detailsJson %}
+                                            <div>
+                                                <span class="text-secondary fw-600">{{ key|replace({'_': ' '})|title }}:</span>
+                                                <span class="text-primary">{{ val is iterable ? val|json_encode : val }}</span>
+                                            </div>
+                                        {% endfor %}
+                                    </div>
+                                </details>
+                            {% else %}
+                                <span class="text-muted fs-xs">None</span>
+                            {% endif %}
                         </td>
                         <td class="text-muted">{{ log.ipAddress|default('—') }}</td>
                     </tr>

@@ -15,21 +15,27 @@ use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Style\SymfonyStyle;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
+use Symfony\Component\HttpKernel\KernelInterface;
 
 #[AsCommand(
     name: 'app:seed-data',
-    description: 'Seeds the MySQL database with base plans, system administrator, organizations, managers, and orgUsers.',
+    description: 'Seeds the MySQL database with base plans, system administrator, organizations, managers, and orgUsers from seed_data.json.',
 )]
 class SeedDataCommand extends Command
 {
     private EntityManagerInterface $entityManager;
     private UserPasswordHasherInterface $passwordHasher;
+    private string $projectDir;
 
-    public function __construct(EntityManagerInterface $entityManager, UserPasswordHasherInterface $passwordHasher)
-    {
+    public function __construct(
+        EntityManagerInterface $entityManager, 
+        UserPasswordHasherInterface $passwordHasher,
+        KernelInterface $kernel
+    ) {
         parent::__construct();
         $this->entityManager = $entityManager;
         $this->passwordHasher = $passwordHasher;
+        $this->projectDir = $kernel->getProjectDir();
     }
 
     protected function execute(InputInterface $input, OutputInterface $output): int
@@ -37,49 +43,21 @@ class SeedDataCommand extends Command
         $io = new SymfonyStyle($input, $output);
         $io->title('Starting Database Seeding...');
 
+        $configPath = $this->projectDir . '/config/seed_data.json';
+        if (!file_exists($configPath)) {
+            $io->error("Seed data configuration file not found at: {$configPath}");
+            return Command::FAILURE;
+        }
+
+        $config = json_decode(file_get_contents($configPath), true);
+        if (!$config) {
+            $io->error("Failed to parse seed data JSON file.");
+            return Command::FAILURE;
+        }
+
         // 1. Seed Plans if they do not exist
         $plans = [];
-        $plansData = [
-            'basic' => [
-                'max_emp' => 10,
-                'max_mgr' => 1,
-                'max_fields' => 3,
-                'max_cat' => 1,
-                'session' => 2,
-                'retention' => 45,
-                'exports' => false,
-                'price' => '0.00',
-                'secure_kiosk' => false,
-                'custom_duration' => false,
-                'overtime' => false
-            ],
-            'silver' => [
-                'max_emp' => 100,
-                'max_mgr' => 1,
-                'max_fields' => 10,
-                'max_cat' => 5,
-                'session' => 8,
-                'retention' => 90,
-                'exports' => true,
-                'price' => '29.00',
-                'secure_kiosk' => true,
-                'custom_duration' => true,
-                'overtime' => true
-            ],
-            'gold' => [
-                'max_emp' => 1000,
-                'max_mgr' => 9999,
-                'max_fields' => 99,
-                'max_cat' => 99,
-                'session' => 24,
-                'retention' => 365,
-                'exports' => true,
-                'price' => '99.00',
-                'secure_kiosk' => true,
-                'custom_duration' => true,
-                'overtime' => true
-            ]
-        ];
+        $plansData = $config['plans'] ?? [];
 
         foreach ($plansData as $name => $data) {
             $plan = $this->entityManager->getRepository(Plan::class)->findOneBy(['name' => $name]);
@@ -106,165 +84,133 @@ class SeedDataCommand extends Command
         $this->entityManager->flush();
 
         // 2. Create System Administrator
-        $existingAdmin = $this->entityManager->getRepository(Manager::class)->findOneBy(['email' => 'admin@platform.com']);
-        if (!$existingAdmin) {
-            $admin = new Manager();
-            $admin->setEmail('admin@platform.com');
-            $admin->setFirstName('System');
-            $admin->setLastName('Administrator');
-            $admin->setRole('ROLE_SYSTEM_ADMIN');
-            $admin->setIsActive(true);
-            
-            $hashedPassword = $this->passwordHasher->hashPassword($admin, 'admin123');
-            $admin->setPasswordHash($hashedPassword);
-
-            $this->entityManager->persist($admin);
-            $io->success('Created platform administrator: admin@platform.com (Password: admin123)');
-        } else {
-            $io->text('Platform administrator admin@platform.com already exists.');
-        }
-
-        // 3. Create Acme Corp Organization (Gold)
-        $existingOrg = $this->entityManager->getRepository(Organization::class)->findOneBy(['slug' => 'acme-corp']);
-        if (!$existingOrg) {
-            $org = new Organization();
-            $org->setName('Acme Corporation');
-            $org->setSlug('acme-corp');
-            $org->setPlan($plans['gold']);
-            $org->setAccessMode('secure'); // Secure PIN mode
-            $org->setCheckInLinkToken('acme-secret-token');
-            $org->setOvertimeGraceMinutes(15);
-            $org->setOvertimeMultiplier('1.50');
-            
-            $this->entityManager->persist($org);
-            $io->success('Created Acme Corporation organization (Slug: acme-corp, Plan: Gold, Access Mode: Secure)');
-
-            // 4. Create Org Manager
-            $manager = new Manager();
-            $manager->setEmail('manager@acme.com');
-            $manager->setFirstName('Alice');
-            $manager->setLastName('Manager');
-            $manager->setRole('ROLE_ORG_MANAGER');
-            $manager->setOrganization($org);
-            $manager->setIsActive(true);
-
-            $hashedPassword = $this->passwordHasher->hashPassword($manager, 'manager123');
-            $manager->setPasswordHash($hashedPassword);
-
-            $this->entityManager->persist($manager);
-            $io->success('Created organization manager: manager@acme.com (Password: manager123)');
-
-            // 5. Create Categories
-            $categoriesData = [
-                ['name' => 'Development', 'icon' => 'code'],
-                ['name' => 'Design', 'icon' => 'palette'],
-                ['name' => 'Meeting', 'icon' => 'groups'],
-                ['name' => 'Support', 'icon' => 'support_agent'],
-            ];
-
-            $categories = [];
-            foreach ($categoriesData as $catData) {
-                $category = new Category();
-                $category->setOrganization($org);
-                $category->setName($catData['name']);
-                $category->setIcon($catData['icon']);
-                $category->setIsActive(true);
-                $this->entityManager->persist($category);
-                $categories[] = $category;
-            }
-            $io->success('Created 4 activity categories for Acme Corporation.');
-
-            // 6. Create OrgUsers
-            $orgUsersData = [
-                ['first' => 'John', 'last' => 'Doe', 'email' => 'john.doe@acme.com', 'pin' => '1234', 'custom' => ['OrgUser ID' => 'EMP-1001', 'Department' => 'Engineering']],
-                ['first' => 'Jane', 'last' => 'Smith', 'email' => 'jane.smith@acme.com', 'pin' => '5678', 'custom' => ['OrgUser ID' => 'EMP-1002', 'Department' => 'Design']],
-                ['first' => 'Bob', 'last' => 'Johnson', 'email' => 'bob.johnson@acme.com', 'pin' => '4321', 'custom' => ['OrgUser ID' => 'EMP-1003', 'Department' => 'Customer Success']],
-            ];
-
-            foreach ($orgUsersData as $empData) {
-                $orgUser = new OrgUser();
-                $orgUser->setOrganization($org);
-                $orgUser->setFirstName($empData['first']);
-                $orgUser->setLastName($empData['last']);
-                $orgUser->setEmail($empData['email']);
-                $orgUser->setIsActive(true);
-                $orgUser->setCustomFieldsJson($empData['custom']);
+        $adminData = $config['admin'] ?? [];
+        if ($adminData) {
+            $existingAdmin = $this->entityManager->getRepository(Manager::class)->findOneBy(['email' => $adminData['email']]);
+            if (!$existingAdmin) {
+                $admin = new Manager();
+                $admin->setEmail($adminData['email']);
+                $admin->setFirstName($adminData['first_name']);
+                $admin->setLastName($adminData['last_name']);
+                $admin->setRole('ROLE_SYSTEM_ADMIN');
+                $admin->setIsActive(true);
                 
-                $orgUser->setPhone($empData['phone'] ?? null);
-                $orgUser->setPin($empData['pin']);
-                $pinHash = password_hash($empData['pin'], PASSWORD_BCRYPT);
-                $orgUser->setPinHash($pinHash);
+                $hashedPassword = $this->passwordHasher->hashPassword($admin, $adminData['password']);
+                $admin->setPasswordHash($hashedPassword);
 
-                $this->entityManager->persist($orgUser);
-
-                if ($empData['first'] === 'John') {
-                    $session = new WorkSession();
-                    $session->setOrgUser($orgUser);
-                    $session->setOrganization($org);
-                    $session->setCategory($categories[0]); // Development
-                    $session->setStartedAt(new \DateTime('-1 day 09:00:00'));
-                    $session->setEndedAt(new \DateTime('-1 day 17:00:00'));
-                    $session->setDurationSeconds(8 * 3600);
-                    $session->setStartMethod('secure');
-                    $session->setEndMethod('secure');
-                    $session->setIsOvertime(false);
-                    $session->setIsOutOfWindow(false);
-                    $this->entityManager->persist($session);
-                }
+                $this->entityManager->persist($admin);
+                $io->success("Created platform administrator: {$adminData['email']} (Password: {$adminData['password']})");
+            } else {
+                $io->text("Platform administrator {$adminData['email']} already exists.");
             }
-            $io->success('Created 3 orgUsers with sample PIN logins and check-in logs.');
-
-        } else {
-            $io->text('Acme Corporation sample data already seeded.');
         }
 
-        // 7. Create a Basic Plan Demo Organization for comparison
-        $existingBasicOrg = $this->entityManager->getRepository(Organization::class)->findOneBy(['slug' => 'basic-demo']);
-        if (!$existingBasicOrg) {
-            $org = new Organization();
-            $org->setName('Basic Demo Corp');
-            $org->setSlug('basic-demo');
-            $org->setPlan($plans['basic']);
-            $org->setAccessMode('open'); // Open mode
-            $org->setCheckInLinkToken('basic-secret-token');
-            $org->setOvertimeGraceMinutes(0);
-            
-            $this->entityManager->persist($org);
+        // 3. Create Organizations
+        $orgsData = $config['static_organizations'] ?? [];
+        foreach ($orgsData as $orgData) {
+            $existingOrg = $this->entityManager->getRepository(Organization::class)->findOneBy(['slug' => $orgData['slug']]);
+            if (!$existingOrg) {
+                $org = new Organization();
+                $org->setName($orgData['name']);
+                $org->setSlug($orgData['slug']);
+                $org->setPlan($plans[$orgData['plan']]);
+                $org->setAccessMode($orgData['access_mode']);
+                $org->setCheckInLinkToken($orgData['token']);
+                $org->setOvertimeGraceMinutes($orgData['overtime_grace_minutes'] ?? 0);
+                $org->setOvertimeMultiplier($orgData['overtime_multiplier'] ?? '1.00');
+                
+                $this->entityManager->persist($org);
+                $io->success("Created organization: {$orgData['name']} (Slug: {$orgData['slug']})");
 
-            $manager = new Manager();
-            $manager->setEmail('basic@demo.com');
-            $manager->setFirstName('Basic');
-            $manager->setLastName('Manager');
-            $manager->setRole('ROLE_ORG_MANAGER');
-            $manager->setOrganization($org);
-            $manager->setIsActive(true);
-            $manager->setPasswordHash($this->passwordHasher->hashPassword($manager, 'demo123'));
-            $this->entityManager->persist($manager);
+                // Managers
+                foreach ($orgData['managers'] ?? [] as $mgrData) {
+                    $manager = new Manager();
+                    $manager->setEmail($mgrData['email']);
+                    $manager->setFirstName($mgrData['first_name']);
+                    $manager->setLastName($mgrData['last_name']);
+                    $manager->setRole('ROLE_ORG_MANAGER');
+                    $manager->setOrganization($org);
+                    $manager->setIsActive(true);
 
-            $category = new Category();
-            $category->setOrganization($org);
-            $category->setName('General Work');
-            $category->setIcon('work');
-            $category->setIsActive(true);
-            $this->entityManager->persist($category);
+                    $hashedPassword = $this->passwordHasher->hashPassword($manager, $mgrData['password']);
+                    $manager->setPasswordHash($hashedPassword);
+                    $this->entityManager->persist($manager);
+                    $io->text("  Manager: {$mgrData['email']} (Password: {$mgrData['password']})");
+                }
 
-            $orgUsers = [
-                ['first' => 'Dave', 'last' => 'Basic', 'pin' => '0000', 'phone' => '000-000-0000'],
-                ['first' => 'Sarah', 'last' => 'Open', 'pin' => '1111', 'phone' => '111-111-1111']
-            ];
-            foreach ($orgUsers as $emp) {
-                $orgUser = new OrgUser();
-                $orgUser->setOrganization($org);
-                $orgUser->setFirstName($emp['first']);
-                $orgUser->setLastName($emp['last']);
-                $orgUser->setIsActive(true);
-                $orgUser->setPhone($emp['phone']);
-                $orgUser->setPin($emp['pin']);
-                $orgUser->setPinHash(password_hash($emp['pin'], PASSWORD_BCRYPT));
-                $this->entityManager->persist($orgUser);
+                // Categories
+                $categories = [];
+                foreach ($orgData['categories'] ?? [] as $catData) {
+                    $category = new Category();
+                    $category->setOrganization($org);
+                    $category->setName($catData['name']);
+                    $category->setIcon($catData['icon']);
+                    $category->setIsActive(true);
+                    $this->entityManager->persist($category);
+                    $categories[] = $category;
+                }
+
+                // OrgUsers
+                foreach ($orgData['org_users'] ?? [] as $empData) {
+                    $orgUser = new OrgUser();
+                    $orgUser->setOrganization($org);
+                    $orgUser->setFirstName($empData['first']);
+                    $orgUser->setLastName($empData['last']);
+                    $orgUser->setEmail($empData['email'] ?? null);
+                    $orgUser->setIsActive(true);
+                    $orgUser->setPhone($empData['phone'] ?? null);
+                    $orgUser->setPin($empData['pin']);
+                    $orgUser->setPinHash(password_hash($empData['pin'], PASSWORD_BCRYPT));
+                    if (isset($empData['custom'])) {
+                        $orgUser->setCustomFieldsJson($empData['custom']);
+                    }
+                    $this->entityManager->persist($orgUser);
+
+                    // Optional Sessions
+                    foreach ($empData['sessions'] ?? [] as $sessData) {
+                        $session = new WorkSession();
+                        $session->setOrgUser($orgUser);
+                        $session->setOrganization($org);
+                        if (isset($categories[$sessData['category_index']])) {
+                            $session->setCategory($categories[$sessData['category_index']]);
+                        }
+                        $session->setStartedAt(new \DateTime($sessData['started_at']));
+                        $session->setEndedAt(new \DateTime($sessData['ended_at']));
+                        $session->setDurationSeconds($sessData['duration_seconds']);
+                        $session->setStartMethod($sessData['start_method']);
+                        $session->setEndMethod($sessData['end_method']);
+                        $session->setIsOvertime($sessData['is_overtime'] ?? false);
+                        $session->setIsOutOfWindow($sessData['is_out_of_window'] ?? false);
+                        $this->entityManager->persist($session);
+                    }
+                }
+            } else {
+                $io->text("Organization {$orgData['name']} already exists.");
             }
+        }
 
-            $io->success('Created Basic Demo organization (Slug: basic-demo, Plan: Basic, Access Mode: Open, Manager: basic@demo.com / demo123)');
+        // 4. Seed Default Configurations
+        $defaultConfigs = [
+            'new_signups_enabled' => true,
+            'allowed_phone_countries' => ['us'],
+            'max_import_records' => 100,
+            'demo_rotation_hours' => 12,
+            'captcha_login_enabled' => false,
+            'captcha_demo_enabled' => false,
+            'audit_log_archive_days' => 180,
+            'session_sweep_throttle_seconds' => 60,
+            'demo_reset_history_days' => 150,
+            'audit_log_archive_dir' => '/var/log/audit_archives',
+        ];
+        foreach ($defaultConfigs as $key => $val) {
+            $existing = $this->entityManager->getRepository(\App\Entity\AppConfig::class)->findOneBy(['settingKey' => $key]);
+            if (!$existing) {
+                $config = new \App\Entity\AppConfig();
+                $config->setSettingKey($key);
+                $config->setSettingValue($val);
+                $this->entityManager->persist($config);
+                $io->text("Seeding default config: {$key} = " . json_encode($val));
+            }
         }
 
         $this->entityManager->flush();

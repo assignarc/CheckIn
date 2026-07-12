@@ -10,29 +10,32 @@
         </div>
         
         <nav class="sidebar-nav">
-            <a href="{{ path('app_manager_dashboard') }}" class="sidebar-link {% if app.request.attributes.get('_route') == 'app_manager_dashboard' %}active{% endif %}">
-                <span class="material-icons">dashboard</span> Dashboard
+            <a href="{{ path('app_manager_dashboard') }}" class="sidebar-link {% if app.request.attributes.get('_route') == 'app_manager_dashboard' %}active{% endif %}" data-tooltip="Dashboard">
+                <span class="material-icons">dashboard</span> <span>Dashboard</span>
             </a>
-            <a href="{{ path('app_manager_users') }}" class="sidebar-link {% if 'app_manager_user' in app.request.attributes.get('_route') %}active{% endif %}">
-                <span class="material-icons">people</span> Users & Managers
+            <a href="{{ path('app_manager_users_checked_in') }}" class="sidebar-link {% if app.request.attributes.get('_route') == 'app_manager_users_checked_in' %}active{% endif %}" data-tooltip="Checked In Now">
+                <span class="material-icons">directions_run</span> <span>Checked In Now</span>
             </a>
-            <a href="{{ path('app_manager_categories') }}" class="sidebar-link {% if app.request.attributes.get('_route') == 'app_manager_categories' %}active{% endif %}">
-                <span class="material-icons">category</span> Categories
+            <a href="{{ path('app_manager_users') }}" class="sidebar-link {% if 'app_manager_user' in app.request.attributes.get('_route') and app.request.attributes.get('_route') != 'app_manager_users_checked_in' %}active{% endif %}" data-tooltip="Users & Managers">
+                <span class="material-icons">people</span> <span>Users & Managers</span>
             </a>
-            <a href="{{ path('app_manager_reports') }}" class="sidebar-link {% if app.request.attributes.get('_route') == 'app_manager_reports' %}active{% endif %}">
-                <span class="material-icons">bar_chart</span> Reporting & Logs
+            <a href="{{ path('app_manager_categories') }}" class="sidebar-link {% if app.request.attributes.get('_route') == 'app_manager_categories' %}active{% endif %}" data-tooltip="Categories">
+                <span class="material-icons">category</span> <span>Categories</span>
             </a>
-            <a href="{{ path('app_manager_reports_by_user') }}" class="sidebar-link {% if app.request.attributes.get('_route') == 'app_manager_reports_by_user' %}active{% endif %}">
-                <span class="material-icons">calendar_month</span> Reports by User
+            <a href="{{ path('app_manager_reports') }}" class="sidebar-link {% if app.request.attributes.get('_route') == 'app_manager_reports' %}active{% endif %}" data-tooltip="Reporting & Logs">
+                <span class="material-icons">bar_chart</span> <span>Reporting & Logs</span>
             </a>
-            <a href="{{ path('app_manager_settings') }}" class="sidebar-link {% if app.request.attributes.get('_route') == 'app_manager_settings' %}active{% endif %}">
-                <span class="material-icons">settings</span> Settings
+            <a href="{{ path('app_manager_reports_by_user') }}" class="sidebar-link {% if app.request.attributes.get('_route') == 'app_manager_reports_by_user' %}active{% endif %}" data-tooltip="Reports by User">
+                <span class="material-icons">calendar_month</span> <span>Reports by User</span>
             </a>
-            <a href="{{ path('app_manager_audit_logs') }}" class="sidebar-link {% if app.request.attributes.get('_route') == 'app_manager_audit_logs' %}active{% endif %}">
-                <span class="material-icons">history</span> Audit Logs
+            <a href="{{ path('app_manager_settings') }}" class="sidebar-link {% if app.request.attributes.get('_route') == 'app_manager_settings' %}active{% endif %}" data-tooltip="Settings">
+                <span class="material-icons">settings</span> <span>Settings</span>
             </a>
-            <a href="{{ path('app_manager_billing') }}" class="sidebar-link {% if app.request.attributes.get('_route') == 'app_manager_billing' %}active{% endif %}">
-                <span class="material-icons">credit_card</span> Billing & Subscription
+            <a href="{{ path('app_manager_audit_logs') }}" class="sidebar-link {% if app.request.attributes.get('_route') == 'app_manager_audit_logs' %}active{% endif %}" data-tooltip="Audit Logs">
+                <span class="material-icons">history</span> <span>Audit Logs</span>
+            </a>
+            <a href="{{ path('app_manager_billing') }}" class="sidebar-link {% if app.request.attributes.get('_route') == 'app_manager_billing' %}active{% endif %}" data-tooltip="Billing & Subscription">
+                <span class="material-icons">credit_card</span> <span>Billing & Subscription</span>
             </a>
         </nav>
     </aside>
@@ -111,8 +114,7 @@
             </div>
         </header>
 
-        <!-- Dashboard Content Body -->
-        <section class="dashboard-body">
+        <div class="dashboard-body flex-1">
             {% for type, messages in app.flashes %}
                 {% for message in messages %}
                     <div class="alert alert-{{ type }}">
@@ -125,47 +127,37 @@
             {% endfor %}
 
             {% block manager_content %}{% endblock %}
-        </section>
+        </div>
     </main>
 </div>
 
 <script>
-    document.addEventListener('DOMContentLoaded', () => {
+    document.addEventListener("DOMContentLoaded", function() {
+        // Ticking Active Sessions Timer Functionality
         function updateTickingTimers() {
+            const timers = document.querySelectorAll('.ticking-timer');
             const now = new Date();
-            document.querySelectorAll('.ticking-timer').forEach(timer => {
-                const startedStr = timer.getAttribute('data-started');
-                if (!startedStr) return;
+            
+            timers.forEach(timer => {
+                const startedAtStr = timer.getAttribute('data-started-at');
+                const maxSeconds = parseInt(timer.getAttribute('data-max-seconds') || '0', 10);
+                if (!startedAtStr) return;
                 
-                const startedDate = new Date(startedStr);
-                const diffMs = now - startedDate;
-                const diffSecs = diffMs > 0 ? Math.floor(diffMs / 1000) : 0;
-
-                const maxSecs = parseInt(timer.getAttribute('data-max-duration'), 10) || 0;
-                const terminate = timer.getAttribute('data-terminate') === 'true';
-
+                const startedAt = new Date(startedAtStr);
+                const diffSecs = Math.floor((now - startedAt) / 1000);
+                
                 const textEl = timer.querySelector('.timer-text');
-                const dot = timer.querySelector('.ticking-dot');
-
-                if (maxSecs > 0 && diffSecs >= maxSecs) {
-                    if (terminate) {
-                        if (textEl) textEl.textContent = 'Auto End';
-                        timer.classList.remove('badge-success');
-                        timer.classList.add('badge-secondary');
-                        timer.style.background = 'rgba(107, 114, 128, 0.15)';
-                        timer.style.color = '#6B7280';
-                        if (dot) dot.style.display = 'none';
-                        return;
-                    } else {
-                        // Exceeded and not terminating -> show in RED as overtime
-                        timer.classList.remove('badge-success');
-                        timer.classList.add('badge-danger');
-                        timer.style.background = 'var(--danger-glow)';
-                        timer.style.color = 'var(--danger)';
-                        if (dot) {
-                            dot.style.display = 'inline-block';
-                            dot.style.backgroundColor = 'var(--danger)';
-                        }
+                const dot = timer.querySelector('.timer-dot');
+                
+                if (diffSecs >= maxSeconds) {
+                    // Over limit
+                    timer.classList.remove('badge-success');
+                    timer.classList.add('badge-danger');
+                    timer.style.background = 'var(--danger-glow)';
+                    timer.style.color = 'var(--danger)';
+                    if (dot) {
+                        dot.style.display = 'inline-block';
+                        dot.style.backgroundColor = 'var(--danger)';
                     }
                 } else {
                     // Normal under limit
@@ -198,9 +190,35 @@
         setInterval(updateTickingTimers, 1000);
     });
 
+    // Restore sidebar collapse state immediately on load
+    if (window.innerWidth > 900 && localStorage.getItem('sidebar-collapsed') === '1') {
+        const layout = document.querySelector('.dashboard-layout');
+        if (layout) {
+            layout.classList.add('sidebar-collapsed');
+        }
+        const icon = document.querySelector('#sidebarToggle .material-icons');
+        if (icon) {
+            icon.textContent = 'menu_open';
+        }
+    }
+
     function toggleSidebar() {
-        const sidebar = document.getElementById('sidebar');
-        sidebar.classList.toggle('sidebar-open');
+        const layout = document.querySelector('.dashboard-layout');
+        const icon = document.querySelector('#sidebarToggle .material-icons');
+        
+        if (window.innerWidth <= 900) {
+            const sidebar = document.getElementById('sidebar');
+            sidebar.classList.toggle('sidebar-open');
+        } else {
+            layout.classList.toggle('sidebar-collapsed');
+            const isCollapsed = layout.classList.contains('sidebar-collapsed');
+            localStorage.setItem('sidebar-collapsed', isCollapsed ? '1' : '0');
+            
+            // Toggle hamburger icon between menu and menu_open
+            if (icon) {
+                icon.textContent = isCollapsed ? 'menu_open' : 'menu';
+            }
+        }
     }
 
     function toggleHeaderMenu() {
@@ -212,7 +230,7 @@
     document.addEventListener('click', function(e) {
         const sidebar = document.getElementById('sidebar');
         const toggle = document.getElementById('sidebarToggle');
-        if (window.innerWidth <= 768 && sidebar.classList.contains('sidebar-open')
+        if (window.innerWidth <= 900 && sidebar.classList.contains('sidebar-open')
             && !sidebar.contains(e.target) && !toggle.contains(e.target)) {
             sidebar.classList.remove('sidebar-open');
         }

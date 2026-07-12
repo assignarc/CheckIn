@@ -9,7 +9,7 @@
 
 {% block manager_content %}
 
-<div class="d-grid align-items-start gap-5 settings-grid-layout">
+<div class="mx-auto" style="max-width: 950px;">
 
     <!-- Left: Tabbed settings panel -->
     <div class="glass-panel p-0 overflow-hidden">
@@ -24,6 +24,9 @@
             </button>
             <button class="settings-tab" data-tab="tab-policies">
                 <span class="material-icons">admin_panel_settings</span> Policies
+            </button>
+            <button class="settings-tab" data-tab="tab-kiosk">
+                <span class="material-icons">router</span> Kiosk URL
             </button>
         </div>
 
@@ -51,8 +54,13 @@
                     <div class="form-group">
                         <label class="form-label" for="org_logo">Organization Logo</label>
                         <div class="d-flex align-items-center gap-4">
-                            <img src="{{ path('app_org_logo', {slug: app.user.organization.slug}) }}" alt="Logo" class="border" style="width: 48px; height: 48px; border-radius: 8px">
-                            <input type="file" name="org_logo" id="org_logo" class="form-control" accept="image/png, image/jpeg, image/gif, image/webp" class="flex-1">
+                            <img src="{{ path('app_org_logo', {slug: app.user.organization.slug}) }}?t={{ app.user.organization.updatedAt.timestamp|default(0) }}" alt="Logo" class="border" style="width: 48px; height: 48px; border-radius: 8px">
+                            <input type="file" name="org_logo" id="org_logo" class="form-control flex-1" accept="image/png, image/jpeg, image/gif, image/webp">
+                            {% if app.user.organization.logoBlob %}
+                                <button type="submit" form="delete-logo-form" class="btn btn-sm btn-outline-danger d-flex align-items-center gap-1" style="height: 38px;">
+                                    <span class="material-icons fs-md">delete</span> Remove Logo
+                                </button>
+                            {% endif %}
                         </div>
                         <span class="form-text d-block fs-xs text-muted mt-1">
                             Logo must be between 64x64px and 256x256px (renders at 128x128px). Only square dimensions are supported; non-square images will be auto-cropped from the center.
@@ -72,6 +80,7 @@
                     </button>
                 </div>
             </form>
+            <form id="delete-logo-form" action="{{ path('app_manager_settings_delete_logo') }}" method="post" class="confirm-form d-none" data-confirm="Are you sure you want to remove the custom logo? Falling back to stock image."></form>
         </div>
 
         <!-- ── Tab: My Account ──────────────────────────────────────── -->
@@ -226,36 +235,73 @@
             </form>
         </div>
 
+        <!-- ── Tab: Kiosk URL ────────────────────────────────────────── -->
+        <div id="tab-kiosk" class="settings-tab-pane">
+            <div class="p-6">
+                <h3 class="fs-lg d-flex align-items-center gap-2 mb-4">
+                    <span class="material-icons text-primary">link</span> Kiosk URL settings
+                </h3>
+                <p class="text-secondary mb-6 fs-sm">
+                    Display this private link on a tablet placed at your entrance. Workers will use this kiosk to check in and out.
+                </p>
+
+                <div class="mb-6 p-4 rounded-md border text-center" style="background: rgba(99, 102, 241, 0.05); border-style: dashed; border-color: var(--primary);">
+                    <div class="fs-xs text-muted mb-2">Private Kiosk Launch Link</div>
+                    <code class="text-primary word-break-all fs-md fw-600 select-all" style="font-size: 1rem; display: block; margin-bottom: 1rem;">
+                        {{ url('app_kiosk', {slug: org.slug, token: org.checkInLinkToken}) }}
+                    </code>
+                    
+                    <div class="d-inline-block p-4 bg-white rounded-xl border" style="
+                        box-shadow: 0 8px 30px rgba(99, 102, 241, 0.1); 
+                        position: relative; 
+                        border-radius: 16px; 
+                        border: 2px solid rgba(99, 102, 241, 0.2) !important;
+                    ">
+                        <!-- QR Code Image with custom color matching TimeFlow's brand -->
+                        <img src="https://api.qrserver.com/v1/create-qr-code/?size=180x180&data={{ url('app_kiosk', {slug: org.slug, token: org.checkInLinkToken})|url_encode }}&ecc=H&color=6366f1" alt="Kiosk QR Code" style="width: 180px; height: 180px; display: block; border-radius: 8px;">
+                        
+                        <!-- Centered TimeFlow & Org Icons Badge -->
+                        <div class="d-flex align-items-center justify-content-center gap-1 bg-white p-1" style="
+                            position: absolute;
+                            top: 50%;
+                            left: 50%;
+                            transform: translate(-50%, -50%);
+                            border-radius: 50px;
+                            padding: 4px 8px !important;
+                            box-shadow: 0 2px 10px rgba(0,0,0,0.15);
+                            background: white;
+                            border: 1px solid #e2e8f0;
+                            height: 28px;
+                        ">
+                            <!-- TimeFlow Logo Icon (alarm) -->
+                            <span class="material-icons text-primary" style="font-size: 14px; width: 14px; height: 14px; line-height: 14px;">alarm</span>
+                            
+                            <!-- Vertical Divider -->
+                            <span style="width: 1px; height: 12px; background: #e2e8f0; display: inline-block;"></span>
+                            
+                            <!-- Org Logo Icon -->
+                            <img src="{{ path('app_org_logo', {slug: org.slug}) }}?t={{ org.updatedAt.timestamp|default(0) }}" alt="Org Logo" style="width: 14px; height: 14px; object-fit: contain; border-radius: 2px;">
+                        </div>
+                    </div>
+                    <div class="fs-xs text-muted mt-2">Scan this QR code with your kiosk tablet or mobile device to launch the kiosk immediately.</div>
+                </div>
+
+                <div class="d-flex gap-4">
+                    <a href="{{ path('app_kiosk', {slug: org.slug, token: org.checkInLinkToken}) }}" target="_blank"
+                       class="btn btn-secondary d-flex align-items-center justify-content-center gap-1 flex-1">
+                        <span class="material-icons">open_in_new</span> Launch Kiosk
+                    </a>
+                    <form action="{{ path('app_manager_rotate_token') }}" method="post"
+                          class="confirm-form flex-1" data-confirm="Rotate the Kiosk link? This will immediately invalidate the current screen.">
+                        <button type="submit" class="btn btn-danger d-flex align-items-center justify-content-center gap-1 w-100">
+                            <span class="material-icons">sync</span> Rotate Token
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
     </div>{# /glass-panel #}
-
-    <!-- Right: Kiosk URL (always visible) -->
-    <div class="glass-panel">
-        <h3 class="fs-sm d-flex align-items-center gap-1 mb-3">
-            <span class="material-icons fs-md text-primary">link</span> Kiosk URL
-        </h3>
-        <p class="text-secondary mb-3 fs-xs">
-            Display this private link on a tablet placed at your entrance.
-        </p>
-
-        <div class="bg-input mb-0 p-0 rounded-md border" >
-            <code class="text-primary word-break-all fs-xs">
-                /org/{{ org.slug }}/kiosk/{{ org.checkInLinkToken }}
-            </code>
-        </div>
-
-        <div class="d-flex flex-column gap-2">
-            <a href="/org/{{ org.slug }}/kiosk/{{ org.checkInLinkToken }}" target="_blank"
-               class="btn btn-secondary btn-sm justify-content-center w-100">
-                <span class="material-icons fs-md">open_in_new</span> Launch Kiosk
-            </a>
-            <form action="{{ path('app_manager_rotate_token') }}" method="post"
-                  class="confirm-form" data-confirm="Rotate the Kiosk link? This will immediately invalidate the current screen.">
-                <button type="submit" class="btn btn-danger btn-sm justify-content-center w-100">
-                    <span class="material-icons fs-md">sync</span> Rotate Token
-                </button>
-            </form>
-        </div>
-    </div>
 
 </div>
 
@@ -280,9 +326,15 @@ $(function () {
     });
 
     // ── Restore last active tab (e.g. after form submit + redirect) ────
-    var saved = sessionStorage.getItem('settings-active-tab');
-    if (saved && $('#' + saved).length) {
-        $('.settings-tab[data-tab="' + saved + '"]').trigger('click');
+    const urlParams = new URLSearchParams(window.location.search);
+    const urlTab = urlParams.get('tab');
+    if (urlTab && $('#' + urlTab).length) {
+        $('.settings-tab[data-tab="' + urlTab + '"]').trigger('click');
+    } else {
+        var saved = sessionStorage.getItem('settings-active-tab');
+        if (saved && $('#' + saved).length) {
+            $('.settings-tab[data-tab="' + saved + '"]').trigger('click');
+        }
     }
 });
 </script>

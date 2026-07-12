@@ -3,116 +3,222 @@
 {% block title %}Global Settings - TimeFlow Admin{% endblock %}
 
 {% block admin_content %}
-<div class="glass-panel m-0 max-w-800" >
-    <h3 class="fs-xl d-flex align-items-center gap-2 mb-6">
-        <span class="material-icons text-primary">settings</span> Global Application Settings
-    </h3>
+<div class="mx-auto" style="max-width: 900px;">
 
-    <form action="{{ path('app_admin_settings') }}" method="post">
-        
-        <div class="mb-6 p-6 rounded-md border" style="background: rgba(255,255,255,0.03)">
-            <h4 class="fs-md mt-0 mb-4">Phone Number Formatting</h4>
-            <p class="fs-sm text-secondary mb-4">
-                Select which countries are allowed for phone number inputs across the platform (Sign Up, Organization Settings, User Management). 
-                We use the standard 2-letter ISO country codes.
-            </p>
+    <!-- Left: Tabbed settings panel -->
+    <div class="glass-panel p-0 overflow-hidden">
 
-            <div class="form-group">
-                <label class="form-label">Allowed Countries</label>
-                <div class="d-flex flex-column gap-2">
-                    {# Simple checkbox list for top countries, could be expanded to a select2 in the future #}
-                    {% set popular_countries = {
-                        'us': 'United States',
-                        'ca': 'Canada',
-                        'gb': 'United Kingdom',
-                        'au': 'Australia',
-                        'in': 'India',
-                        'de': 'Germany',
-                        'fr': 'France',
-                        'za': 'South Africa',
-                        'mx': 'Mexico',
-                        'br': 'Brazil'
-                    } %}
-
-                    <div class="d-grid gap-3" style="grid-template-columns: repeat(auto-fill, minmax(200px, 1fr))">
-                        {% for code, name in popular_countries %}
-                            <label class="fs-md d-flex align-items-center gap-2 cursor-pointer">
-                                <input type="checkbox" name="allowed_phone_countries[]" value="{{ code }}" 
-                                       {% if code in allowedPhoneCountries %}checked{% endif %}>
-                                {{ name }} ({{ code|upper }})
-                            </label>
-                        {% endfor %}
-                    </div>
-                </div>
-            </div>
-            
-            <div class="alert alert-info alert-sm mt-4 mb-3">
-                <span class="material-icons fs-md">info</span>
-                <span>If no country is selected, it will automatically fall back to just the United States (US).</span>
-            </div>
-        </div>
-
-        <div class="mb-6 p-6 rounded-md border" style="background: rgba(255,255,255,0.03)">
-            <h4 class="fs-md mt-0 mb-4">Data Limits</h4>
-            
-            <div class="form-group mb-4">
-                <label class="form-label" for="max_import_records">Maximum CSV Import Records</label>
-                <input type="number" class="form-control" name="max_import_records" id="max_import_records" value="{{ maxImportRecords|default(100) }}" min="1">
-                <span class="form-text d-block" style="margin-top:-0.3rem">
-                    The maximum number of rows allowed in a single CSV import. If a file exceeds this limit, the manager will be prompted to split the file into smaller batches. Default is 100.
-                </span>
-            </div>
-
-            <div class="form-group mb-0">
-                <label class="form-label" for="demo_rotation_hours">Demo Credentials Rotation (Hours)</label>
-                <input type="number" class="form-control" name="demo_rotation_hours" id="demo_rotation_hours" value="{{ demoRotationHours|default(12) }}" min="1">
-                <span class="form-text d-block" style="margin-top:-0.3rem">
-                    The number of hours before passwords and kiosk tokens are automatically rotated for all demo organizations. Default is 12 hours.
-                </span>
-            </div>
-        <div class="mb-6 p-6 rounded-md border" style="background: rgba(255,255,255,0.03)">
-            <h4 class="fs-md mt-0 mb-4">Security & Verification</h4>
-            <p class="fs-sm text-secondary mb-4">
-                Configure when mathematical captchas are required to protect console operations and prevent automated abuse.
-            </p>
-
-            <div class="form-group mb-4">
-                <label class="fs-md d-flex align-items-center gap-2 cursor-pointer">
-                    <input type="hidden" name="captcha_login_enabled" value="0">
-                    <input type="checkbox" name="captcha_login_enabled" value="1" {% if captchaLoginEnabled %}checked{% endif %}>
-                    Enable Captcha for Console Login (Manager & Admin login)
-                </label>
-            </div>
-
-            <div class="form-group mb-0">
-                <label class="fs-md d-flex align-items-center gap-2 cursor-pointer">
-                    <input type="hidden" name="captcha_demo_enabled" value="0">
-                    <input type="checkbox" name="captcha_demo_enabled" value="1" {% if captchaDemoEnabled %}checked{% endif %}>
-                    Enable Captcha for Requesting Demo Access
-                </label>
-            </div>
-        </div>
-
-        <div class="mb-6 p-6 rounded-md border" style="background: rgba(255,255,255,0.03)">
-            <h4 class="fs-md mt-0 mb-4">Data Retention</h4>
-            <p class="fs-sm text-secondary mb-4">
-                Configure how long to keep audit logs in the database before archiving them to a zip file on the server.
-            </p>
-
-            <div class="form-group mb-0">
-                <label class="form-label" for="audit_log_archive_days">Audit Log Archival Duration (Days)</label>
-                <input type="number" class="form-control" name="audit_log_archive_days" id="audit_log_archive_days" value="{{ auditLogArchiveDays|default(180) }}" min="1">
-                <span class="form-text d-block" style="margin-top:-0.3rem">
-                    Logs older than this number of days will be exported to a JSON file, zipped, and removed from the active database. Default is 180.
-                </span>
-            </div>
-        </div>
-
-        <div class="d-flex justify-content-end">
-            <button type="submit" class="btn btn-primary">
-                <span class="material-icons">save</span> Save Global Settings
+        <!-- Tab bar -->
+        <div class="settings-tab-bar">
+            <button type="button" class="settings-tab active" data-tab="tab-phone">
+                <span class="material-icons">phone</span> Phone Numbers
+            </button>
+            <button type="button" class="settings-tab" data-tab="tab-limits">
+                <span class="material-icons">speed</span> Limits &amp; Sweeps
+            </button>
+            <button type="button" class="settings-tab" data-tab="tab-security">
+                <span class="material-icons">security</span> Security &amp; Signups
+            </button>
+            <button type="button" class="settings-tab" data-tab="tab-retention">
+                <span class="material-icons">storage</span> Data Retention
             </button>
         </div>
-    </form>
+
+        <form action="{{ path('app_admin_settings') }}" method="post">
+
+            <!-- ── Tab: Phone Numbers ────────────────────────────────────── -->
+            <div id="tab-phone" class="settings-tab-pane active" style="padding: 2rem;">
+                <h4 class="fs-md mt-0 mb-4 d-flex align-items-center gap-2">
+                    <span class="material-icons text-primary fs-md">phone</span> Phone Number Formatting
+                </h4>
+                <p class="fs-sm text-secondary mb-6">
+                    Select which countries are allowed for phone number inputs across the platform (Sign Up, Organization Settings, User Management). 
+                    We use the standard 2-letter ISO country codes.
+                </p>
+
+                <div class="form-group mb-6">
+                    <label class="form-label mb-3">Allowed Countries</label>
+                    <div class="d-flex flex-column gap-2">
+                        {% set popular_countries = {
+                            'us': 'United States',
+                            'ca': 'Canada',
+                            'gb': 'United Kingdom',
+                            'au': 'Australia',
+                            'in': 'India',
+                            'de': 'Germany',
+                            'fr': 'France',
+                            'za': 'South Africa',
+                            'mx': 'Mexico',
+                            'br': 'Brazil'
+                        } %}
+
+                        <div class="d-grid gap-3" style="grid-template-columns: repeat(auto-fill, minmax(200px, 1fr))">
+                            {% for code, name in popular_countries %}
+                                <label class="fs-md d-flex align-items-center gap-2 cursor-pointer">
+                                    <input type="checkbox" name="allowed_phone_countries[]" value="{{ code }}" 
+                                           {% if code in allowedPhoneCountries %}checked{% endif %}>
+                                    {{ name }} ({{ code|upper }})
+                                </label>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="alert alert-info alert-sm m-0">
+                    <span class="material-icons fs-md">info</span>
+                    <span>If no country is selected, it will automatically fall back to just the United States (US).</span>
+                </div>
+            </div>
+
+            <!-- ── Tab: Limits & Sweeps ──────────────────────────────────── -->
+            <div id="tab-limits" class="settings-tab-pane" style="padding: 2rem; display: none;">
+                <h4 class="fs-md mt-0 mb-4 d-flex align-items-center gap-2">
+                    <span class="material-icons text-primary fs-md">speed</span> Platform Limits &amp; Automation
+                </h4>
+                <p class="fs-sm text-secondary mb-6">
+                    Configure limits and sweep throttle intervals to balance platform performance and background worker overhead.
+                </p>
+
+                <div class="form-group mb-5">
+                    <label class="form-label" for="max_import_records">Maximum CSV Import Records</label>
+                    <input type="number" class="form-control" name="max_import_records" id="max_import_records" value="{{ maxImportRecords|default(100) }}" min="1">
+                    <span class="form-text d-block" style="margin-top: 0.35rem">
+                        The maximum number of rows allowed in a single CSV import. If a file exceeds this limit, the manager will be prompted to split the file into smaller batches. Default is 100.
+                    </span>
+                </div>
+
+                <div class="form-group mb-5">
+                    <label class="form-label" for="demo_rotation_hours">Demo Credentials Rotation (Hours)</label>
+                    <input type="number" class="form-control" name="demo_rotation_hours" id="demo_rotation_hours" value="{{ demoRotationHours|default(12) }}" min="1">
+                    <span class="form-text d-block" style="margin-top: 0.35rem">
+                        The number of hours before passwords and kiosk tokens are automatically rotated for all demo organizations. Default is 12 hours.
+                    </span>
+                </div>
+
+                <div class="form-group mb-5">
+                    <label class="form-label" for="session_sweep_throttle_seconds">Session Sweep Throttle (Seconds)</label>
+                    <input type="number" class="form-control" name="session_sweep_throttle_seconds" id="session_sweep_throttle_seconds" value="{{ sessionSweepThrottleSeconds|default(60) }}" min="1">
+                    <span class="form-text d-block" style="margin-top: 0.35rem">
+                        The minimum number of seconds that must elapse before a request is allowed to trigger a background active session sweep. Default is 60.
+                    </span>
+                </div>
+
+                <div class="form-group mb-0">
+                    <label class="form-label" for="demo_reset_history_days">Demo Reset History Length (Days)</label>
+                    <input type="number" class="form-control" name="demo_reset_history_days" id="demo_reset_history_days" value="{{ demoResetHistoryDays|default(150) }}" min="1">
+                    <span class="form-text d-block" style="margin-top: 0.35rem">
+                        The number of days of historical work sessions generated when resetting the demo database. Default is 150 days.
+                    </span>
+                </div>
+            </div>
+
+            <!-- ── Tab: Security & Signups ───────────────────────────────── -->
+            <div id="tab-security" class="settings-tab-pane" style="padding: 2rem; display: none;">
+                <h4 class="fs-md mt-0 mb-4 d-flex align-items-center gap-2">
+                    <span class="material-icons text-primary fs-md">security</span> Security, Captchas &amp; Signups
+                </h4>
+                <p class="fs-sm text-secondary mb-6">
+                    Manage captcha protection rules and toggle global public signups for the platform.
+                </p>
+
+                <div class="form-group mb-4">
+                    <label class="fs-md d-flex align-items-center gap-3 cursor-pointer">
+                        <input type="hidden" name="captcha_login_enabled" value="0">
+                        <input type="checkbox" name="captcha_login_enabled" value="1" {% if captchaLoginEnabled %}checked{% endif %}>
+                        <span>Enable Captcha for Console Login (Manager &amp; Admin login)</span>
+                    </label>
+                </div>
+
+                <div class="form-group mb-5">
+                    <label class="fs-md d-flex align-items-center gap-3 cursor-pointer">
+                        <input type="hidden" name="captcha_demo_enabled" value="0">
+                        <input type="checkbox" name="captcha_demo_enabled" value="1" {% if captchaDemoEnabled %}checked{% endif %}>
+                        <span>Enable Captcha for Requesting Demo Access</span>
+                    </label>
+                </div>
+
+                <hr class="my-5" style="border: 0; border-top: 1px solid rgba(255,255,255,0.08)">
+
+                <div class="form-group mb-0">
+                    <label class="fs-md d-flex align-items-center gap-3 cursor-pointer">
+                        <input type="hidden" name="new_signups_enabled" value="0">
+                        <input type="checkbox" name="new_signups_enabled" value="1" {% if newSignupsEnabled %}checked{% endif %}>
+                        <span class="fw-600 text-gradient">Allow New Organization Signups on the Website</span>
+                    </label>
+                    <span class="form-text d-block mt-2">
+                        If disabled, all public signup CTA buttons and pricing selectors on the landing page will be disabled, and requests to registration endpoints will be blocked.
+                    </span>
+                </div>
+            </div>
+
+            <!-- ── Tab: Data Retention ───────────────────────────────────── -->
+            <div id="tab-retention" class="settings-tab-pane" style="padding: 2rem; display: none;">
+                <h4 class="fs-md mt-0 mb-4 d-flex align-items-center gap-2">
+                    <span class="material-icons text-primary fs-md">storage</span> Data Archival &amp; Retention
+                </h4>
+                <p class="fs-sm text-secondary mb-6">
+                    Configure thresholds for database cleanup. Older audit logs are automatically zipped and exported to storage to save DB space.
+                </p>
+
+                <div class="form-group mb-5">
+                    <label class="form-label" for="audit_log_archive_days">Audit Log Archival Duration (Days)</label>
+                    <input type="number" class="form-control" name="audit_log_archive_days" id="audit_log_archive_days" value="{{ auditLogArchiveDays|default(180) }}" min="1">
+                    <span class="form-text d-block" style="margin-top: 0.35rem">
+                        Logs older than this number of days will be exported to a JSON file, zipped, and removed from the active database. Default is 180.
+                    </span>
+                </div>
+
+                <div class="form-group mb-0">
+                    <label class="form-label" for="audit_log_archive_dir">Archive Storage Subdirectory</label>
+                    <input type="text" class="form-control" name="audit_log_archive_dir" id="audit_log_archive_dir" value="{{ auditLogArchiveDir|default('/var/log/audit_archives') }}">
+                    <span class="form-text d-block" style="margin-top: 0.35rem">
+                        Relative path from the project root where archived zip files will be stored. Default is /var/log/audit_archives.
+                    </span>
+                </div>
+            </div>
+
+            <!-- Tab Footer -->
+            <div class="settings-tab-footer" style="padding: 1.5rem 2rem; border-top: 1px solid rgba(255,255,255,0.06); display: flex; justify-content: flex-end; background: rgba(0,0,0,0.1);">
+                <button type="submit" class="btn btn-primary d-flex align-items-center gap-2">
+                    <span class="material-icons">save</span> Save Global Settings
+                </button>
+            </div>
+
+        </form>
+
+    </div>{# /glass-panel #}
+
 </div>
+
+<script>
+$(function () {
+    // ── Tab switching ──────────────────────────────────────────────────
+    $('.settings-tab').on('click', function () {
+        var target = $(this).data('tab');
+
+        // Update tab buttons
+        $('.settings-tab').removeClass('active');
+        $(this).addClass('active');
+
+        // Show the correct pane with a quick fade
+        $('.settings-tab-pane').hide().removeClass('active');
+        $('#' + target).fadeIn(150).addClass('active');
+
+        // Persist active tab in sessionStorage so it survives a page reload/redirect
+        sessionStorage.setItem('admin-settings-active-tab', target);
+    });
+
+    // ── Restore last active tab (e.g. after form submit + redirect) ────
+    const urlParams = new URLSearchParams(window.location.search);
+    const urlTab = urlParams.get('tab');
+    if (urlTab && $('#' + urlTab).length) {
+        $('.settings-tab[data-tab="' + urlTab + '"]').trigger('click');
+    } else {
+        var saved = sessionStorage.getItem('admin-settings-active-tab');
+        if (saved && $('#' + saved).length) {
+            $('.settings-tab[data-tab="' + saved + '"]').trigger('click');
+        }
+    }
+});
+</script>
 {% endblock %}

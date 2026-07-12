@@ -20,14 +20,20 @@ use App\Service\AppConfigService;
 #[Route('/admin')]
 class AdminController extends AbstractController
 {
-    private function logAdminAudit(EntityManagerInterface $em, string $action, array $details, Request $request): void
+    private function logAdminAudit(EntityManagerInterface $em, string $action, array $details, Request $request, ?Organization $org = null): void
     {
         /** @var Manager $admin */
         $admin = $this->getUser();
         $log = new AuditLog();
         if ($admin instanceof Manager) {
             $log->setManager($admin);
-            $log->setOrganization($admin->getOrganization());
+            if ($org) {
+                $log->setOrganization($org);
+            } else {
+                $log->setOrganization($admin->getOrganization());
+            }
+        } elseif ($org) {
+            $log->setOrganization($org);
         }
         $log->setAction($action);
         $log->setDetailsJson($details);
@@ -228,7 +234,7 @@ class AdminController extends AbstractController
         $this->logAdminAudit($em, 'PASSWORD_RESET', [
             'org_id' => $org->getId(),
             'manager_email' => $managerEmail
-        ], $request);
+        ], $request, $org);
 
         $this->addFlash('success', "Password successfully reset for manager '{$managerEmail}'.");
         return $this->redirectToRoute('app_admin_organizations');
@@ -277,17 +283,24 @@ class AdminController extends AbstractController
         $manager->setIsActive($request->request->get('is_active') === '1');
 
         $password = $request->request->get('password', '');
+        $passwordChanged = false;
         if ($password && strlen($password) >= 8) {
             $manager->setPasswordHash($passwordHasher->hashPassword($manager, $password));
+            $passwordChanged = true;
         }
 
         $manager->setUpdatedAt(new \DateTimeImmutable());
         $em->flush();
 
-        $this->logAdminAudit($em, 'MANAGER_EDITED', [
+        $details = [
             'target_manager_id' => $manager->getId(),
             'email' => $manager->getEmail()
-        ], $request);
+        ];
+        if ($passwordChanged) {
+            $details['password_changed'] = true;
+        }
+
+        $this->logAdminAudit($em, 'MANAGER_EDITED', $details, $request, $manager->getOrganization());
 
         $this->addFlash('success', 'Manager updated successfully.');
         return $this->redirectToRoute('app_admin_managers');
@@ -348,8 +361,11 @@ class AdminController extends AbstractController
             ->orderBy('a.createdAt', 'DESC');
             
         if ($orgId) {
-            $qb->andWhere('a.organization = :orgId')
-               ->setParameter('orgId', $orgId);
+            $orgExists = $em->getRepository(\App\Entity\Organization::class)->find($orgId);
+            if ($orgExists) {
+                $qb->andWhere('a.organization = :orgId')
+                   ->setParameter('orgId', $orgId);
+            }
         }
         if ($action) {
             $qb->andWhere('a.action LIKE :action')
@@ -420,8 +436,20 @@ class AdminController extends AbstractController
             $captchaDemoEnabled = $request->request->get('captcha_demo_enabled') === '1';
             $configService->set('captcha_demo_enabled', $captchaDemoEnabled);
 
+            $newSignupsEnabled = $request->request->get('new_signups_enabled') === '1';
+            $configService->set('new_signups_enabled', $newSignupsEnabled);
+
             $auditLogArchiveDays = (int)$request->request->get('audit_log_archive_days', 180);
             $configService->set('audit_log_archive_days', $auditLogArchiveDays);
+
+            $sessionSweepThrottleSeconds = (int)$request->request->get('session_sweep_throttle_seconds', 60);
+            $configService->set('session_sweep_throttle_seconds', $sessionSweepThrottleSeconds);
+
+            $demoResetHistoryDays = (int)$request->request->get('demo_reset_history_days', 150);
+            $configService->set('demo_reset_history_days', $demoResetHistoryDays);
+
+            $auditLogArchiveDir = $request->request->get('audit_log_archive_dir', '/var/log/audit_archives');
+            $configService->set('audit_log_archive_dir', $auditLogArchiveDir);
 
             $this->logAdminAudit($em, 'SETTINGS_UPDATE', [
                 'allowed_phone_countries' => array_values($allowedCountries),
@@ -429,7 +457,11 @@ class AdminController extends AbstractController
                 'demo_rotation_hours' => $demoRotationHours,
                 'captcha_login_enabled' => $captchaLoginEnabled,
                 'captcha_demo_enabled' => $captchaDemoEnabled,
+                'new_signups_enabled' => $newSignupsEnabled,
                 'audit_log_archive_days' => $auditLogArchiveDays,
+                'session_sweep_throttle_seconds' => $sessionSweepThrottleSeconds,
+                'demo_reset_history_days' => $demoResetHistoryDays,
+                'audit_log_archive_dir' => $auditLogArchiveDir,
             ], $request);
 
             $this->addFlash('success', 'Global settings updated successfully.');
@@ -441,7 +473,11 @@ class AdminController extends AbstractController
         $demoRotationHours = $configService->get('demo_rotation_hours', 12);
         $captchaLoginEnabled = $configService->get('captcha_login_enabled', false);
         $captchaDemoEnabled = $configService->get('captcha_demo_enabled', false);
+        $newSignupsEnabled = $configService->get('new_signups_enabled', true);
         $auditLogArchiveDays = $configService->get('audit_log_archive_days', 180);
+        $sessionSweepThrottleSeconds = $configService->get('session_sweep_throttle_seconds', 60);
+        $demoResetHistoryDays = $configService->get('demo_reset_history_days', 150);
+        $auditLogArchiveDir = $configService->get('audit_log_archive_dir', '/var/log/audit_archives');
 
         return $this->render('admin/settings.html.twig', [
             'allowedPhoneCountries' => $allowedPhoneCountries,
@@ -449,7 +485,11 @@ class AdminController extends AbstractController
             'demoRotationHours' => $demoRotationHours,
             'captchaLoginEnabled' => $captchaLoginEnabled,
             'captchaDemoEnabled' => $captchaDemoEnabled,
+            'newSignupsEnabled' => $newSignupsEnabled,
             'auditLogArchiveDays' => $auditLogArchiveDays,
+            'sessionSweepThrottleSeconds' => $sessionSweepThrottleSeconds,
+            'demoResetHistoryDays' => $demoResetHistoryDays,
+            'auditLogArchiveDir' => $auditLogArchiveDir,
         ]);
     }
 
@@ -500,5 +540,48 @@ class AdminController extends AbstractController
             'cronToken' => $cronToken,
             'demoRotationHours' => $demoRotationHours
         ]);
+    }
+
+    #[Route('/active-sessions', name: 'app_admin_active_sessions', methods: ['GET'])]
+    public function activeSessions(EntityManagerInterface $em): Response
+    {
+        $activeSessions = $em->getRepository(WorkSession::class)->findBy(
+            ['endedAt' => null],
+            ['startedAt' => 'DESC']
+        );
+
+        return $this->render('admin/active_sessions.html.twig', [
+            'activeSessions' => $activeSessions,
+        ]);
+    }
+
+    #[Route('/active-sessions/force-end/{id}', name: 'app_admin_session_force_end', methods: ['POST'])]
+    public function forceEndSession(int $id, Request $request, EntityManagerInterface $em): Response
+    {
+        $session = $em->getRepository(WorkSession::class)->find($id);
+
+        if ($session && !$session->getEndedAt()) {
+            $now = new \DateTime();
+            $session->setEndedAt($now);
+            $session->setEndMethod('Admin Force End');
+            
+            $durationSeconds = $now->getTimestamp() - $session->getStartedAt()->getTimestamp();
+            $session->setDurationSeconds($durationSeconds);
+
+            $em->flush();
+
+            $admin = $this->getUser();
+            $this->logAdminAudit($em, 'ADMIN_FORCE_END_SESSION', [
+                'session_id' => $session->getId(),
+                'user' => $session->getOrgUser()->getFirstName() . ' ' . $session->getOrgUser()->getLastName(),
+                'org' => $session->getOrganization()->getName(),
+                'forced_by' => $admin->getFirstName() . ' ' . $admin->getLastName() . ' (' . $admin->getEmail() . ')'
+            ], $request, $session->getOrganization());
+            
+            $this->addFlash('success', "Session for {$session->getOrgUser()->getFirstName()} {$session->getOrgUser()->getLastName()} has been forcefully ended.");
+        }
+
+        $referer = $request->headers->get('referer');
+        return $referer ? $this->redirect($referer) : $this->redirectToRoute('app_admin_active_sessions');
     }
 }

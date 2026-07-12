@@ -134,6 +134,24 @@ class ManagerController extends AbstractController
         ]);
     }
 
+    #[Route('/settings/delete-logo', name: 'app_manager_settings_delete_logo', methods: ['POST'])]
+    public function deleteLogo(Request $request, EntityManagerInterface $em): Response
+    {
+        /** @var Manager $manager */
+        $manager = $this->getUser();
+        $org = $manager->getOrganization();
+
+        $org->setLogoBlob(null);
+        $org->setLogoPath(null);
+        $org->setUpdatedAt(new \DateTimeImmutable());
+        $em->flush();
+
+        $this->logAudit($em, $org, 'ORG_LOGO_DELETE', [], $request);
+        $this->addFlash('success', 'Organization logo removed successfully. Falling back to stock image.');
+
+        return $this->redirectToRoute('app_manager_settings');
+    }
+
     #[Route('/settings', name: 'app_manager_settings', methods: ['GET', 'POST'])]
     public function settings(Request $request, EntityManagerInterface $em, UserPasswordHasherInterface $passwordHasher): Response
     {
@@ -216,12 +234,20 @@ class ManagerController extends AbstractController
                 if ($email)     $manager->setEmail($email);
                 $manager->setPhone($phone ?: null);
 
+                $passwordChanged = false;
                 if ($password && strlen($password) >= 8) {
                     $manager->setPasswordHash($passwordHasher->hashPassword($manager, $password));
+                    $passwordChanged = true;
                 }
                 $manager->setUpdatedAt(new \DateTimeImmutable());
                 $em->flush();
-                $this->logAudit($em, $org, 'MANAGER_SELF_EDIT', ['manager_id' => $manager->getId()], $request);
+                
+                $details = ['manager_id' => $manager->getId()];
+                if ($passwordChanged) {
+                    $details['password_changed'] = true;
+                }
+                
+                $this->logAudit($em, $org, 'MANAGER_SELF_EDIT', $details, $request);
                 $this->addFlash('success', 'Your account information has been updated.');
                 return $this->redirectToRoute('app_manager_settings');
             }
@@ -1666,12 +1692,34 @@ class ManagerController extends AbstractController
 
             $em->flush();
 
-            $this->logAudit($em, $org, 'FORCE_END_SESSION', ['session_id' => $session->getId(), 'user' => $session->getOrgUser()->getFirstName() . ' ' . $session->getOrgUser()->getLastName()], $request);
+            $this->logAudit($em, $org, 'FORCE_END_SESSION', [
+                'session_id' => $session->getId(),
+                'user' => $session->getOrgUser()->getFirstName() . ' ' . $session->getOrgUser()->getLastName(),
+                'forced_by' => $manager->getFirstName() . ' ' . $manager->getLastName() . ' (' . $manager->getEmail() . ')'
+            ], $request);
             
             $this->addFlash('success', "Session for {$session->getOrgUser()->getFirstName()} {$session->getOrgUser()->getLastName()} has been forcefully ended.");
         }
 
         $referer = $request->headers->get('referer');
         return $referer ? $this->redirect($referer) : $this->redirectToRoute('app_manager_reports');
+    }
+
+    #[Route('/users/checked-in', name: 'app_manager_users_checked_in', methods: ['GET'])]
+    public function checkedInUsers(EntityManagerInterface $em): Response
+    {
+        /** @var Manager $manager */
+        $manager = $this->getUser();
+        $org = $manager->getOrganization();
+
+        $activeSessions = $em->getRepository(\App\Entity\WorkSession::class)->findBy(
+            ['organization' => $org, 'endedAt' => null],
+            ['startedAt' => 'DESC']
+        );
+
+        return $this->render('manager/checked_in_users.html.twig', [
+            'activeSessions' => $activeSessions,
+            'org' => $org,
+        ]);
     }
 }

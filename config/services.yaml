@@ -7,6 +7,7 @@
 # Put parameters here that don't need to change on each machine where the app is deployed
 # https://symfony.com/doc/current/best_practices.html#use-parameters-for-application-configuration
 parameters:
+    default_fallback_salt_change_me_in_prod: 'placeholder_salt_value'
     import_hash_salt: '%env(string:default:default_fallback_salt_change_me_in_prod:IMPORT_HASH_SALT)%'
     cron_secret_token: '%env(string:CRON_SECRET_TOKEN)%'
 

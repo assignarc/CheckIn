@@ -6,7 +6,7 @@
 
 <div class="kiosk-container">
     <div class="kiosk-header">
-        <img src="{{ path('app_org_logo', {slug: org.slug}) }}" alt="{{ org.name }} Logo" class="kiosk-logo">
+        <img src="{{ path('app_org_logo', {slug: org.slug}) }}?t={{ org.updatedAt.timestamp|default(0) }}" alt="{{ org.name }} Logo" class="kiosk-logo">
         <h2 class="kiosk-org-name">{{ org.name }}</h2>
     </div>
 

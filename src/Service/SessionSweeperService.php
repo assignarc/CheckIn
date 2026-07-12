@@ -38,14 +38,7 @@ class SessionSweeperService
             }
             $elapsedSeconds = $now->getTimestamp() - $startedAt->getTimestamp();
 
-            $shouldTerminate = false;
-            if ($org->getPlan()->getName() === 'basic') {
-                $shouldTerminate = true;
-            } elseif ($category && $category->isTerminateAtMaxDuration()) {
-                $shouldTerminate = true;
-            }
-
-            if ($elapsedSeconds >= $limitSeconds && $shouldTerminate) {
+            if ($elapsedSeconds >= $limitSeconds) {
                 $endedAt = \DateTime::createFromInterface($startedAt)->modify("+{$limitSeconds} seconds");
                 $session->setEndedAt($endedAt);
                 $session->setDurationSeconds($limitSeconds);

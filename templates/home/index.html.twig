@@ -25,7 +25,11 @@
             </button>
         </div>
         <a href="{{ path('app_login') }}" class="btn btn-secondary fs-sm" >Login</a>
-        <a href="{{ path('app_signup') }}" class="btn btn-primary fs-sm" >Start Free Trial</a>
+        {% if new_signups_enabled %}
+            <a href="{{ path('app_signup') }}" class="btn btn-primary fs-sm" >Start Free Trial</a>
+        {% else %}
+            <button class="btn btn-primary fs-sm" disabled style="opacity: 0.6; cursor: not-allowed;">Signups Closed</button>
+        {% endif %}
     </div>
 </header>
 
@@ -46,9 +50,15 @@
                 Streamline user check-ins with secure PIN entries, custom data fields, customizable time windows, and robust manager-level reporting. Built to scale with multi-tenant logical separation.
             </p>
             <div class="d-flex flex-wrap gap-4">
-                <a href="{{ path('app_signup') }}" class="btn btn-primary fs-lg" >
-                    Create Organization <span class="material-icons">arrow_forward</span>
-                </a>
+                {% if new_signups_enabled %}
+                    <a href="{{ path('app_signup') }}" class="btn btn-primary fs-lg" >
+                        Create Organization <span class="material-icons">arrow_forward</span>
+                    </a>
+                {% else %}
+                    <button class="btn btn-primary fs-lg" disabled style="opacity: 0.6; cursor: not-allowed;">
+                        Registration Closed
+                    </button>
+                {% endif %}
                 <a href="{{ path('app_demo') }}" class="btn btn-secondary fs-lg">
                     Request Live Demo
                 </a>
@@ -225,9 +235,13 @@
                             </li>
                         </ul>
                     </div>
-                    <a href="{{ path('app_signup', {plan: plan.name}) }}" class="btn {% if plan.name == 'silver' %}btn-primary{% else %}btn-secondary{% endif %} w-100">
-                        {% if plan.name == 'basic' %}Get Started Free{% else %}Start {{ plan.name|capitalize }} Trial{% endif %}
-                    </a>
+                    {% if new_signups_enabled %}
+                        <a href="{{ path('app_signup', {plan: plan.name}) }}" class="btn {% if plan.name == 'silver' %}btn-primary{% else %}btn-secondary{% endif %} w-100">
+                            {% if plan.name == 'basic' %}Get Started Free{% else %}Start {{ plan.name|capitalize }} Trial{% endif %}
+                        </a>
+                    {% else %}
+                        <button class="btn btn-secondary w-100" disabled style="opacity: 0.6; cursor: not-allowed;">Disabled</button>
+                    {% endif %}
                 </div>
             {% endfor %}
         </div>

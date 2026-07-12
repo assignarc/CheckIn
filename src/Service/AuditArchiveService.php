@@ -64,7 +64,8 @@ class AuditArchiveService
         // 4. Create directory and files
         $fs = new Filesystem();
         $projectDir = $this->params->get('kernel.project_dir');
-        $archiveDir = $projectDir . '/var/log/audit_archives';
+        $archiveSubdir = $this->configService->get('audit_log_archive_dir', '/var/log/audit_archives');
+        $archiveDir = $projectDir . $archiveSubdir;
         
         if (!$fs->exists($archiveDir)) {
             $fs->mkdir($archiveDir);

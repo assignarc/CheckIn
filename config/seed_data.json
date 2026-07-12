@@ -1,0 +1,772 @@
+{
+    "plans": {
+        "basic": {
+            "max_emp": 10,
+            "max_mgr": 1,
+            "max_fields": 3,
+            "max_cat": 1,
+            "session": 2,
+            "retention": 45,
+            "exports": false,
+            "price": "0.00",
+            "secure_kiosk": false,
+            "custom_duration": false,
+            "overtime": false
+        },
+        "silver": {
+            "max_emp": 100,
+            "max_mgr": 1,
+            "max_fields": 10,
+            "max_cat": 5,
+            "session": 8,
+            "retention": 90,
+            "exports": true,
+            "price": "29.00",
+            "secure_kiosk": true,
+            "custom_duration": true,
+            "overtime": true
+        },
+        "gold": {
+            "max_emp": 1000,
+            "max_mgr": 9999,
+            "max_fields": 99,
+            "max_cat": 99,
+            "session": 24,
+            "retention": 365,
+            "exports": true,
+            "price": "99.00",
+            "secure_kiosk": true,
+            "custom_duration": true,
+            "overtime": true
+        }
+    },
+    "admin": {
+        "email": "admin@platform.com",
+        "first_name": "System",
+        "last_name": "Administrator",
+        "password": "admin123"
+    },
+    "static_organizations": [
+        {
+            "name": "Acme Corporation",
+            "slug": "acme-corp",
+            "plan": "gold",
+            "access_mode": "secure",
+            "token": "acme-secret-token",
+            "overtime_grace_minutes": 15,
+            "overtime_multiplier": "1.50",
+            "managers": [
+                {
+                    "email": "manager@acme.com",
+                    "first_name": "Alice",
+                    "last_name": "Manager",
+                    "password": "manager123"
+                }
+            ],
+            "categories": [
+                {
+                    "name": "Development",
+                    "icon": "code"
+                },
+                {
+                    "name": "Design",
+                    "icon": "palette"
+                },
+                {
+                    "name": "Meeting",
+                    "icon": "groups"
+                },
+                {
+                    "name": "Support",
+                    "icon": "support_agent"
+                }
+            ],
+            "org_users": [
+                {
+                    "first": "John",
+                    "last": "Doe",
+                    "email": "john.doe@acme.com",
+                    "pin": "1234",
+                    "custom": {
+                        "OrgUser ID": "EMP-1001",
+                        "Department": "Engineering"
+                    },
+                    "sessions": [
+                        {
+                            "category_index": 0,
+                            "started_at": "-1 day 09:00:00",
+                            "ended_at": "-1 day 17:00:00",
+                            "duration_seconds": 28800,
+                            "start_method": "secure",
+                            "end_method": "secure"
+                        }
+                    ]
+                },
+                {
+                    "first": "Jane",
+                    "last": "Smith",
+                    "email": "jane.smith@acme.com",
+                    "pin": "5678",
+                    "custom": {
+                        "OrgUser ID": "EMP-1002",
+                        "Department": "Design"
+                    }
+                },
+                {
+                    "first": "Bob",
+                    "last": "Johnson",
+                    "email": "bob.johnson@acme.com",
+                    "pin": "4321",
+                    "custom": {
+                        "OrgUser ID": "EMP-1003",
+                        "Department": "Customer Success"
+                    }
+                }
+            ]
+        }
+    ],
+    "demo_organizations": {
+        "basic": {
+            "name": "Basic Demo Company",
+            "slug": "basic-demo",
+            "plan": "basic",
+            "access_mode": "open",
+            "token": "temp_token_b",
+            "manager": {
+                "email": "basic@platform.com",
+                "first_name": "Basic",
+                "last_name": "Manager",
+                "password": "temp_hash_b"
+            },
+            "category": {
+                "name": "General Shift",
+                "icon": "work",
+                "color": "#10b981",
+                "max_duration_minutes": 480
+            }
+        },
+        "golden": {
+            "name": "Golden Demo Company",
+            "slug": "golden-demo",
+            "plan": "gold",
+            "access_mode": "secure",
+            "token": "temp_token_g",
+            "overtime_grace_minutes": 15,
+            "overtime_multiplier": "1.50",
+            "manager": {
+                "email": "golden@platform.com",
+                "first_name": "Golden",
+                "last_name": "Manager",
+                "password": "temp_hash_g"
+            },
+            "category": {
+                "name": "Design Shift",
+                "icon": "palette",
+                "color": "#8b5cf6",
+                "max_duration_minutes": 480
+            }
+        }
+    },
+    "demo_users": [
+        {
+            "first": "Taylor",
+            "last": "Garcia",
+            "phone": "5550173",
+            "email": "taylor.garcia0@example.com"
+        },
+        {
+            "first": "Rowan",
+            "last": "Harris",
+            "phone": "5550167",
+            "email": "rowan.harris1@example.com"
+        },
+        {
+            "first": "Dakota",
+            "last": "Johnson",
+            "phone": "5550114",
+            "email": "dakota.johnson2@example.com"
+        },
+        {
+            "first": "Cameron",
+            "last": "Clark",
+            "phone": "5550155",
+            "email": "cameron.clark3@example.com"
+        },
+        {
+            "first": "Finley",
+            "last": "Anderson",
+            "phone": "5550112",
+            "email": "finley.anderson4@example.com"
+        },
+        {
+            "first": "Dakota",
+            "last": "Jackson",
+            "phone": "5550110",
+            "email": "dakota.jackson5@example.com"
+        },
+        {
+            "first": "Blake",
+            "last": "Thompson",
+            "phone": "5550187",
+            "email": "blake.thompson6@example.com"
+        },
+        {
+            "first": "Alex",
+            "last": "Rodriguez",
+            "phone": "5550195",
+            "email": "alex.rodriguez7@example.com"
+        },
+        {
+            "first": "Peyton",
+            "last": "Wilson",
+            "phone": "5550166",
+            "email": "peyton.wilson8@example.com"
+        },
+        {
+            "first": "Peyton",
+            "last": "Moore",
+            "phone": "5550185",
+            "email": "peyton.moore9@example.com"
+        },
+        {
+            "first": "Hayden",
+            "last": "Johnson",
+            "phone": "5550125",
+            "email": "hayden.johnson10@example.com"
+        },
+        {
+            "first": "Morgan",
+            "last": "Lewis",
+            "phone": "5550177",
+            "email": "morgan.lewis11@example.com"
+        },
+        {
+            "first": "Kendall",
+            "last": "Davis",
+            "phone": "5550181",
+            "email": "kendall.davis12@example.com"
+        },
+        {
+            "first": "Peyton",
+            "last": "Taylor",
+            "phone": "5550137",
+            "email": "peyton.taylor13@example.com"
+        },
+        {
+            "first": "Finley",
+            "last": "Hernandez",
+            "phone": "5550184",
+            "email": "finley.hernandez14@example.com"
+        },
+        {
+            "first": "Riley",
+            "last": "Jones",
+            "phone": "5550135",
+            "email": "riley.jones15@example.com"
+        },
+        {
+            "first": "Emerson",
+            "last": "Taylor",
+            "phone": "5550118",
+            "email": "emerson.taylor16@example.com"
+        },
+        {
+            "first": "Charlie",
+            "last": "Jackson",
+            "phone": "5550150",
+            "email": "charlie.jackson17@example.com"
+        },
+        {
+            "first": "Spencer",
+            "last": "Davis",
+            "phone": "5550194",
+            "email": "spencer.davis18@example.com"
+        },
+        {
+            "first": "Avery",
+            "last": "Taylor",
+            "phone": "5550124",
+            "email": "avery.taylor19@example.com"
+        },
+        {
+            "first": "Taylor",
+            "last": "Garcia",
+            "phone": "5550185",
+            "email": "taylor.garcia20@example.com"
+        },
+        {
+            "first": "Finley",
+            "last": "Gonzalez",
+            "phone": "5550152",
+            "email": "finley.gonzalez21@example.com"
+        },
+        {
+            "first": "Morgan",
+            "last": "Thomas",
+            "phone": "5550185",
+            "email": "morgan.thomas22@example.com"
+        },
+        {
+            "first": "Charlie",
+            "last": "Lewis",
+            "phone": "5550154",
+            "email": "charlie.lewis23@example.com"
+        },
+        {
+            "first": "Peyton",
+            "last": "Sanchez",
+            "phone": "5550158",
+            "email": "peyton.sanchez24@example.com"
+        },
+        {
+            "first": "Logan",
+            "last": "Lee",
+            "phone": "5550153",
+            "email": "logan.lee25@example.com"
+        },
+        {
+            "first": "Riley",
+            "last": "Lee",
+            "phone": "5550192",
+            "email": "riley.lee26@example.com"
+        },
+        {
+            "first": "Alex",
+            "last": "Rodriguez",
+            "phone": "5550191",
+            "email": "alex.rodriguez27@example.com"
+        },
+        {
+            "first": "Charlie",
+            "last": "Wilson",
+            "phone": "5550118",
+            "email": "charlie.wilson28@example.com"
+        },
+        {
+            "first": "Sawyer",
+            "last": "Anderson",
+            "phone": "5550186",
+            "email": "sawyer.anderson29@example.com"
+        },
+        {
+            "first": "Cameron",
+            "last": "White",
+            "phone": "5550182",
+            "email": "cameron.white30@example.com"
+        },
+        {
+            "first": "Alex",
+            "last": "Martinez",
+            "phone": "5550170",
+            "email": "alex.martinez31@example.com"
+        },
+        {
+            "first": "Hayden",
+            "last": "Davis",
+            "phone": "5550169",
+            "email": "hayden.davis32@example.com"
+        },
+        {
+            "first": "Avery",
+            "last": "Rodriguez",
+            "phone": "5550191",
+            "email": "avery.rodriguez33@example.com"
+        },
+        {
+            "first": "Skyler",
+            "last": "Clark",
+            "phone": "5550123",
+            "email": "skyler.clark34@example.com"
+        },
+        {
+            "first": "Hayden",
+            "last": "Johnson",
+            "phone": "5550126",
+            "email": "hayden.johnson35@example.com"
+        },
+        {
+            "first": "Finley",
+            "last": "Moore",
+            "phone": "5550117",
+            "email": "finley.moore36@example.com"
+        },
+        {
+            "first": "Morgan",
+            "last": "Jones",
+            "phone": "5550114",
+            "email": "morgan.jones37@example.com"
+        },
+        {
+            "first": "Casey",
+            "last": "Smith",
+            "phone": "5550138",
+            "email": "casey.smith38@example.com"
+        },
+        {
+            "first": "Peyton",
+            "last": "Garcia",
+            "phone": "5550167",
+            "email": "peyton.garcia39@example.com"
+        },
+        {
+            "first": "Frankie",
+            "last": "Brown",
+            "phone": "5550199",
+            "email": "frankie.brown40@example.com"
+        },
+        {
+            "first": "Peyton",
+            "last": "Jackson",
+            "phone": "5550138",
+            "email": "peyton.jackson41@example.com"
+        },
+        {
+            "first": "Cameron",
+            "last": "Jackson",
+            "phone": "5550192",
+            "email": "cameron.jackson42@example.com"
+        },
+        {
+            "first": "Alex",
+            "last": "Harris",
+            "phone": "5550111",
+            "email": "alex.harris43@example.com"
+        },
+        {
+            "first": "Alex",
+            "last": "Martinez",
+            "phone": "5550187",
+            "email": "alex.martinez44@example.com"
+        },
+        {
+            "first": "Morgan",
+            "last": "Sanchez",
+            "phone": "5550153",
+            "email": "morgan.sanchez45@example.com"
+        },
+        {
+            "first": "Riley",
+            "last": "White",
+            "phone": "5550112",
+            "email": "riley.white46@example.com"
+        },
+        {
+            "first": "Skyler",
+            "last": "Thompson",
+            "phone": "5550157",
+            "email": "skyler.thompson47@example.com"
+        },
+        {
+            "first": "Frankie",
+            "last": "Anderson",
+            "phone": "5550154",
+            "email": "frankie.anderson48@example.com"
+        },
+        {
+            "first": "Frankie",
+            "last": "Miller",
+            "phone": "5550117",
+            "email": "frankie.miller49@example.com"
+        },
+        {
+            "first": "Skyler",
+            "last": "Ramirez",
+            "phone": "5550188",
+            "email": "skyler.ramirez50@example.com"
+        },
+        {
+            "first": "Parker",
+            "last": "Martinez",
+            "phone": "5550152",
+            "email": "parker.martinez51@example.com"
+        },
+        {
+            "first": "Taylor",
+            "last": "Jones",
+            "phone": "5550164",
+            "email": "taylor.jones52@example.com"
+        },
+        {
+            "first": "Logan",
+            "last": "Harris",
+            "phone": "5550158",
+            "email": "logan.harris53@example.com"
+        },
+        {
+            "first": "Blake",
+            "last": "Gonzalez",
+            "phone": "5550133",
+            "email": "blake.gonzalez54@example.com"
+        },
+        {
+            "first": "Emerson",
+            "last": "Ramirez",
+            "phone": "5550167",
+            "email": "emerson.ramirez55@example.com"
+        },
+        {
+            "first": "Spencer",
+            "last": "Hernandez",
+            "phone": "5550140",
+            "email": "spencer.hernandez56@example.com"
+        },
+        {
+            "first": "Dallas",
+            "last": "Hernandez",
+            "phone": "5550144",
+            "email": "dallas.hernandez57@example.com"
+        },
+        {
+            "first": "Skyler",
+            "last": "Rodriguez",
+            "phone": "5550160",
+            "email": "skyler.rodriguez58@example.com"
+        },
+        {
+            "first": "Skyler",
+            "last": "Wilson",
+            "phone": "5550119",
+            "email": "skyler.wilson59@example.com"
+        },
+        {
+            "first": "Jordan",
+            "last": "Martin",
+            "phone": "5550129",
+            "email": "jordan.martin60@example.com"
+        },
+        {
+            "first": "Frankie",
+            "last": "Sanchez",
+            "phone": "5550124",
+            "email": "frankie.sanchez61@example.com"
+        },
+        {
+            "first": "Jamie",
+            "last": "Gonzalez",
+            "phone": "5550119",
+            "email": "jamie.gonzalez62@example.com"
+        },
+        {
+            "first": "Kendall",
+            "last": "Anderson",
+            "phone": "5550179",
+            "email": "kendall.anderson63@example.com"
+        },
+        {
+            "first": "Tatum",
+            "last": "Davis",
+            "phone": "5550166",
+            "email": "tatum.davis64@example.com"
+        },
+        {
+            "first": "Riley",
+            "last": "Davis",
+            "phone": "5550171",
+            "email": "riley.davis65@example.com"
+        },
+        {
+            "first": "Dakota",
+            "last": "Moore",
+            "phone": "5550179",
+            "email": "dakota.moore66@example.com"
+        },
+        {
+            "first": "Casey",
+            "last": "Perez",
+            "phone": "5550180",
+            "email": "casey.perez67@example.com"
+        },
+        {
+            "first": "Jordan",
+            "last": "Thomas",
+            "phone": "5550143",
+            "email": "jordan.thomas68@example.com"
+        },
+        {
+            "first": "Reese",
+            "last": "Harris",
+            "phone": "5550117",
+            "email": "reese.harris69@example.com"
+        },
+        {
+            "first": "Jordan",
+            "last": "Thomas",
+            "phone": "5550135",
+            "email": "jordan.thomas70@example.com"
+        },
+        {
+            "first": "Charlie",
+            "last": "Sanchez",
+            "phone": "5550145",
+            "email": "charlie.sanchez71@example.com"
+        },
+        {
+            "first": "Reese",
+            "last": "Ramirez",
+            "phone": "5550160",
+            "email": "reese.ramirez72@example.com"
+        },
+        {
+            "first": "Morgan",
+            "last": "Thomas",
+            "phone": "5550181",
+            "email": "morgan.thomas73@example.com"
+        },
+        {
+            "first": "Tatum",
+            "last": "Garcia",
+            "phone": "5550181",
+            "email": "tatum.garcia74@example.com"
+        },
+        {
+            "first": "Parker",
+            "last": "Lee",
+            "phone": "5550114",
+            "email": "parker.lee75@example.com"
+        },
+        {
+            "first": "Rowan",
+            "last": "Wilson",
+            "phone": "5550153",
+            "email": "rowan.wilson76@example.com"
+        },
+        {
+            "first": "Morgan",
+            "last": "Lee",
+            "phone": "5550131",
+            "email": "morgan.lee77@example.com"
+        },
+        {
+            "first": "Drew",
+            "last": "Miller",
+            "phone": "5550115",
+            "email": "drew.miller78@example.com"
+        },
+        {
+            "first": "Cameron",
+            "last": "Garcia",
+            "phone": "5550123",
+            "email": "cameron.garcia79@example.com"
+        },
+        {
+            "first": "Avery",
+            "last": "Wilson",
+            "phone": "5550118",
+            "email": "avery.wilson80@example.com"
+        },
+        {
+            "first": "Frankie",
+            "last": "Ramirez",
+            "phone": "5550117",
+            "email": "frankie.ramirez81@example.com"
+        },
+        {
+            "first": "Drew",
+            "last": "Perez",
+            "phone": "5550199",
+            "email": "drew.perez82@example.com"
+        },
+        {
+            "first": "Charlie",
+            "last": "Gonzalez",
+            "phone": "5550160",
+            "email": "charlie.gonzalez83@example.com"
+        },
+        {
+            "first": "Parker",
+            "last": "Harris",
+            "phone": "5550130",
+            "email": "parker.harris84@example.com"
+        },
+        {
+            "first": "Finley",
+            "last": "Thomas",
+            "phone": "5550180",
+            "email": "finley.thomas85@example.com"
+        },
+        {
+            "first": "Peyton",
+            "last": "Sanchez",
+            "phone": "5550153",
+            "email": "peyton.sanchez86@example.com"
+        },
+        {
+            "first": "Riley",
+            "last": "Davis",
+            "phone": "5550131",
+            "email": "riley.davis87@example.com"
+        },
+        {
+            "first": "Casey",
+            "last": "Ramirez",
+            "phone": "5550160",
+            "email": "casey.ramirez88@example.com"
+        },
+        {
+            "first": "Charlie",
+            "last": "Perez",
+            "phone": "5550127",
+            "email": "charlie.perez89@example.com"
+        },
+        {
+            "first": "Spencer",
+            "last": "Anderson",
+            "phone": "5550126",
+            "email": "spencer.anderson90@example.com"
+        },
+        {
+            "first": "Reese",
+            "last": "Moore",
+            "phone": "5550177",
+            "email": "reese.moore91@example.com"
+        },
+        {
+            "first": "Sawyer",
+            "last": "Sanchez",
+            "phone": "5550198",
+            "email": "sawyer.sanchez92@example.com"
+        },
+        {
+            "first": "Charlie",
+            "last": "Brown",
+            "phone": "5550134",
+            "email": "charlie.brown93@example.com"
+        },
+        {
+            "first": "Cameron",
+            "last": "Thomas",
+            "phone": "5550125",
+            "email": "cameron.thomas94@example.com"
+        },
+        {
+            "first": "Parker",
+            "last": "Harris",
+            "phone": "5550145",
+            "email": "parker.harris95@example.com"
+        },
+        {
+            "first": "Hayden",
+            "last": "Jackson",
+            "phone": "5550125",
+            "email": "hayden.jackson96@example.com"
+        },
+        {
+            "first": "Parker",
+            "last": "Garcia",
+            "phone": "5550136",
+            "email": "parker.garcia97@example.com"
+        },
+        {
+            "first": "Logan",
+            "last": "Jones",
+            "phone": "5550193",
+            "email": "logan.jones98@example.com"
+        },
+        {
+            "first": "Avery",
+            "last": "Thomas",
+            "phone": "5550170",
+            "email": "avery.thomas99@example.com"
+        }
+    ]
+}

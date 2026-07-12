@@ -17,7 +17,7 @@ use App\Service\CaptchaService;
 class HomeController extends AbstractController
 {
     #[Route('/', name: 'app_home')]
-    public function index(EntityManagerInterface $entityManager): Response
+    public function index(EntityManagerInterface $entityManager, \App\Service\AppConfigService $configService): Response
     {
         if ($this->getUser()) {
             return $this->redirectToRoute('app_redirect_by_role');
@@ -26,15 +26,21 @@ class HomeController extends AbstractController
         $basicPlan = $entityManager->getRepository(\App\Entity\Plan::class)->findOneBy(['name' => 'basic']);
         return $this->render('home/index.html.twig', [
             'plans' => $plans,
-            'basic_plan' => $basicPlan
+            'basic_plan' => $basicPlan,
+            'new_signups_enabled' => $configService->get('new_signups_enabled', true)
         ]);
     }
 
     #[Route('/signup', name: 'app_signup', methods: ['GET', 'POST'])]
-    public function signup(Request $request, EntityManagerInterface $entityManager, UserPasswordHasherInterface $passwordHasher, \App\Service\TokenGeneratorService $tokenGenerator, CaptchaService $captchaService): Response
+    public function signup(Request $request, EntityManagerInterface $entityManager, UserPasswordHasherInterface $passwordHasher, \App\Service\TokenGeneratorService $tokenGenerator, CaptchaService $captchaService, \App\Service\AppConfigService $configService): Response
     {
         if ($this->getUser()) {
             return $this->redirectToRoute('app_redirect_by_role');
+        }
+
+        if (!$configService->get('new_signups_enabled', true)) {
+            $this->addFlash('danger', 'New organization registration is currently disabled by the administrator.');
+            return $this->redirectToRoute('app_home');
         }
 
         $plans = $entityManager->getRepository(\App\Entity\Plan::class)->findAll();

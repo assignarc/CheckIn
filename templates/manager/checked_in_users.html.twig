@@ -1,0 +1,115 @@
+{% extends 'manager/layout.html.twig' %}
+
+{% block title %}Active Sessions - TimeFlow{% endblock %}
+{% block header_title %}Checked In Now{% endblock %}
+
+{% block manager_content %}
+<div class="mx-auto" style="max-width: 1000px;">
+    
+    <div class="d-flex align-items-center justify-content-between mb-6">
+        <div>
+            <h3 class="fs-xl mb-1">Active Sessions</h3>
+            <p class="fs-sm text-secondary">Real-time overview of users currently logged into kiosks.</p>
+        </div>
+        <div class="badge badge-success p-2 fs-sm d-flex align-items-center gap-1">
+            <span class="material-icons fs-md">fiber_manual_record</span>
+            Live: {{ activeSessions|length }} Active
+        </div>
+    </div>
+
+    <!-- MAIN ACTIVE SESSIONS PANEL -->
+    <div class="glass-panel p-6">
+        <div class="table-responsive">
+            <table class="table align-middle">
+                <thead>
+                    <tr>
+                        <th>User</th>
+                        <th>Email / Details</th>
+                        <th>Category</th>
+                        <th>Check-In Time</th>
+                        <th>Time Elapsed</th>
+                        <th style="width: 150px; text-align: right;">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for session in activeSessions %}
+                        <tr>
+                            <td>
+                                <div class="d-flex align-items-center gap-3">
+                                    <div class="user-avatar icon-36 fs-xs">
+                                        {{ session.orgUser.firstName|slice(0, 1) }}{{ session.orgUser.lastName|slice(0, 1) }}
+                                    </div>
+                                    <div>
+                                        <div class="fw-600 fs-sm">{{ session.orgUser.firstName }} {{ session.orgUser.lastName }}</div>
+                                        <div class="fs-xs text-muted">PIN: {{ session.orgUser.pin }}</div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>
+                                <div class="fs-sm">{{ session.orgUser.email }}</div>
+                                <div class="fs-xs text-muted">Method: {{ session.startMethod|capitalize }}</div>
+                            </td>
+                            <td>
+                                <span class="badge {% if session.category %}badge-success{% else %}badge-secondary{% endif %} fs-xs">
+                                    {{ session.category.name|default('General') }}
+                                </span>
+                            </td>
+                            <td>
+                                <div class="fs-sm fw-500">{{ session.startedAt|date('H:i:s') }}</div>
+                                <div class="fs-xs text-muted">{{ session.startedAt|date('M d, Y') }}</div>
+                            </td>
+                            <td>
+                                <div class="fs-sm fw-600 text-primary">
+                                    <span class="session-timer" data-start="{{ session.startedAt.timestamp }}">Calculating...</span>
+                                </div>
+                            </td>
+                            <td style="text-align: right;">
+                                <form action="{{ path('app_manager_reports_force_end', {id: session.id}) }}" method="post" class="confirm-form d-inline-block" data-confirm="Are you sure you want to check out {{ session.orgUser.firstName }} {{ session.orgUser.lastName }}?">
+                                    <button type="submit" class="btn btn-sm btn-outline-danger d-flex align-items-center gap-1 ms-auto">
+                                        <span class="material-icons fs-md">logout</span> Check Out
+                                    </button>
+                                </form>
+                            </td>
+                        </tr>
+                    {% else %}
+                        <tr>
+                            <td colspan="6" class="text-center py-10 text-muted">
+                                <span class="material-icons fs-xl mb-2" style="opacity: 0.5;">info_outline</span>
+                                <div class="fs-md fw-500">No active sessions</div>
+                                <p class="fs-xs text-muted mt-1">There are currently no users checked in at any kiosk.</p>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    function updateTimers() {
+        const now = Math.floor(Date.now() / 1000);
+        document.querySelectorAll('.session-timer').forEach(el => {
+            const start = parseInt(el.getAttribute('data-start'));
+            const diff = now - start;
+            if (diff < 0) {
+                el.innerText = 'Just now';
+                return;
+            }
+            const hours = Math.floor(diff / 3600);
+            const minutes = Math.floor((diff % 3600) / 60);
+            const seconds = diff % 60;
+            
+            let text = '';
+            if (hours > 0) text += hours + 'h ';
+            text += minutes + 'm ' + seconds + 's';
+            el.innerText = text;
+        });
+    }
+    updateTimers();
+    setInterval(updateTimers, 1000);
+});
+</script>
+{% endblock %}

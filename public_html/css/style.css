@@ -306,9 +306,8 @@ a:hover {
     border-left: 1px solid var(--border-color);
 }
 
-/* Hamburger toggle button */
 .sidebar-toggle {
-    display: none;
+    display: flex;
     background: none;
     border: none;
     color: var(--text-secondary);
@@ -772,6 +771,7 @@ input.form-control {
 
 /* File Upload Drag-and-Drop Dropzone */
 .dropzone {
+    display: block;
     border: 2px dashed var(--border-color);
     border-radius: var(--radius-md);
     background: var(--bg-input);
@@ -1383,6 +1383,16 @@ dialog[open] {
     display: flex;
     border-bottom: 1px solid var(--border-color);
     background: rgba(0,0,0,0.15);
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: thin;
+}
+.settings-tab-bar::-webkit-scrollbar {
+    height: 4px;
+}
+.settings-tab-bar::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 2px;
 }
 .settings-tab {
     display: flex;
@@ -1600,10 +1610,16 @@ dialog[open] {
    NATIVE ELEMENT OVERRIDES (Scrollbars, Checkboxes, File Uploads, Dates)
    ========================================================================== */
 
-/* 1. Custom Webkit Scrollbars */
+/* Modern standard scrollbars for Firefox/Edge */
+* {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(120, 120, 120, 0.3) transparent;
+}
+
+/* 1. Custom Webkit Scrollbars (Chrome/Safari) */
 ::-webkit-scrollbar {
-    width: 10px;
-    height: 10px;
+    width: 8px;
+    height: 8px;
 }
 
 ::-webkit-scrollbar-track {
@@ -1611,13 +1627,16 @@ dialog[open] {
 }
 
 ::-webkit-scrollbar-thumb {
-    background: rgba(100, 100, 100, 0.3);
+    background: rgba(120, 120, 120, 0.3);
     border-radius: var(--radius-full);
-    border: 2px solid var(--bg-body); /* Creates padding effect */
+    border: 2px solid transparent;
+    background-clip: padding-box;
+    transition: background var(--transition-fast);
 }
 
 ::-webkit-scrollbar-thumb:hover {
-    background: rgba(100, 100, 100, 0.5);
+    background: rgba(120, 120, 120, 0.5);
+    background-clip: padding-box;
 }
 
 /* 2. Custom Checkboxes and Radio Buttons */
@@ -1637,6 +1656,7 @@ input[type="radio"] {
     display: inline-flex;
     align-items: center;
     justify-content: center;
+    flex-shrink: 0;
 }
 
 input[type="checkbox"] {
@@ -1679,6 +1699,9 @@ input[type="radio"]:checked::after {
     background: white;
     border-radius: 50%;
     position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
 }
 
 /* 3. Custom File Upload Buttons */
@@ -1701,6 +1724,14 @@ input[type="file"]::file-selector-button:hover {
     background: var(--sidebar-active-bg);
     border-color: var(--primary);
     color: var(--primary);
+}
+
+input[type="file"].form-control {
+    padding: 4px 8px;
+    height: auto;
+    min-height: 38px;
+    display: flex;
+    align-items: center;
 }
 
 /* Date & Time Picker Base Styles */
@@ -1847,3 +1878,133 @@ input[type="datetime-local"]::-webkit-calendar-picker-indicator:hover {
 .flex-2 { flex: 2; }
 .py-10 { padding-top: 2.5rem; padding-bottom: 2.5rem; }
 .fs-3xl { font-size: 2.5rem; }
+
+/* Import Wizard Compact Layout Adjustments */
+.import-wizard-container .glass-panel {
+    padding: 1.5rem !important;
+}
+.import-wizard-container .wizard-steps {
+    margin-bottom: 1.5rem !important;
+}
+.import-wizard-container .table-responsive {
+    max-height: 240px !important;
+    margin-bottom: 1.5rem !important;
+}
+.import-wizard-container .table th,
+.import-wizard-container .table td {
+    padding: 0.45rem 0.75rem !important;
+}
+.import-wizard-container h3 {
+    margin-bottom: 0.5rem !important;
+}
+.import-wizard-container .form-group {
+    margin-bottom: 1rem !important;
+}
+.import-wizard-container .border-t {
+    margin-top: 1rem !important;
+    padding-top: 1rem !important;
+}
+.import-wizard-container .mb-8 {
+    margin-bottom: 1rem !important;
+}
+.import-wizard-container .mb-10 {
+    margin-bottom: 1.5rem !important;
+}
+.import-wizard-container .mt-8 {
+    margin-top: 1.5rem !important;
+}
+
+/* Desktop collapsed sidebar */
+@media (min-width: 901px) {
+    .dashboard-layout {
+        transition: all var(--transition-normal);
+    }
+    
+    .sidebar {
+        transition: width var(--transition-normal), padding var(--transition-normal);
+    }
+    
+    .dashboard-layout.sidebar-collapsed .sidebar {
+        width: 72px;
+        padding: 1.25rem 0.5rem;
+    }
+    
+    .dashboard-layout.sidebar-collapsed .sidebar-logo {
+        justify-content: center;
+        padding-left: 0;
+        margin-bottom: 2rem;
+    }
+    
+    .dashboard-layout.sidebar-collapsed .sidebar-logo span:not(.material-icons) {
+        display: none !important;
+    }
+    
+    .dashboard-layout.sidebar-collapsed .sidebar-logo .material-icons {
+        margin: 0;
+    }
+    
+    .dashboard-layout.sidebar-collapsed .sidebar-link {
+        justify-content: center;
+        padding: 0.6rem 0.5rem;
+        gap: 0;
+        position: relative;
+    }
+    
+    .dashboard-layout.sidebar-collapsed .sidebar-link span:not(.material-icons) {
+        display: none !important;
+    }
+    
+    .dashboard-layout.sidebar-collapsed .sidebar-link .material-icons {
+        margin: 0;
+        font-size: 1.3rem;
+    }
+    
+    /* Popover Tooltip for Collapsed Sidebar Items */
+    .dashboard-layout.sidebar-collapsed .sidebar-link::after {
+        content: attr(data-tooltip);
+        position: absolute;
+        left: 68px;
+        top: 50%;
+        transform: translateY(-50%);
+        background: #1e1b4b;
+        color: #ffffff;
+        padding: 5px 10px;
+        border-radius: var(--radius-sm);
+        font-size: 0.75rem;
+        font-weight: 500;
+        white-space: nowrap;
+        opacity: 0;
+        visibility: hidden;
+        pointer-events: none;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+        border: 1px solid rgba(99, 102, 241, 0.4);
+        z-index: 999;
+        transition: opacity var(--transition-fast) ease, transform var(--transition-fast) ease, visibility var(--transition-fast);
+    }
+    
+    .dashboard-layout.sidebar-collapsed .sidebar-link:hover::after {
+        opacity: 1;
+        visibility: visible;
+        transform: translate(5px, -50%);
+    }
+}
+
+@media (max-width: 768px) {
+    .settings-tab-bar {
+        display: flex;
+        width: 100%;
+    }
+    .settings-tab {
+        flex: 1;
+        justify-content: center;
+        padding: 0.65rem 0.4rem;
+        font-size: 0.7rem;
+        gap: 0.25rem;
+    }
+    .settings-tab .material-icons {
+        font-size: 0.9rem;
+    }
+    .settings-tab-pane {
+        padding: 1rem !important;
+    }
+}

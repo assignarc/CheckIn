@@ -28,19 +28,25 @@ class ResetDemoDataHandler
     private ParameterBagInterface $params;
     private PinService $pinService;
     private LicenseService $licenseService;
+    private \App\Service\SystemAuditLogger $auditLogger;
+    private \App\Service\AppConfigService $configService;
 
     public function __construct(
         EntityManagerInterface $em,
         MessageBusInterface $messageBus,
         ParameterBagInterface $params,
         PinService $pinService,
-        LicenseService $licenseService
+        LicenseService $licenseService,
+        \App\Service\SystemAuditLogger $auditLogger,
+        \App\Service\AppConfigService $configService
     ) {
         $this->em = $em;
         $this->messageBus = $messageBus;
         $this->params = $params;
         $this->pinService = $pinService;
         $this->licenseService = $licenseService;
+        $this->auditLogger = $auditLogger;
+        $this->configService = $configService;
     }
 
     public function __invoke(ResetDemoDataMessage $message)
@@ -49,174 +55,211 @@ class ResetDemoDataHandler
         ini_set('memory_limit', '-1');
         set_time_limit(0);
 
-        // 1. Delete existing Demo Orgs using raw SQL to bypass SoftDeleteable and cascade delete EVERYTHING
-        $this->em->getConnection()->executeStatement(
-            "DELETE FROM organizations WHERE slug IN ('basic-demo', 'golden-demo')"
-        );
+        // Log that the background process has started
+        $this->auditLogger->log('SYSTEM_DEMO_DATA_RESET_START', [
+            'status' => 'started'
+        ]);
 
-        // 2. Recreate Basic Demo Org (Basic Plan, Open Access)
-        $basicPlan = $this->em->getRepository(Plan::class)->findOneBy(['name' => 'basic']);
-        $bOrg = new Organization();
-        $bOrg->setName('Basic Demo Company');
-        $bOrg->setSlug('basic-demo');
+        // Load configurations from config/seed_data.json
+        $configPath = $this->params->get('kernel.project_dir') . '/config/seed_data.json';
+        $config = json_decode(file_get_contents($configPath), true);
+        $demoConfigs = $config['demo_organizations'] ?? [];
+        $basicConf = $demoConfigs['basic'] ?? [];
+        $goldenConf = $demoConfigs['golden'] ?? [];
+
+        // 1. Find existing Demo Organizations if they exist
+        $bOrg = $this->em->getRepository(Organization::class)->findOneBy(['slug' => $basicConf['slug'] ?? 'basic-demo']);
+        $gOrg = $this->em->getRepository(Organization::class)->findOneBy(['slug' => $goldenConf['slug'] ?? 'golden-demo']);
+
+        // Collect existing IDs to wipe only their child/dependent records
+        $orgIds = [];
+        if ($bOrg) {
+            $orgIds[] = $bOrg->getId();
+        }
+        if ($gOrg) {
+            $orgIds[] = $gOrg->getId();
+        }
+
+        if (!empty($orgIds)) {
+            $idsStr = implode(',', $orgIds);
+            // Delete dependent records to start fresh under the same Org IDs
+            $this->em->getConnection()->executeStatement("DELETE FROM work_sessions WHERE organization_id IN ({$idsStr})");
+            $this->em->getConnection()->executeStatement("DELETE FROM audit_logs WHERE organization_id IN ({$idsStr})");
+            $this->em->getConnection()->executeStatement("DELETE FROM org_users WHERE organization_id IN ({$idsStr})");
+            $this->em->getConnection()->executeStatement("DELETE FROM categories WHERE organization_id IN ({$idsStr})");
+            $this->em->getConnection()->executeStatement("DELETE FROM managers WHERE organization_id IN ({$idsStr})");
+        }
+
+        // 2. Setup/Update Basic Demo Org (Basic Plan, Open Access)
+        $basicPlan = $this->em->getRepository(Plan::class)->findOneBy(['name' => $basicConf['plan'] ?? 'basic']);
+        if (!$bOrg) {
+            $bOrg = new Organization();
+        }
+        $bOrg->setName($basicConf['name'] ?? 'Basic Demo Company');
+        $bOrg->setSlug($basicConf['slug'] ?? 'basic-demo');
         $bOrg->setPlan($basicPlan);
-        $bOrg->setAccessMode('open');
-        // Will be overwritten by RotateKioskTokenMessage
-        $bOrg->setCheckInLinkToken('temp_token_b');
+        $bOrg->setAccessMode($basicConf['access_mode'] ?? 'open');
+        $bOrg->setCheckInLinkToken($basicConf['token'] ?? 'temp_token_b');
+        $bOrg->setLogoPath(null); 
+        $bOrg->setLogoBlob(null); // Reset logo on refresh
+        $bOrg->setUpdatedAt(new \DateTimeImmutable());
         $this->em->persist($bOrg);
 
+        $bMgrConf = $basicConf['manager'] ?? [];
         $bManager = new Manager();
-        $bManager->setEmail('basic@platform.com');
-        $bManager->setFirstName('Basic');
-        $bManager->setLastName('Manager');
+        $bManager->setEmail($bMgrConf['email'] ?? 'basic@platform.com');
+        $bManager->setFirstName($bMgrConf['first_name'] ?? 'Basic');
+        $bManager->setLastName($bMgrConf['last_name'] ?? 'Manager');
         $bManager->setRole('ROLE_ORG_MANAGER');
         $bManager->setOrganization($bOrg);
         $bManager->setIsActive(true);
-        // Will be overwritten by RotatePasswordMessage
-        $bManager->setPasswordHash('temp_hash_b');
+        $bManager->setPasswordHash($bMgrConf['password'] ?? 'temp_hash_b');
         $this->em->persist($bManager);
 
+        $bCatConf = $basicConf['category'] ?? [];
         $bCat = new Category();
-        $bCat->setName('General Shift');
-        $bCat->setIcon('work');
-        $bCat->setColor('#10b981');
+        $bCat->setName($bCatConf['name'] ?? 'General Shift');
+        $bCat->setIcon($bCatConf['icon'] ?? 'work');
+        $bCat->setColor($bCatConf['color'] ?? '#10b981');
         $bCat->setOrganization($bOrg);
         $bCat->setIsActive(true);
-        $bCat->setMaxSessionDurationMinutes(480);
+        $bCat->setMaxSessionDurationMinutes($bCatConf['max_duration_minutes'] ?? 480);
         $this->em->persist($bCat);
 
-        // 3. Recreate Golden Demo Org (Gold Plan, Secure Access)
-        $goldPlan = $this->em->getRepository(Plan::class)->findOneBy(['name' => 'gold']);
-        $gOrg = new Organization();
-        $gOrg->setName('Golden Demo Company');
-        $gOrg->setSlug('golden-demo');
+        // 3. Setup/Update Golden Demo Org (Gold Plan, Secure Access)
+        $goldPlan = $this->em->getRepository(Plan::class)->findOneBy(['name' => $goldenConf['plan'] ?? 'gold']);
+        if (!$gOrg) {
+            $gOrg = new Organization();
+        }
+        $gOrg->setName($goldenConf['name'] ?? 'Golden Demo Company');
+        $gOrg->setSlug($goldenConf['slug'] ?? 'golden-demo');
         $gOrg->setPlan($goldPlan);
-        $gOrg->setAccessMode('secure');
-        // Will be overwritten by RotateKioskTokenMessage
-        $gOrg->setCheckInLinkToken('temp_token_g');
-        $gOrg->setOvertimeGraceMinutes(15);
-        $gOrg->setOvertimeMultiplier('1.50');
+        $gOrg->setAccessMode($goldenConf['access_mode'] ?? 'secure');
+        $gOrg->setCheckInLinkToken($goldenConf['token'] ?? 'temp_token_g');
+        $gOrg->setOvertimeGraceMinutes($goldenConf['overtime_grace_minutes'] ?? 15);
+        $gOrg->setOvertimeMultiplier($goldenConf['overtime_multiplier'] ?? '1.50');
+        $gOrg->setLogoPath(null);
+        $gOrg->setLogoBlob(null); // Reset logo on refresh
+        $gOrg->setUpdatedAt(new \DateTimeImmutable());
         $this->em->persist($gOrg);
 
+        $gMgrConf = $goldenConf['manager'] ?? [];
         $gManager = new Manager();
-        $gManager->setEmail('golden@platform.com');
-        $gManager->setFirstName('Golden');
-        $gManager->setLastName('Manager');
+        $gManager->setEmail($gMgrConf['email'] ?? 'golden@platform.com');
+        $gManager->setFirstName($gMgrConf['first_name'] ?? 'Golden');
+        $gManager->setLastName($gMgrConf['last_name'] ?? 'Manager');
         $gManager->setRole('ROLE_ORG_MANAGER');
         $gManager->setOrganization($gOrg);
         $gManager->setIsActive(true);
-        // Will be overwritten by RotatePasswordMessage
-        $gManager->setPasswordHash('temp_hash_g');
+        $gManager->setPasswordHash($gMgrConf['password'] ?? 'temp_hash_g');
         $this->em->persist($gManager);
 
+        $gCatConf = $goldenConf['category'] ?? [];
         $gCat = new Category();
-        $gCat->setName('Design Shift');
-        $gCat->setIcon('palette');
-        $gCat->setColor('#8b5cf6');
+        $gCat->setName($gCatConf['name'] ?? 'Design Shift');
+        $gCat->setIcon($gCatConf['icon'] ?? 'palette');
+        $gCat->setColor($gCatConf['color'] ?? '#8b5cf6');
         $gCat->setOrganization($gOrg);
         $gCat->setIsActive(true);
-        $gCat->setMaxSessionDurationMinutes(480);
+        $gCat->setMaxSessionDurationMinutes($gCatConf['max_duration_minutes'] ?? 480);
         $this->em->persist($gCat);
 
-        // Flush newly created Organizations so they have database IDs for PinService to query
+        // Flush newly created/updated Organizations so they have database IDs for PinService to query
         $this->em->flush();
 
-        // 4. Seed Users from DemoData.csv (50/50 split)
-        $csvPath = $this->params->get('kernel.project_dir') . '/data/DemoData.csv';
-        if (file_exists($csvPath)) {
-            $handle = fopen($csvPath, 'r');
-            fgetcsv($handle); // skip header
+        // 4. Seed Users from config (50/50 split)
+        $historyDays = (int)$this->configService->get('demo_reset_history_days', 150);
+        $demoUsersData = $config['demo_users'] ?? [];
+        
+        $usersCreated = 0;
+        $usedBasicPins = [];
+        $usedGoldenPins = [];
+        $activeBasicCount = 0;
+        $activeGoldenCount = 0;
+
+        foreach ($demoUsersData as $row) {
+            if ($usersCreated >= 100) break;
+
+            // Alternate between orgs
+            $isGolden = ($usersCreated % 2 === 0);
+            $targetOrg = $isGolden ? $gOrg : $bOrg;
+            $targetCat = $isGolden ? $gCat : $bCat;
+
+            $firstName = $row['first'] ?? 'Demo';
+            $lastName = $row['last'] ?? 'User';
+            $phone = $row['phone'] ?? null;
+            $email = $row['email'] ?? null;
             
-            $usersCreated = 0;
-            $usedBasicPins = [];
-            $usedGoldenPins = [];
-            $activeBasicCount = 0;
-            $activeGoldenCount = 0;
-            while (($row = fgetcsv($handle)) !== false) {
-                if ($usersCreated >= 100) break;
+            $pin = $this->pinService->generateUniquePin($targetOrg, null, $isGolden ? $usedGoldenPins : $usedBasicPins);
+            if ($isGolden) {
+                $usedGoldenPins[] = $pin;
+            } else {
+                $usedBasicPins[] = $pin;
+            }
 
-                // Alternate between orgs
-                $isGolden = ($usersCreated % 2 === 0);
-                $targetOrg = $isGolden ? $gOrg : $bOrg;
-                $targetCat = $isGolden ? $gCat : $bCat;
-
-                $firstName = $row[1] ?? 'Demo';
-                $lastName = $row[2] ?? 'User';
-                $phone = $row[3] ?? null;
-                $email = $row[4] ?? null;
-                
-                $pin = $this->pinService->generateUniquePin($targetOrg, null, $isGolden ? $usedGoldenPins : $usedBasicPins);
+            $isActive = $this->licenseService->isNextUserActiveAllowed($targetOrg, $isGolden ? $activeGoldenCount : $activeBasicCount);
+            if ($isActive) {
                 if ($isGolden) {
-                    $usedGoldenPins[] = $pin;
+                    $activeGoldenCount++;
                 } else {
-                    $usedBasicPins[] = $pin;
+                    $activeBasicCount++;
                 }
+            }
 
-                $isActive = $this->licenseService->isNextUserActiveAllowed($targetOrg, $isGolden ? $activeGoldenCount : $activeBasicCount);
-                if ($isActive) {
-                    if ($isGolden) {
-                        $activeGoldenCount++;
-                    } else {
-                        $activeBasicCount++;
-                    }
-                }
-
-                $orgUser = new OrgUser();
-                $orgUser->setOrganization($targetOrg);
-                $orgUser->setFirstName($firstName);
-                $orgUser->setLastName($lastName);
-                $orgUser->setPhone($phone);
-                $orgUser->setEmail($email);
-                $orgUser->setPin($pin);
-                $orgUser->setPinHash($this->pinService->hashPin($pin));
-                $orgUser->setIsActive($isActive);
-                $this->em->persist($orgUser);
+            $orgUser = new OrgUser();
+            $orgUser->setOrganization($targetOrg);
+            $orgUser->setFirstName($firstName);
+            $orgUser->setLastName($lastName);
+            $orgUser->setPhone($phone);
+            $orgUser->setEmail($email);
+            $orgUser->setPin($pin);
+            $orgUser->setPinHash($this->pinService->hashPin($pin));
+            $orgUser->setIsActive($isActive);
+            $this->em->persist($orgUser);
 
 
-                // Generate history for last 150 days (5 months)
-                for ($day = 150; $day >= 1; $day--) {
-                    if (random_int(1, 100) <= 15) {
-                        $session = new WorkSession();
-                        $session->setOrganization($targetOrg);
-                        $session->setOrgUser($orgUser);
-                        $session->setCategory($targetCat);
-                        
-                        $startHour = random_int(8, 10);
-                        $startMin = random_int(0, 59);
-                        $start = new \DateTime("-{$day} days");
-                        $start->setTime($startHour, $startMin);
-                        $session->setStartedAt($start);
-                        
-                        $durationHours = random_int(4, 8);
-                        $end = clone $start;
-                        $end->modify("+{$durationHours} hours");
-                        $session->setEndedAt($end);
-                        $session->setDurationSeconds($durationHours * 3600);
-                        
-                        $this->em->persist($session);
-                    }
-                }
-
-                // 10% chance they are actively working today
-                if (random_int(1, 10) === 1) {
+            // Generate history for configured number of days
+            for ($day = $historyDays; $day >= 1; $day--) {
+                if (random_int(1, 100) <= 15) {
                     $session = new WorkSession();
                     $session->setOrganization($targetOrg);
                     $session->setOrgUser($orgUser);
                     $session->setCategory($targetCat);
                     
-                    $start = new \DateTime('-' . random_int(1, 4) . ' hours');
+                    $startHour = random_int(8, 10);
+                    $startMin = random_int(0, 59);
+                    $start = new \DateTime("-{$day} days");
+                    $start->setTime($startHour, $startMin);
                     $session->setStartedAt($start);
+                    
+                    $durationHours = random_int(4, 8);
+                    $end = clone $start;
+                    $end->modify("+{$durationHours} hours");
+                    $session->setEndedAt($end);
+                    $session->setDurationSeconds($durationHours * 3600);
+                    
                     $this->em->persist($session);
                 }
-                
-                $usersCreated++;
-
-                // Batch flush to avoid memory bloat
-                if ($usersCreated % 20 === 0) {
-                    $this->em->flush();
-                }
             }
-            fclose($handle);
+
+            // 10% chance they are actively working today
+            if (random_int(1, 10) === 1) {
+                $session = new WorkSession();
+                $session->setOrganization($targetOrg);
+                $session->setOrgUser($orgUser);
+                $session->setCategory($targetCat);
+                
+                $start = new \DateTime('-' . random_int(1, 4) . ' hours');
+                $session->setStartedAt($start);
+                $this->em->persist($session);
+            }
+            
+            $usersCreated++;
+
+            // Batch flush to avoid memory bloat
+            if ($usersCreated % 20 === 0) {
+                $this->em->flush();
+            }
         }
 
         // Final flush
@@ -232,5 +275,13 @@ class ResetDemoDataHandler
             $this->messageBus->dispatch(new RotatePasswordMessage($gOrg->getId(), $gManager->getId()));
             $this->messageBus->dispatch(new RotateKioskTokenMessage($gOrg->getId(), $gOrg->getName()));
         }
+
+        // Log completion of the demo reset process
+        $this->auditLogger->log('SYSTEM_DEMO_DATA_RESET_COMPLETE', [
+            'status' => 'completed',
+            'basic_demo_org_id' => $bOrg->getId(),
+            'golden_demo_org_id' => $gOrg->getId(),
+            'users_seeded_count' => $usersCreated,
+        ]);
     }
 }

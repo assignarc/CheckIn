@@ -3,55 +3,52 @@
 {% block body %}
 <div class="dashboard-layout">
     <!-- Admin Sidebar -->
-    <aside class="sidebar" style="border-right: 1px solid var(--sidebar-border);">
+    <aside class="sidebar" id="sidebar" style="border-right: 1px solid var(--sidebar-border);">
         <a href="{{ path('app_home') }}" class="sidebar-logo text-decoration-none text-inherit">
             <span class="material-icons text-purple-500">admin_panel_settings</span>
             <span>TimeFlow</span>
         </a>
         
         <nav class="sidebar-nav">
-            <a href="{{ path('app_admin_dashboard') }}" class="sidebar-link {% if app.request.attributes.get('_route') == 'app_admin_dashboard' %}active{% endif %}">
-                <span class="material-icons">analytics</span> Platform Overview
+            <a href="{{ path('app_admin_dashboard') }}" class="sidebar-link {% if app.request.attributes.get('_route') == 'app_admin_dashboard' %}active{% endif %}" data-tooltip="Platform Overview">
+                <span class="material-icons">analytics</span> <span>Platform Overview</span>
             </a>
-            <a href="{{ path('app_admin_organizations') }}" class="sidebar-link {% if app.request.attributes.get('_route') == 'app_admin_organizations' %}active{% endif %}">
-                <span class="material-icons">business</span> Manage Tenants
+            <a href="{{ path('app_admin_active_sessions') }}" class="sidebar-link {% if app.request.attributes.get('_route') == 'app_admin_active_sessions' %}active{% endif %}" data-tooltip="Active Sessions">
+                <span class="material-icons">directions_run</span> <span>Active Sessions</span>
             </a>
-            <a href="{{ path('app_admin_plans') }}" class="sidebar-link {% if app.request.attributes.get('_route') == 'app_admin_plans' %}active{% endif %}">
-                <span class="material-icons">card_membership</span>
-                Subscription Plans
+            <a href="{{ path('app_admin_organizations') }}" class="sidebar-link {% if app.request.attributes.get('_route') == 'app_admin_organizations' %}active{% endif %}" data-tooltip="Manage Tenants">
+                <span class="material-icons">business</span> <span>Manage Tenants</span>
             </a>
-            <a href="{{ path('app_admin_audit_logs') }}" class="sidebar-link {% if app.request.attributes.get('_route') == 'app_admin_audit_logs' %}active{% endif %}">
-                <span class="material-icons">history</span>
-                Audit Logs
+            <a href="{{ path('app_admin_plans') }}" class="sidebar-link {% if app.request.attributes.get('_route') == 'app_admin_plans' %}active{% endif %}" data-tooltip="Subscription Plans">
+                <span class="material-icons">card_membership</span> <span>Subscription Plans</span>
+            </a>
+            <a href="{{ path('app_admin_audit_logs') }}" class="sidebar-link {% if app.request.attributes.get('_route') == 'app_admin_audit_logs' %}active{% endif %}" data-tooltip="Audit Logs">
+                <span class="material-icons">history</span> <span>Audit Logs</span>
             </a>
             
-            <a href="{{ path('app_admin_scheduled_jobs') }}" class="sidebar-link {% if app.request.attributes.get('_route') == 'app_admin_scheduled_jobs' %}active{% endif %}">
-                <span class="material-icons">schedule</span>
-                Scheduled Jobs
+            <a href="{{ path('app_admin_scheduled_jobs') }}" class="sidebar-link {% if app.request.attributes.get('_route') == 'app_admin_scheduled_jobs' %}active{% endif %}" data-tooltip="Scheduled Jobs">
+                <span class="material-icons">schedule</span> <span>Scheduled Jobs</span>
             </a>
-            <a href="{{ path('app_admin_settings') }}" class="sidebar-link {% if app.request.attributes.get('_route') == 'app_admin_settings' %}active{% endif %}">
-                <span class="material-icons">settings</span>
-                Global Settings
+            <a href="{{ path('app_admin_settings') }}" class="sidebar-link {% if app.request.attributes.get('_route') == 'app_admin_settings' %}active{% endif %}" data-tooltip="Global Settings">
+                <span class="material-icons">settings</span> <span>Global Settings</span>
             </a>
 
             <div class="sidebar-divider"></div>
             
-            <form action="{{ path('app_admin_demo_reset') }}" method="post" style="padding: 0.75rem 1rem;" class="confirm-form" data-confirm="Are you sure you want to wipe and reset all Demo Data? This cannot be undone.">
-                <button type="submit" class="btn btn-outline-danger w-100 d-flex align-items-center justify-content-center gap-2">
-                    <span class="material-icons">restart_alt</span>
-                    Reset Demo Data
+            <form action="{{ path('app_admin_demo_reset') }}" method="post" class="confirm-form" data-confirm="Are you sure you want to wipe and reset all Demo Data? This cannot be undone.">
+                <button type="submit" class="sidebar-link w-100 border-0 bg-transparent text-danger cursor-pointer" data-tooltip="Reset Demo Data" style="outline: none; text-align: left; padding: 0.6rem 0.75rem; border-radius: var(--radius-md); font-family: inherit;">
+                    <span class="material-icons text-danger">restart_alt</span> <span>Reset Demo Data</span>
                 </button>
             </form>
             
-            <a href="{{ path('app_admin_demo_leads') }}" class="sidebar-link {% if app.request.attributes.get('_route') == 'app_admin_demo_leads' %}active{% endif %}">
-                <span class="material-icons">campaign</span>
-                Demo Leads
+            <a href="{{ path('app_admin_demo_leads') }}" class="sidebar-link {% if app.request.attributes.get('_route') == 'app_admin_demo_leads' %}active{% endif %}" data-tooltip="Demo Leads">
+                <span class="material-icons">campaign</span> <span>Demo Leads</span>
             </a>
-            <a href="{{ path('app_admin_managers') }}" class="sidebar-link {% if app.request.attributes.get('_route') == 'app_admin_managers' %}active{% endif %}">
-                <span class="material-icons">manage_accounts</span> Manager Maintenance
+            <a href="{{ path('app_admin_managers') }}" class="sidebar-link {% if app.request.attributes.get('_route') == 'app_admin_managers' %}active{% endif %}" data-tooltip="Manager Maintenance">
+                <span class="material-icons">manage_accounts</span> <span>Manager Maintenance</span>
             </a>
-            <a href="{{ path('app_admin_audit_logs') }}" class="sidebar-link {% if app.request.attributes.get('_route') == 'app_admin_audit_logs' %}active{% endif %}">
-                <span class="material-icons">receipt_long</span> System Audit Logs
+            <a href="{{ path('app_admin_audit_logs') }}" class="sidebar-link {% if app.request.attributes.get('_route') == 'app_admin_audit_logs' %}active{% endif %}" data-tooltip="System Audit Logs">
+                <span class="material-icons">receipt_long</span> <span>System Audit Logs</span>
             </a>
         </nav>
     </aside>
@@ -59,13 +56,16 @@
     <!-- Admin Main Body Frame -->
     <main class="main-content">
         <header class="dashboard-header" style="border-bottom-color: var(--sidebar-border);">
-            <div>
+            <div class="d-flex align-items-center gap-3">
+                <button class="sidebar-toggle" id="sidebarToggle" onclick="toggleSidebar()" aria-label="Toggle sidebar">
+                    <span class="material-icons">menu</span>
+                </button>
                 <h2 class="fs-lg fw-600 text-purple-300 m-0">Platform Administrator Panel</h2>
             </div>
             
             <div class="header-actions-menu" id="headerActionsMenu">
                 <button type="button" class="header-actions-toggle" id="headerActionsToggle" onclick="toggleHeaderMenu()" aria-label="User menu">
-                    <div class="user-avatar fs-xs icon-28 bg-purple-500">SA</div>
+                    <div class="user-avatar fs-xs icon-28" style="background: var(--primary-glow); color: var(--primary);">AD</div>
                     <span class="material-icons fs-md">expand_more</span>
                 </button>
 
@@ -73,19 +73,12 @@
                     <!-- User Info -->
                     <div class="header-dropdown-section">
                         <div class="d-flex align-items-center gap-3 p-4">
-                            <div class="user-avatar fs-xs icon-36 bg-purple-500">SA</div>
+                            <div class="user-avatar fs-xs icon-36" style="background: var(--primary-glow); color: var(--primary);">AD</div>
                             <div class="lh-sm">
-                                <div class="fw-600 fs-sm">{{ app.user.email ?? 'admin@platform.com' }}</div>
-                                <div class="fs-xs text-muted">Platform Administrator</div>
+                                <div class="fw-600 fs-sm">{{ app.user.firstName }} {{ app.user.lastName }}</div>
+                                <div class="fs-xs text-muted">Platform Admin</div>
                             </div>
                         </div>
-                    </div>
-
-                    <!-- Status Badges -->
-                    <div class="header-dropdown-section d-flex align-items-center gap-2 p-3">
-                        <span class="badge" style="background: var(--sidebar-active-bg); color: var(--text-accent); border: 1px solid var(--sidebar-border);">
-                            Superuser Access
-                        </span>
                     </div>
 
                     <!-- Theme Selector -->
@@ -137,12 +130,53 @@
 </div>
 
 <script>
+    // Restore sidebar collapse state immediately on load
+    if (window.innerWidth > 900 && localStorage.getItem('sidebar-collapsed') === '1') {
+        const layout = document.querySelector('.dashboard-layout');
+        if (layout) {
+            layout.classList.add('sidebar-collapsed');
+        }
+        const icon = document.querySelector('#sidebarToggle .material-icons');
+        if (icon) {
+            icon.textContent = 'menu_open';
+        }
+    }
+
+    function toggleSidebar() {
+        const layout = document.querySelector('.dashboard-layout');
+        const icon = document.querySelector('#sidebarToggle .material-icons');
+        
+        if (window.innerWidth <= 900) {
+            const sidebar = document.getElementById('sidebar');
+            sidebar.classList.toggle('sidebar-open');
+        } else {
+            layout.classList.toggle('sidebar-collapsed');
+            const isCollapsed = layout.classList.contains('sidebar-collapsed');
+            localStorage.setItem('sidebar-collapsed', isCollapsed ? '1' : '0');
+            
+            // Toggle hamburger icon between menu and menu_open
+            if (icon) {
+                icon.textContent = isCollapsed ? 'menu_open' : 'menu';
+            }
+        }
+    }
+
     function toggleHeaderMenu() {
         const dropdown = document.getElementById('headerActionsDropdown');
         dropdown.classList.toggle('open');
     }
 
     document.addEventListener('click', function(e) {
+        const sidebar = document.getElementById('sidebar');
+        const toggle = document.getElementById('sidebarToggle');
+        
+        // Close mobile sidebar clicking outside
+        if (window.innerWidth <= 900 && sidebar.classList.contains('sidebar-open')
+            && !sidebar.contains(e.target) && !toggle.contains(e.target)) {
+            sidebar.classList.remove('sidebar-open');
+        }
+
+        // Close header dropdown clicking outside
         const menu = document.getElementById('headerActionsMenu');
         const dropdown = document.getElementById('headerActionsDropdown');
         if (dropdown && dropdown.classList.contains('open') && !menu.contains(e.target)) {

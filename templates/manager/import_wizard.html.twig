@@ -4,7 +4,7 @@
 {% block header_title %}Spreadsheet Onboarding Wizard{% endblock %}
 
 {% block manager_content %}
-<div class="m-0" style="max-width: 900px;  auto">
+<div class="mx-auto import-wizard-container" style="max-width: 900px;" data-turbo="false">
     
     <!-- Wizard Steps Indicator -->
     <!-- Wizard Steps Indicator -->
@@ -12,13 +12,13 @@
         <div class="wizard-step {% if step >= 1 %}completed{% endif %} d-flex align-items-center justify-content-center">
             {% if step > 1 %}<span class="material-icons fs-lg">check</span>{% else %}1{% endif %}
         </div>
-        <div class="wizard-step {% if step == 2 %}active{% elseif > %}completed{% endif %} d-flex align-items-center justify-content-center">
+        <div class="wizard-step {% if step == 2 %}active{% elseif step > 2 %}completed{% endif %} d-flex align-items-center justify-content-center">
             {% if step > 2 %}<span class="material-icons fs-lg">check</span>{% else %}2{% endif %}
         </div>
-        <div class="wizard-step {% if step == 3 %}active{% elseif > %}completed{% endif %} d-flex align-items-center justify-content-center">
+        <div class="wizard-step {% if step == 3 %}active{% elseif step > 3 %}completed{% endif %} d-flex align-items-center justify-content-center">
             {% if step > 3 %}<span class="material-icons fs-lg">check</span>{% else %}3{% endif %}
         </div>
-        <div class="wizard-step {% if step == 4 %}active{% elseif > %}completed{% endif %} d-flex align-items-center justify-content-center">
+        <div class="wizard-step {% if step == 4 %}active{% elseif step > 4 %}completed{% endif %} d-flex align-items-center justify-content-center">
             {% if step > 4 %}<span class="material-icons fs-lg">check</span>{% else %}4{% endif %}
         </div>
         <div class="wizard-step {% if step == 5 %}active{% endif %} d-flex align-items-center justify-content-center">
@@ -71,7 +71,7 @@
             </p>
 
             <!-- Unique key select -->
-            <div class="form-group mb-8" style="max-width: 400px">
+            <div class="form-group mb-8">
                 <label class="form-label" for="unique_col">Unique Identifier Column (Optional)</label>
                 <select name="unique_col" id="unique_col" class="form-control">
                     <option value="">-- None (Match by Name Fallback) --</option>
@@ -212,7 +212,7 @@
                                 <td><div>{{ item.email }}</div><div class="fs-xs text-muted">PIN: {{ item.pin }}</div></td>
                                 <td><span class="badge badge-success fs-xs">No match found</span></td>
                                 <td>
-                                    <select name="actions[{{ item.row_index }}]" class="form-control fs-sm p-0" >
+                                    <select name="actions[{{ item.row_index }}]" class="form-control fs-sm form-select-sm-custom" >
                                         <option value="add" selected>Create As New User</option>
                                         <option value="skip">Skip / Ignore Row</option>
                                     </select>
@@ -244,7 +244,7 @@
                                     {% endif %}
                                 </td>
                                 <td>
-                                    <select name="actions[{{ item.row_index }}]" class="form-control fs-sm p-0" >
+                                    <select name="actions[{{ item.row_index }}]" class="form-control fs-sm form-select-sm-custom" >
                                         <option value="update" selected>Update Database Record</option>
                                         <option value="add">Create As New User</option>
                                         <option value="skip">Skip / Ignore Row</option>
