@@ -34,6 +34,9 @@ class SessionSweeperService
             $limitSeconds = $org->getSessionLimitHours() * 3600;
 
             if ($org->getPlan()->hasCustomSessionDurations() && $category && $category->getMaxSessionDurationMinutes() !== null) {
+                if (!$category->isTerminateAtMaxDuration()) {
+                    continue;
+                }
                 $limitSeconds = $category->getMaxSessionDurationMinutes() * 60;
             }
             $elapsedSeconds = $now->getTimestamp() - $startedAt->getTimestamp();

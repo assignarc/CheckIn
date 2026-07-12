@@ -10,6 +10,14 @@ use Symfony\Component\HttpKernel\Event\RequestEvent;
 use Symfony\Component\HttpKernel\KernelEvents;
 use Symfony\Component\HttpKernel\KernelInterface;
 
+/**
+ * Request listener that runs active session sweeps automatically.
+ * 
+ * Rationale:
+ * - Sweeping ensures users don't remain clocked in past allowed limits.
+ * - Triggering sweeps on incoming requests avoids requiring a cron runner for basic demo usage.
+ * - Employs a file lock to throttle executions to once per `session_sweep_throttle_seconds` to minimize DB load.
+ */
 class SessionSweepSubscriber implements EventSubscriberInterface
 {
     private EntityManagerInterface $em;
@@ -17,8 +25,12 @@ class SessionSweepSubscriber implements EventSubscriberInterface
     private string $cacheDir;
     private \App\Service\AppConfigService $configService;
 
-    public function __construct(EntityManagerInterface $em, SessionSweeperService $sweeper, KernelInterface $kernel, \App\Service\AppConfigService $configService)
-    {
+    public function __construct(
+        EntityManagerInterface $em,
+        SessionSweeperService $sweeper,
+        KernelInterface $kernel,
+        \App\Service\AppConfigService $configService
+    ) {
         $this->em = $em;
         $this->sweeper = $sweeper;
         $this->cacheDir = $kernel->getProjectDir() . '/var';
@@ -28,12 +40,14 @@ class SessionSweepSubscriber implements EventSubscriberInterface
     public static function getSubscribedEvents(): array
     {
         return [
+            // Subscribe to the initial Kernel Request event
             KernelEvents::REQUEST => [['onKernelRequest', 0]],
         ];
     }
 
     public function onKernelRequest(RequestEvent $event): void
     {
+        // Skip sub-requests (e.g. controller forwards, twig renders)
         if (!$event->isMainRequest()) {
             return;
         }
@@ -41,24 +55,26 @@ class SessionSweepSubscriber implements EventSubscriberInterface
         $lockFile = $this->cacheDir . '/session_sweep.lock';
         $now = time();
 
+        // 1. Throttling Lock: Only run the sweeps if the lock file is older than configured seconds
         $throttle = (int)$this->configService->get('session_sweep_throttle_seconds', 60);
         if (file_exists($lockFile) && ($now - filemtime($lockFile)) < $throttle) {
             return;
         }
 
-        // Touch the lock file to update the time immediately and prevent concurrent execution
+        // 2. Touch/Create lock file immediately to prevent concurrent requests from double-triggering
         if (!is_dir($this->cacheDir)) {
             @mkdir($this->cacheDir, 0777, true);
         }
         @touch($lockFile);
 
         try {
+            // 3. Scan all registered organizations and terminate expired clock-ins
             $orgs = $this->em->getRepository(Organization::class)->findAll();
             foreach ($orgs as $org) {
                 $this->sweeper->sweepActiveSessions($org);
             }
         } catch (\Exception $e) {
-            // Silently fail to not block requests if database is not ready
+            // Silently fail to avoid blocking client requests if database is not fully loaded/migrated
         }
     }
 }

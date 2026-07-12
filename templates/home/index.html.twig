@@ -7,7 +7,7 @@
 {% endblock %}
 
 {% block body %}
-<header class="dashboard-header" style="background: rgba(11, 15, 25, 0.7); border-bottom: 1px solid rgba(255,255,255,0.06); position: sticky; top:0; backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); z-index: 100;">
+<header class="dashboard-header" style="z-index: 100;">
     <div class="d-flex align-items-center gap-3">
         <span class="material-icons fs-3xl text-primary">alarm</span>
         <h1 class="fs-2xl fw-800 m-0" style="letter-spacing: -0.02em">TimeFlow</h1>
@@ -36,8 +36,19 @@
 <!-- Main Container -->
 <main class="app-container d-flex flex-column home-main-container">
     
+    {% for type, messages in app.flashes %}
+        {% for message in messages %}
+            <div class="alert alert-{{ type }} mb-6">
+                <span class="material-icons">
+                    {% if type == 'danger' %}error{% else %}check_circle{% endif %}
+                </span>
+                <span>{{ message|raw }}</span>
+            </div>
+        {% endfor %}
+    {% endfor %}
+    
     <!-- Hero Section -->
-    <section class="hero-grid align-items-center gap-16">
+    <section class="hero-grid align-items-center gap-16 reveal">
         <div>
             <div class="d-inline-flex align-items-center gap-2 mb-6 p-0 rounded-full" style="padding: .35rem 1rem; background: var(--primary-glow); border: 1px solid rgba(99,102,241,0.2)">
                 <span class="material-icons fs-md text-primary">bolt</span>
@@ -103,7 +114,7 @@
     </section>
 
     <!-- Key Platform Benefits Section -->
-    <section class="d-flex flex-column gap-12">
+    <section class="d-flex flex-column gap-12 reveal">
         <div class="text-center">
             <h2 class="fs-3xl">Engineered for <span class="text-gradient">Precision</span> and Control</h2>
             <p class="fs-lg text-secondary mt-2 ml-auto mr-auto max-w-700">
@@ -158,9 +169,355 @@
             </div>
         </div>
     </section>
+    <!-- Spreadsheet Onboarding Wizard Section -->
+    <section class="d-flex flex-column gap-12 mt-12 mb-12 reveal">
+        <div class="text-center">
+            <h2 class="fs-3xl">Streamlined <span class="text-gradient">Spreadsheet Onboarding</span></h2>
+            <p class="fs-lg text-secondary mt-2 ml-auto mr-auto max-w-700">
+                Move your users from legacy systems to TimeFlow instantly using our high-fidelity CSV mapping tool.
+            </p>
+        </div>
+
+        <div class="grid-cols-2 gap-8 align-items-center">
+            <!-- Left Side: Interactive Mockup of mapping columns -->
+            <div class="glass-panel p-6">
+                <div class="d-flex justify-content-between align-items-center mb-5 pb-3 border-b">
+                    <div class="d-flex align-items-center gap-2">
+                        <span class="material-icons text-primary">view_week</span>
+                        <span class="fs-sm fw-700 text-indigo-200 text-uppercase tracking-wider">CSV Header Mapping</span>
+                    </div>
+                    <span class="badge bg-primary-glow text-primary fs-xs fw-700">Step 2 of 5</span>
+                </div>
+
+                <div class="d-flex flex-column gap-4">
+                    <!-- Mapping Card 1 -->
+                    <div class="d-flex align-items-center justify-content-between p-3 rounded-sm bg-input border">
+                        <div>
+                            <span class="fs-xs text-secondary d-block">CSV Column Header</span>
+                            <span class="fs-sm fw-700">user_first_name</span>
+                        </div>
+                        <span class="material-icons text-secondary">trending_flat</span>
+                        <div style="text-align: right;">
+                            <span class="fs-xs text-secondary d-block">TimeFlow Property</span>
+                            <span class="badge bg-success-glow text-success fs-xs fw-600">First Name <span class="material-icons fs-xs align-middle">check</span></span>
+                        </div>
+                    </div>
+
+                    <!-- Mapping Card 2 -->
+                    <div class="d-flex align-items-center justify-content-between p-3 rounded-sm bg-input border">
+                        <div>
+                            <span class="fs-xs text-secondary d-block">CSV Column Header</span>
+                            <span class="fs-sm fw-700">contact_email_addr</span>
+                        </div>
+                        <span class="material-icons text-secondary">trending_flat</span>
+                        <div style="text-align: right;">
+                            <span class="fs-xs text-secondary d-block">TimeFlow Property</span>
+                            <span class="badge bg-success-glow text-success fs-xs fw-600">Email Address <span class="material-icons fs-xs align-middle">check</span></span>
+                        </div>
+                    </div>
+
+                    <!-- Mapping Card 3 -->
+                    <div class="d-flex align-items-center justify-content-between p-3 rounded-sm bg-input border">
+                        <div>
+                            <span class="fs-xs text-secondary d-block">CSV Column Header</span>
+                            <span class="fs-sm fw-700">personal_kiosk_pin</span>
+                        </div>
+                        <span class="material-icons text-secondary">trending_flat</span>
+                        <div style="text-align: right;">
+                            <span class="fs-xs text-secondary d-block">TimeFlow Property</span>
+                            <span class="badge bg-secondary-glow text-secondary fs-xs fw-600">Secure PIN (Auto-Seeded)</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Live Status Metrics -->
+                <div class="d-flex gap-4 mt-6">
+                    <div class="flex-1 p-3 rounded-sm bg-input text-center border">
+                        <span class="fs-xs text-secondary d-block">Fuzzy Matches</span>
+                        <span class="fs-sm fw-700 text-warning">0 Conflicts</span>
+                    </div>
+                    <div class="flex-1 p-3 rounded-sm bg-input text-center border">
+                        <span class="fs-xs text-secondary d-block">License Check</span>
+                        <span class="fs-sm fw-700 text-success">Within Quota</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Side: Details on importing features -->
+            <div class="d-flex flex-column gap-6">
+                <div>
+                    <h3 class="fs-2xl mb-2">Import, Reconcile, and Deploy in Minutes</h3>
+                    <p class="fs-md text-secondary lh-base">
+                        Managers can upload roster lists containing thousands of user records. Our onboarding wizard validates data integrity dynamically to keep you within plans parameters.
+                    </p>
+                </div>
+
+                <div class="d-flex flex-column gap-4">
+                    <div class="d-flex gap-3 align-items-start">
+                        <span class="material-icons text-primary fs-xl mt-1">auto_awesome</span>
+                        <div>
+                            <h4 class="fs-md mb-1 fw-600">Smart Headers Mapping</h4>
+                            <p class="fs-sm text-secondary">
+                                Algorithms automatically match standard columns (e.g. emails, phone formats) to target attributes.
+                            </p>
+                        </div>
+                    </div>
+
+                    <div class="d-flex gap-3 align-items-start">
+                        <span class="material-icons text-success fs-xl mt-1">difference</span>
+                        <div>
+                            <h4 class="fs-md mb-1 fw-600">Reconciliation Diff Preview</h4>
+                            <p class="fs-sm text-secondary">
+                                Displays a side-by-side reconciliation list of Added, Updated, and Unchanged profiles before committing database writes.
+                            </p>
+                        </div>
+                    </div>
+
+                    <div class="d-flex gap-3 align-items-start">
+                        <span class="material-icons text-warning fs-xl mt-1">vpn_key</span>
+                        <div>
+                            <h4 class="fs-md mb-1 fw-600">Auto PIN Generator Fallback</h4>
+                            <p class="fs-sm text-secondary">
+                                If users don't have PIN numbers in the spreadsheet, the seeder creates unique 4-character numbers securely.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Use Cases & SMB Business Benefits Section -->
+    <section class="d-flex flex-column gap-12 mt-12 mb-12 reveal">
+        <div class="text-center">
+            <h2 class="fs-3xl">Built for Every <span class="text-gradient">Check-In Scenario</span></h2>
+            <p class="fs-lg text-secondary mt-2 ml-auto mr-auto max-w-700">
+                TimeFlow adapts to your organization's workflow, whether tracking shift hours, class attendance, or event promoter activities.
+            </p>
+        </div>
+
+        <div class="grid-cols-4 gap-6">
+            <!-- Use Case 1: Shift Workers -->
+            <div class="glass-panel p-6 d-flex flex-column justify-content-between hover-scale" style="background: linear-gradient(180deg, rgba(255,255,255,0.01) 0%, rgba(16,185,129,0.02) 100%);">
+                <div>
+                    <div class="text-success d-inline-flex align-items-center justify-content-center mb-4 rounded-sm icon-40 bg-success-glow">
+                        <span class="material-icons">engineering</span>
+                    </div>
+                    <h4 class="fs-lg mb-2 fw-600">Shift Workers & Employees</h4>
+                    <p class="fs-sm text-secondary lh-base">
+                        Eliminate buddy punching using a secure PIN kiosk. Configure custom overtime multipliers and set automatic checkout limits to prevent wage leakage.
+                    </p>
+                </div>
+                <div class="fs-xs text-success fw-600 mt-4 d-flex align-items-center gap-1">
+                    <span class="material-icons fs-sm">trending_up</span> Improves payroll accuracy by 18%
+                </div>
+            </div>
+
+            <!-- Use Case 2: Students & Classrooms -->
+            <div class="glass-panel p-6 d-flex flex-column justify-content-between hover-scale" style="background: linear-gradient(180deg, rgba(255,255,255,0.01) 0%, rgba(99,102,241,0.02) 100%);">
+                <div>
+                    <div class="text-primary d-inline-flex align-items-center justify-content-center mb-4 rounded-sm icon-40 bg-primary-glow">
+                        <span class="material-icons">school</span>
+                    </div>
+                    <h4 class="fs-lg mb-2 fw-600">Students & Classrooms</h4>
+                    <p class="fs-sm text-secondary lh-base">
+                        Track classroom hours for bootcamps or seminars. Allow students to select their name from an open kiosk roster list for friction-free check-ins.
+                    </p>
+                </div>
+                <div class="fs-xs text-primary fw-600 mt-4 d-flex align-items-center gap-1">
+                    <span class="material-icons fs-sm">trending_up</span> Saves 15 mins of class time daily
+                </div>
+            </div>
+
+            <!-- Use Case 3: Contractors & Agencies -->
+            <div class="glass-panel p-6 d-flex flex-column justify-content-between hover-scale" style="background: linear-gradient(180deg, rgba(255,255,255,0.01) 0%, rgba(139,92,246,0.02) 100%);">
+                <div>
+                    <div class="text-indigo d-inline-flex align-items-center justify-content-center mb-4 rounded-sm icon-40" style="background: rgba(139,92,246,0.1); color: var(--text-accent-strong);">
+                        <span class="material-icons">assignment_ind</span>
+                    </div>
+                    <h4 class="fs-lg mb-2 fw-600">Contractors & Agencies</h4>
+                    <p class="fs-sm text-secondary lh-base">
+                        Track promoter activities and billable subcontractor timesheets across multiple client tenants. Export logs directly as formatted CSV files.
+                    </p>
+                </div>
+                <div class="fs-xs fw-600 mt-4 d-flex align-items-center gap-1" style="color: var(--text-accent);">
+                    <span class="material-icons fs-sm">trending_up</span> Streamlines client invoicing cycles
+                </div>
+            </div>
+
+            <!-- Use Case 4: Attendees & Event Promoters -->
+            <div class="glass-panel p-6 d-flex flex-column justify-content-between hover-scale" style="background: linear-gradient(180deg, rgba(255,255,255,0.01) 0%, rgba(245,158,11,0.02) 100%);">
+                <div>
+                    <div class="text-warning d-inline-flex align-items-center justify-content-center mb-4 rounded-sm icon-40 bg-warning-glow">
+                        <span class="material-icons">campaign</span>
+                    </div>
+                    <h4 class="fs-lg mb-2 fw-600">Event Staff & Promoters</h4>
+                    <p class="fs-sm text-secondary lh-base">
+                        Monitor live attendance and event staff schedules from a centralized mobile dashboard, allowing managers to handle checkouts from anywhere.
+                    </p>
+                </div>
+                <div class="fs-xs text-warning fw-600 mt-4 d-flex align-items-center gap-1">
+                    <span class="material-icons fs-sm">trending_up</span> Cuts administrative audit time by 60%
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Interactive Sales Tools Section -->
+    <section class="d-flex flex-column gap-12 mt-12 mb-12 reveal">
+        <div class="text-center">
+            <h2 class="fs-3xl">Analyze Your <span class="text-gradient">Operational Savings</span></h2>
+            <p class="fs-lg text-secondary mt-2 ml-auto mr-auto max-w-700">
+                See how automated kiosk tracking and policy controls eliminate administrative waste.
+            </p>
+        </div>
+
+        <div class="grid-cols-2 gap-8 align-items-stretch">
+            <!-- Column 1: ROI Calculator Widget -->
+            <div class="glass-panel p-8 d-flex flex-column gap-6 justify-content-between">
+                <div>
+                    <h3 class="fs-xl mb-4 d-flex align-items-center gap-2">
+                        <span class="material-icons text-primary">calculate</span> ROI Savings Calculator
+                    </h3>
+                    <p class="fs-md text-secondary mb-6">
+                        Adjust parameters to calculate estimated annual savings by moving away from manual logs.
+                    </p>
+
+                    <div class="d-flex flex-column gap-5">
+                        <!-- Parameter: Active Tracked Users Count -->
+                        <div>
+                            <div class="d-flex justify-content-between mb-2">
+                                <label class="fs-sm fw-600 text-indigo-200">Active Tracked Users</label>
+                                <span class="fs-sm fw-700" id="roi-emp-label">45 Users</span>
+                            </div>
+                            <input type="range" min="5" max="250" value="45" class="w-100" id="roi-emp-input" style="accent-color: var(--primary);">
+                        </div>
+
+                        <!-- Parameter: Hourly Rate -->
+                        <div>
+                            <div class="d-flex justify-content-between mb-2">
+                                <label class="fs-sm fw-600 text-indigo-200">Average Hourly Rate</label>
+                                <span class="fs-sm fw-700" id="roi-wage-label">$25 / hr</span>
+                            </div>
+                            <input type="range" min="12" max="100" value="25" class="w-100" id="roi-wage-input" style="accent-color: var(--primary);">
+                        </div>
+
+                        <!-- Parameter: Time Saved -->
+                        <div>
+                            <div class="d-flex justify-content-between mb-2">
+                                <label class="fs-sm fw-600 text-indigo-200">Weekly Time Theft/Errors (hrs / user)</label>
+                                <span class="fs-sm fw-700" id="roi-time-label">2.5 hrs</span>
+                            </div>
+                            <input type="range" min="0.5" max="10" step="0.5" value="2.5" class="w-100" id="roi-time-input" style="accent-color: var(--primary);">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ROI Results Display -->
+                <div class="bg-input p-5 rounded-md mt-6 d-flex flex-column gap-4 border">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <span class="fs-md text-secondary">Annual Hours Recovered:</span>
+                        <span class="fs-xl fw-700 text-success" id="roi-hours-output">5,850 hrs</span>
+                    </div>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <span class="fs-md text-secondary">Estimated Annual Savings:</span>
+                        <span class="fs-2xl fw-800" id="roi-savings-output">$146,250</span>
+                    </div>
+                    <div class="d-flex justify-content-between align-items-center border-t pt-3">
+                        <span class="fs-sm text-secondary">TimeFlow Plan Cost:</span>
+                        <span class="fs-sm fw-600 text-indigo-200" id="roi-cost-output">$348 / year</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Column 2: Live Manager Dashboard Widget Preview -->
+            <div class="glass-panel p-8 d-flex flex-column justify-content-between">
+                <div>
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <h3 class="fs-xl m-0 d-flex align-items-center gap-2">
+                            <span class="material-icons text-success">analytics</span> Live Dashboard Widget
+                        </h3>
+                        <span class="badge bg-success-glow text-success fs-xs fw-700 d-flex align-items-center gap-1 animate-pulse">
+                            <span class="dot-indicator"></span> ACTIVE PREVIEW
+                        </span>
+                    </div>
+                    <p class="fs-md text-secondary mb-6">
+                        Interactive manager metrics preview. Observe mock live clock-in events updates.
+                    </p>
+
+                    <!-- Mock Dashboard Frame -->
+                    <div class="p-5 rounded-md bg-input border">
+                        <!-- Stats Grid -->
+                        <div class="d-flex gap-4 mb-4">
+                            <div class="flex-1 p-3 bg-input rounded-sm border">
+                                <span class="fs-xs text-secondary text-uppercase tracking-wider">Checked In</span>
+                                <div class="fs-xl fw-700 mt-1" id="mock-active-count">12 / 45</div>
+                            </div>
+                            <div class="flex-1 p-3 bg-input rounded-sm border">
+                                <span class="fs-xs text-secondary text-uppercase tracking-wider">Overtime Alerts</span>
+                                <div class="fs-xl fw-700 text-danger mt-1">1 Pending</div>
+                            </div>
+                        </div>
+
+                        <!-- Active Roster Activity Feed -->
+                        <div class="d-flex flex-column gap-3" id="mock-activity-feed">
+                            <div class="d-flex justify-content-between align-items-center p-3 rounded-sm" style="background: var(--bg-hover); border-left: 3px solid var(--primary);">
+                                <div class="d-flex align-items-center gap-3">
+                                    <div class="avatar bg-primary text-white rounded-full d-flex align-items-center justify-content-center fw-600" style="width: 32px; height: 32px; font-size: 0.75rem;">JS</div>
+                                    <div>
+                                        <div class="fs-sm fw-600">John Smith</div>
+                                        <div class="fs-xs text-secondary">General Shift</div>
+                                    </div>
+                                </div>
+                                <span class="fs-xs text-muted" id="mock-timer-1">04:12:15</span>
+                            </div>
+                            
+                            <div class="d-flex justify-content-between align-items-center p-3 rounded-sm" style="background: var(--bg-hover); border-left: 3px solid var(--success);">
+                                <div class="d-flex align-items-center gap-3">
+                                    <div class="avatar bg-success text-white rounded-full d-flex align-items-center justify-content-center fw-600" style="width: 32px; height: 32px; font-size: 0.75rem;">AD</div>
+                                    <div>
+                                        <div class="fs-sm fw-600">Alice Davis</div>
+                                        <div class="fs-xs text-secondary">Creative Shift</div>
+                                    </div>
+                                </div>
+                                <span class="fs-xs text-muted" id="mock-timer-2">01:45:03</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Simulation Speed Control -->
+                <div class="d-flex justify-content-between align-items-center mt-6">
+                    <span class="fs-sm text-secondary">Simulator Actions:</span>
+                    <button class="btn btn-secondary fs-sm" id="btn-mock-clockin" style="padding: 0.35rem 0.85rem;">
+                        <span class="material-icons fs-sm">add</span> Clock-In Guest
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Custom Demo Booking Lead Form -->
+        <div class="glass-panel p-8 mt-6" style="background: radial-gradient(circle at top right, rgba(99,102,241,0.05), transparent 60%);">
+            <div class="d-flex flex-column md-flex-row justify-content-between align-items-center gap-6">
+                <div>
+                    <h3 class="fs-2xl mb-2">Request a Customized Demonstration</h3>
+                    <p class="fs-md text-secondary m-0">
+                        Consult with our engineering team to construct specific integrations for your organization.
+                    </p>
+                </div>
+                <div class="d-flex gap-3 w-100 max-w-400">
+                    <input type="email" placeholder="enter your email address" class="form-control flex-1" id="sales-lead-email">
+                    <button class="btn btn-primary" id="btn-sales-submit">Request Demo</button>
+                </div>
+            </div>
+            <div class="text-success fs-sm mt-3 d-none text-center" id="sales-success-msg">
+                <span class="material-icons fs-sm align-middle">check_circle</span> Thank you! Our sales team will reach out within 2 hours.
+            </div>
+        </div>
+    </section>
 
     <!-- Pricing Section -->
-    <section id="pricing-section" class="d-flex flex-column gap-12">
+    <section id="pricing-section" class="d-flex flex-column gap-12 reveal">
         <div class="text-center">
             <h2 class="fs-3xl">Simple, Transparent <span class="text-gradient">Subscription Tiers</span></h2>
             <p class="fs-lg text-secondary mt-2 ml-auto mr-auto max-w-700">
@@ -170,7 +527,7 @@
 
         <div class="grid-cols-3 align-items-stretch gap-6">
             {% for plan in plans %}
-                <div class="glass-panel text-primary d-flex flex-column justify-content-between position-relative" style="padding: 2.25rem; {% if plan.name == 'silver' %}border-; box-shadow: var(--shadow-glow);{% else %}border-color: rgba(255,255,255,0.06);{% endif %}">
+                <div class="glass-panel text-primary d-flex flex-column justify-content-between position-relative" style="padding: 2.25rem; {% if plan.name == 'silver' %}border: 1px solid var(--primary); box-shadow: var(--shadow-glow);{% else %}border-color: var(--border-color);{% endif %}">
                     {% if plan.name == 'silver' %}
                         <div class="fs-sm fw-700 text-uppercase text-white rounded-full position-absolute" style="top: -15px; right: 2rem; background: var(--primary); padding: 0.35rem 1rem; box-shadow: var(--shadow-glow);">
                             Best Value
@@ -181,7 +538,7 @@
                             <span class="material-icons text-primary">{% if plan.name == 'basic' %}tag{% elseif plan.name == 'silver' %}stars{% else %}military_tech{% endif %}</span> {{ plan.name }} Plan
                         </h3>
                         <div style="margin: 1.5rem 0;">
-                            <span class="fw-800 text-white fs-3xl">${{ plan.priceMonthly|round }}</span>
+                            <span class="fw-800 fs-3xl">${{ plan.priceMonthly|round }}</span>
                             <span class="fs-md text-muted"> / month</span>
                         </div>
                         <ul class="fs-md text-secondary d-flex flex-column gap-3 mb-8 p-0" >
@@ -269,37 +626,37 @@
                     </thead>
                     <tbody>
                         <tr>
-                            <td class="fw-600 text-white">Base Price</td>
+                            <td class="fw-600">Base Price</td>
                             {% for plan in plans %}
                                 <td>${{ plan.priceMonthly|round }}/mo</td>
                             {% endfor %}
                         </tr>
                         <tr>
-                            <td class="fw-600 text-white">Max Registered Users</td>
+                            <td class="fw-600">Max Registered Users</td>
                             {% for plan in plans %}
                                 <td>{{ plan.maxOrgUsers|number_format }} Users</td>
                             {% endfor %}
                         </tr>
                         <tr>
-                            <td class="fw-600 text-white">Authorized Managers</td>
+                            <td class="fw-600">Authorized Managers</td>
                             {% for plan in plans %}
                                 <td>{% if plan.maxManagers >= 9999 %}Unlimited{% else %}{{ plan.maxManagers }}{% endif %}</td>
                             {% endfor %}
                         </tr>
                         <tr>
-                            <td class="fw-600 text-white">Maximum Shift Duration</td>
+                            <td class="fw-600">Maximum Shift Duration</td>
                             {% for plan in plans %}
                                 <td>{{ plan.sessionLimitHours }} Hours</td>
                             {% endfor %}
                         </tr>
                         <tr>
-                            <td class="fw-600 text-white">Kiosk Mode</td>
+                            <td class="fw-600">Kiosk Mode</td>
                             {% for plan in plans %}
                                 <td>{% if plan.hasSecureKiosk %}Secure (PIN Block){% else %}Open (Click List){% endif %}</td>
                             {% endfor %}
                         </tr>
                         <tr>
-                            <td class="fw-600 text-white">Custom Category Durations</td>
+                            <td class="fw-600">Custom Category Durations</td>
                             {% for plan in plans %}
                                 <td>
                                     {% if plan.hasCustomSessionDurations %}
@@ -311,7 +668,7 @@
                             {% endfor %}
                         </tr>
                         <tr>
-                            <td class="fw-600 text-white">Overtime Multipliers</td>
+                            <td class="fw-600">Overtime Multipliers</td>
                             {% for plan in plans %}
                                 <td>
                                     {% if plan.hasOvertimeRules %}
@@ -323,7 +680,7 @@
                             {% endfor %}
                         </tr>
                         <tr>
-                            <td class="fw-600 text-white">Audit Logs exports</td>
+                            <td class="fw-600">Audit Logs exports</td>
                             {% for plan in plans %}
                                 <td>
                                     {% if plan.exportsEnabled %}
@@ -335,13 +692,13 @@
                             {% endfor %}
                         </tr>
                         <tr>
-                            <td class="fw-600 text-white">Roster CSV upload</td>
+                            <td class="fw-600">Roster CSV upload</td>
                             {% for plan in plans %}
                                 <td><span class="text-success">Yes</span></td>
                             {% endfor %}
                         </tr>
                         <tr>
-                            <td class="fw-600 text-white">Data Retention</td>
+                            <td class="fw-600">Data Retention</td>
                             {% for plan in plans %}
                                 <td>{{ plan.retentionDays }} Days</td>
                             {% endfor %}
@@ -353,7 +710,7 @@
     </section>
 
     <!-- Interactive Demos Sandbox Section -->
-    <section id="demo-section" class="pt-20 border-t">
+    <section id="demo-section" class="pt-20 border-t reveal">
         <h2 class="fs-3xl text-center mb-12">Explore Pre-Seeded <span class="text-gradient">Sandbox Environments</span></h2>
         
         <div class="grid-cols-3 gap-6">
@@ -418,7 +775,7 @@
     </section>
 
     <!-- FAQ Section -->
-    <section class="d-flex flex-column gap-12 mb-8">
+    <section class="d-flex flex-column gap-12 mb-8 reveal">
         <div class="text-center">
             <h2 class="fs-3xl">Frequently Asked <span class="text-gradient">Questions</span></h2>
             <p class="fs-lg text-secondary mt-2">
@@ -428,21 +785,39 @@
 
         <div class="d-flex flex-column gap-6 m-0 w-100 max-w-800" >
             <div class="glass-panel p-5" >
-                <h4 class="fs-lg text-white mb-2">How do custom overrides work?</h4>
+                <h4 class="fs-lg mb-2">How do custom overrides work?</h4>
                 <p class="fs-md text-secondary lh-base">
                     If a tenant requires more capacity than their standard plan permits (e.g. extra user seats or categories limits), the platform super-administrator can add individual overrides from the Organizations controller, storing only overridden parameters at the database level.
                 </p>
             </div>
             <div class="glass-panel p-5" >
-                <h4 class="fs-lg text-white mb-2">What happens when a subscription payment fails?</h4>
+                <h4 class="fs-lg mb-2">What happens when a subscription payment fails?</h4>
                 <p class="fs-md text-secondary lh-base">
-                    The Stripe payment sandbox allows managers to simulate credit card transaction failures. If a renewal fails, the subscription changes to overdue, locking premium manager actions and block kiosk access screens until resolved.
+                    The Stripe payment sandbox allows managers to simulate credit card transaction failures. If a renewal fails, the subscription changes to overdue, locking premium manager actions and blocking kiosk access screens until resolved.
                 </p>
             </div>
             <div class="glass-panel p-5" >
-                <h4 class="fs-lg text-white mb-2">Can orgUsers check in outside schedule hours?</h4>
+                <h4 class="fs-lg mb-2">Can orgUsers check in outside schedule hours?</h4>
                 <p class="fs-md text-secondary lh-base">
                     Managers can configure absolute time windows. If a user clocks in outside this period, their check-in transaction completes successfully but is flagged immediately in audit records and dashboard reports.
+                </p>
+            </div>
+            <div class="glass-panel p-5" >
+                <h4 class="fs-lg mb-2">How are active sessions left open prevented from staying active indefinitely?</h4>
+                <p class="fs-md text-secondary lh-base">
+                    The platform's background `SessionSweeperService` is automatically triggered on active kiosk traffic. Any open clock-in session exceeding the maximum allowed shift duration is automatically ended at the duration limit and marked with the "Auto End" method.
+                </p>
+            </div>
+            <div class="glass-panel p-5" >
+                <h4 class="fs-lg mb-2">What security measures protect the kiosk from unauthorized PIN guessing?</h4>
+                <p class="fs-md text-secondary lh-base">
+                    If a user enters an incorrect PIN 3 times in a row, the platform triggers an anti-brute force lockout. The user account is immediately disabled, blocking all further check-in attempts until a manager clears the lockout in the dashboard.
+                </p>
+            </div>
+            <div class="glass-panel p-5" >
+                <h4 class="fs-lg mb-2">Can we migrate existing rosters from another payroll provider?</h4>
+                <p class="fs-md text-secondary lh-base">
+                    Yes. Managers can upload a standard CSV file using the interactive import wizard. The wizard maps CSV columns (First Name, Last Name, Phone, Email) to organization properties and runs fuzzy-name matches to prevent duplicates.
                 </p>
             </div>
         </div>
@@ -455,6 +830,153 @@
         <p>&copy; 2026 TimeFlow. Powered by PHP Symfony and MySQL. All rights reserved.</p>
     </div>
 </footer>
+
+<script>
+    // ROI Calculator logic
+    const empInput = document.getElementById('roi-emp-input');
+    const wageInput = document.getElementById('roi-wage-input');
+    const timeInput = document.getElementById('roi-time-input');
+
+    const empLabel = document.getElementById('roi-emp-label');
+    const wageLabel = document.getElementById('roi-wage-label');
+    const timeLabel = document.getElementById('roi-time-label');
+
+    const hoursOutput = document.getElementById('roi-hours-output');
+    const savingsOutput = document.getElementById('roi-savings-output');
+    const costOutput = document.getElementById('roi-cost-output');
+
+    function calculateROI() {
+        if (!empInput) return;
+        const emp = parseInt(empInput.value);
+        const wage = parseInt(wageInput.value);
+        const time = parseFloat(timeInput.value);
+
+        empLabel.textContent = emp + " Users";
+        wageLabel.textContent = "$" + wage + " / hr";
+        timeLabel.textContent = time + " hrs";
+
+        const hoursSaved = Math.round(emp * time * 52);
+        const savings = Math.round(hoursSaved * wage);
+        
+        let planCost = 348;
+        if (emp <= 15) {
+            planCost = 108; // Basic: $9 * 12
+        } else if (emp > 100) {
+            planCost = 1068; // Gold: $89 * 12
+        }
+
+        hoursOutput.textContent = hoursSaved.toLocaleString() + " hrs";
+        savingsOutput.textContent = "$" + savings.toLocaleString();
+        costOutput.textContent = "$" + planCost + " / year";
+    }
+
+    if (empInput) {
+        empInput.addEventListener('input', calculateROI);
+        wageInput.addEventListener('input', calculateROI);
+        timeInput.addEventListener('input', calculateROI);
+        calculateROI();
+    }
+
+    // Mock Live Dashboard Ticker logic
+    let mockSeconds1 = 15135; // 04:12:15
+    let mockSeconds2 = 6303;  // 01:45:03
+    let mockActiveCount = 12;
+
+    function formatTime(totalSeconds) {
+        const hrs = Math.floor(totalSeconds / 3600);
+        const mins = Math.floor((totalSeconds % 3600) / 60);
+        const secs = totalSeconds % 60;
+        return [hrs, mins, secs].map(v => v < 10 ? "0" + v : v).join(":");
+    }
+
+    setInterval(() => {
+        mockSeconds1++;
+        mockSeconds2++;
+        const timer1 = document.getElementById('mock-timer-1');
+        const timer2 = document.getElementById('mock-timer-2');
+        if (timer1) timer1.textContent = formatTime(mockSeconds1);
+        if (timer2) timer2.textContent = formatTime(mockSeconds2);
+        
+        // Tick guest timers if added
+        document.querySelectorAll('.mock-guest-timer').forEach(el => {
+            let sec = parseInt(el.getAttribute('data-sec')) + 1;
+            el.setAttribute('data-sec', sec);
+            el.textContent = formatTime(sec);
+        });
+    }, 1000);
+
+    // Mock Clock-In Event Simulation
+    const btnClockIn = document.getElementById('btn-mock-clockin');
+    const activityFeed = document.getElementById('mock-activity-feed');
+    const activeCountDiv = document.getElementById('mock-active-count');
+
+    if (btnClockIn) {
+        btnClockIn.addEventListener('click', () => {
+            mockActiveCount++;
+            if (activeCountDiv) {
+                activeCountDiv.textContent = mockActiveCount + " / 45";
+            }
+            
+            const newRow = document.createElement('div');
+            newRow.className = "d-flex justify-content-between align-items-center p-3 rounded-sm animate-fade-in";
+            newRow.style.background = "rgba(255,255,255,0.02)";
+            newRow.style.borderLeft = "3px solid var(--warning)";
+            
+            newRow.innerHTML = `
+                <div class="d-flex align-items-center gap-3">
+                    <div class="avatar bg-warning text-white rounded-full d-flex align-items-center justify-content-center fw-600" style="width: 32px; height: 32px; font-size: 0.75rem;">G</div>
+                    <div>
+                        <div class="fs-sm fw-600">Guest User</div>
+                        <div class="fs-xs text-secondary">Break Shift</div>
+                    </div>
+                </div>
+                <span class="fs-xs text-muted mock-guest-timer" data-sec="0">00:00:00</span>
+            `;
+            activityFeed.appendChild(newRow);
+            btnClockIn.disabled = true;
+            btnClockIn.textContent = "Guest Active";
+        });
+    }
+
+    // Lead Form submission simulation
+    const btnSubmit = document.getElementById('btn-sales-submit');
+    const leadEmail = document.getElementById('sales-lead-email');
+    const successMsg = document.getElementById('sales-success-msg');
+
+    if (btnSubmit) {
+        btnSubmit.addEventListener('click', () => {
+            if (leadEmail.value.trim() === '') {
+                alert('Please enter a valid email address.');
+                return;
+            }
+            successMsg.classList.remove('d-none');
+            leadEmail.value = '';
+        });
+    }
+
+    // Scroll Reveal Calculation Initialization
+    function checkScroll() {
+        const reveals = document.querySelectorAll('.reveal');
+        const triggerPoint = window.innerHeight * 0.85; // trigger when element is 85% from top
+        const exitPoint = window.innerHeight * 0.05;   // trigger exit when element is 5% from top
+
+        reveals.forEach(el => {
+            const rect = el.getBoundingClientRect();
+            // Check if element top is inside trigger zone and bottom is below exit zone
+            if (rect.top < triggerPoint && rect.bottom > exitPoint) {
+                el.classList.add('active');
+            } else {
+                el.classList.remove('active');
+            }
+        });
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        window.addEventListener('scroll', checkScroll);
+        window.addEventListener('resize', checkScroll);
+        checkScroll(); // initial trigger
+    });
+</script>
 {% endblock %}
 
 

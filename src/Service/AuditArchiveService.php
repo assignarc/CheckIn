@@ -61,7 +61,7 @@ class AuditArchiveService
             ];
         }
 
-        // 4. Create directory and files
+        // 4. Create directory and files: resolve the destination folder dynamically from global settings config
         $fs = new Filesystem();
         $projectDir = $this->params->get('kernel.project_dir');
         $archiveSubdir = $this->configService->get('audit_log_archive_dir', '/var/log/audit_archives');

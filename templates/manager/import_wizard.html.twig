@@ -6,6 +6,20 @@
 {% block manager_content %}
 <div class="mx-auto import-wizard-container" style="max-width: 900px;" data-turbo="false">
     
+    <!-- CSV Import Help Banner -->
+    <div class="d-flex justify-content-between align-items-center mb-6 p-4 rounded-md border" style="background: rgba(99,102,241,0.05); border-color: rgba(99,102,241,0.15); text-align: left;">
+        <div class="d-flex align-items-center gap-3">
+            <span class="material-icons text-primary fs-xl" style="font-size: 2rem;">info</span>
+            <div>
+                <span class="fw-600 text-white d-block">Need help onboarding your team?</span>
+                <span class="fs-sm text-secondary d-block mt-1">Read our guide to map columns, resolve fuzzy duplicates, and check quota limits.</span>
+            </div>
+        </div>
+        <button type="button" class="btn btn-secondary fs-sm d-flex align-items-center gap-1" onclick="toggleImportHelp()" style="white-space: nowrap; height: fit-content; padding: 0.5rem 1rem;">
+            <span class="material-icons fs-md">help_outline</span> View Guide
+        </button>
+    </div>
+    
     <!-- Wizard Steps Indicator -->
     <!-- Wizard Steps Indicator -->
     <div class="wizard-steps mb-8">
@@ -393,6 +407,68 @@
 
 </div>
 
+<!-- CSV Help Modal Container -->
+<div id="import-help-modal" class="modal-overlay d-none" style="position: fixed; inset: 0; background: rgba(0,0,0,0.85); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); z-index: 9999; display: none; align-items: center; justify-content: center; padding: 2rem;">
+    <div class="glass-panel p-8 w-100" style="max-width: 650px; background: #0c0f19; max-height: 85vh; overflow-y: auto; position: relative;">
+        <!-- Close Button -->
+        <button type="button" onclick="toggleImportHelp()" style="position: absolute; top: 1.5rem; right: 1.5rem; background: none; border: none; color: var(--text-muted); cursor: pointer; padding: 0;">
+            <span class="material-icons">close</span>
+        </button>
+
+        <h3 class="fs-xl text-white mb-4 d-flex align-items-center gap-2">
+            <span class="material-icons text-primary">help_outline</span> CSV Import Help & Policy Guide
+        </h3>
+        
+        <div class="d-flex flex-column gap-5 fs-md text-secondary lh-base" style="text-align: left;">
+            <div>
+                <h4 class="fs-md text-white mb-2 fw-600">1. Clean File Structure</h4>
+                <p>
+                    Your CSV spreadsheet should have clear headers. Standard mapped fields are:
+                </p>
+                <ul class="fs-sm text-secondary d-flex flex-column gap-1 pl-4 mt-2" style="list-style-type: none; padding-left: 0.5rem;">
+                    <li>• <strong>First Name / Last Name</strong> (Required for profile creation)</li>
+                    <li>• <strong>Email</strong> (Primary key verification for managers/reports)</li>
+                    <li>• <strong>Phone Number</strong> (Formatted in standard international format)</li>
+                    <li>• <strong>PIN</strong> (Optional. If blank, a unique 4-character PIN is seeded automatically)</li>
+                </ul>
+            </div>
+
+            <div class="border-t pt-4" style="border-color: rgba(255,255,255,0.06);">
+                <h4 class="fs-md text-white mb-2 fw-600">2. Import Process Workflow</h4>
+                <ol class="fs-sm text-secondary d-flex flex-column gap-2 pl-4 mt-2" style="padding-left: 1.25rem;">
+                    <li><strong>Upload:</strong> Provide a spreadsheet file (max 1,000 rows, max 2MB).</li>
+                    <li><strong>Map Columns:</strong> Link your sheet headers to the internal profile database fields.</li>
+                    <li><strong>Fuzzy Match Resolution:</strong> Reconcile conflicts where first/last names match existing profiles but emails differ.</li>
+                    <li><strong>Plan Limit Check:</strong> Ensures your imported active roster size conforms to your subscription license capacity.</li>
+                    <li><strong>Execution Preview:</strong> Inspect a breakdown showing who is being added vs updated before writing to the database.</li>
+                </ol>
+            </div>
+
+            <div class="border-t pt-4" style="border-color: rgba(255,255,255,0.06);">
+                <h4 class="fs-md text-white mb-2 fw-600">3. Expected Outcomes</h4>
+                <div class="d-flex flex-column gap-3 fs-sm mt-2">
+                    <div class="p-3 rounded-sm" style="background: rgba(16,185,129,0.08); border-left: 3px solid var(--success);">
+                        <strong class="text-white">ADD (New Employee Record)</strong><br>
+                        If no matching Email or PIN key is found in the current organization directory, a new user account is successfully registered.
+                    </div>
+                    <div class="p-3 rounded-sm" style="background: rgba(99,102,241,0.08); border-left: 3px solid var(--primary);">
+                        <strong class="text-white">UPDATE (Existing Profile Refresh)</strong><br>
+                        If a row matches an existing employee email, details like phone or name are merged and updated in place.
+                    </div>
+                    <div class="p-3 rounded-sm" style="background: rgba(245,158,11,0.08); border-left: 3px solid var(--warning);">
+                        <strong class="text-white">IGNORED / DEDUPLICATED</strong><br>
+                        Rows that contain exact duplicate values or lack required identifiers are automatically filtered out during validation.
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="d-flex justify-content-end mt-6 pt-4 border-t" style="border-color: rgba(255,255,255,0.06);">
+            <button type="button" class="btn btn-primary" onclick="toggleImportHelp()">Got It</button>
+        </div>
+    </div>
+</div>
+
 <script>
     function handleFileSelected() {
         const fileInput = document.getElementById('import_file');
@@ -400,6 +476,19 @@
         if (fileInput.files.length > 0) {
             fileLabel.textContent = `Selected: ${fileInput.files[0].name}`;
             document.getElementById('dropzone-label').style.borderColor = 'var(--primary)';
+        }
+    }
+
+    function toggleImportHelp() {
+        const modal = document.getElementById('import-help-modal');
+        if (modal) {
+            if (modal.style.display === 'none' || modal.style.display === '') {
+                modal.style.display = 'flex';
+                modal.classList.remove('d-none');
+            } else {
+                modal.style.display = 'none';
+                modal.classList.add('d-none');
+            }
         }
     }
 </script>

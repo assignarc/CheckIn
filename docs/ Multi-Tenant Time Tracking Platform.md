@@ -113,3 +113,29 @@ The platform gates features and resource limits dynamically based on the organiz
 
 - To maintain data integrity, active sessions that exceed the allowed duration cap (based on organization settings or category limits) must be automatically cleaned up.
 - The `SessionSweeperService` scans open sessions on every Kiosk request and terminates them, setting `endedAt` to the maximum permitted session limit.
+
+---
+
+## 6. Recent Platform Updates & Feature Specs
+
+### 6.1 Unified Configuration-Driven Architecture
+The application now uses [config/seed_data.json](file:///Users/vishalkhapre/Documents/Code/CheckIn/config/seed_data.json) as the source of truth for platform entities and system limits. Roster lists, plans, default settings, and categories are parsed dynamically, removing dependency on hardcoded PHP structures and raw CSV imports.
+
+### 6.2 Nondestructive Demo Database Resets
+The demo data refresh command processes updates without altering organization primary keys (`id`). Managers and users are purged using selective raw SQL queries on child rows, preserving organization URLs, tokens, and active sessions in-place.
+
+### 6.3 Progressive Logging & Audits
+Reset actions are executed asynchronously via Messenger. Two distinct audit logs (`SYSTEM_DEMO_DATA_RESET_START` and `SYSTEM_DEMO_DATA_RESET_COMPLETE`) trace the lifecycle of background worker tasks. Direct **Refresh** buttons on manager and admin log pages allow real-time audit polling.
+
+### 6.4 Responsive Navigation Sidebar
+The platform admin panel sidebar supports desktop collapsing to maximize data space and collapses into a responsive header drawer on mobile devices. Collapsed sidebar elements display floating label tooltips on hover to ensure clear navigation.
+
+### 6.5 Tabbed & Compact Mobile Settings
+Settings panels are organized under tabbed panels that stretch evenly (`flex: 1`) on mobile viewports. The active tab state is persisted in `sessionStorage` to maintain tab context across form submissions and page reloads.
+
+### 6.6 Global Application Configuration Options
+Exposed three new settings parameters in the administrative console:
+- `new_signups_enabled` (boolean): Blocks signup routing and replaces landing page links with disabled indicators.
+- `session_sweep_throttle_seconds` (integer): Regulates execution frequency of background database sweeps.
+- `demo_reset_history_days` (integer): Determines length of generated employee history.
+- `audit_log_archive_dir` (string): Specifies file storage paths for zipped database logs.

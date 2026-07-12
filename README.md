@@ -234,60 +234,73 @@ APP_ENV=dev
 APP_SECRET=2e3fa87bd87d890bf7c834bcde11219b
 ```
 
-### 5.2 Step-by-Step Local Workspace Setup
+### 5.2 Automated Setup Scripts
 
-1. **Clone the Repository**:
-   Navigate to your local project directory.
+The platform includes two automated setup workflows for first-time installation (after database configurations are added to `.env`):
 
-2. **Install Package Dependencies**:
-   Run Composer to install all framework and routing dependencies:
+1. **One-Command Shell Script**:
    ```bash
-   composer install
+   ./bin/setup
    ```
+   *This executable bash script installs composer dependencies, creates the schema, runs database migrations, and seeds configurations automatically.*
 
-3. **Prepare Database Schemas**:
-   Generate the database tables and unique indexes for development and testing:
+2. **Composer setup script**:
    ```bash
-   # Update development database
-   php bin/console doctrine:schema:update --force
-
-   # Update testing database
-   php bin/console --env=test doctrine:schema:update --force
+   composer setup
    ```
+   *Runs database initialization, migrations, and seeds parameters in one command.*
 
-4. **Seed System Data**:
-   Prepopulate both environments with default plans, administrators, and demo organizations:
-   ```bash
-   # Seed development database
-   php bin/console app:seed-data
+### 5.3 Manual Setup
+If you prefer running commands manually:
+```bash
+# Install PHP packages
+composer install
 
-   # Seed testing database
-   php bin/console --env=test app:seed-data
-   ```
+# Create Database
+php bin/console doctrine:database:create --if-not-exists
 
-5. **Run the PHPUnit Test Suite**:
-   Verify everything is working by executing the tests:
-   ```bash
-   ./vendor/bin/phpunit
-   ```
+# Run migrations
+php bin/console doctrine:migrations:migrate --no-interaction
 
-6. **Start Dev Server**:
-   ```bash
-   symfony server:start
-   ```
-   Open your browser and navigate to [http://localhost:8000](http://localhost:8000).
+# Seed data & configurations
+php bin/console app:seed-data
+
+# Start local server
+php -S localhost:8000 -t public_html
+```
 
 ---
 
-## 6. Recent Feature Additions
+## 6. Recent Platform Features & Architectural Enhancements
 
-### 6.1 Soft Deletes for Historical Integrity
-To prevent historical data corruption, `Category` entities now implement soft deletes (`deleted_at`). When a manager deletes a category, it is hidden from the active Kiosk selection, but preserved in the database to ensure past `WorkSession` reports remain accurate.
+### 6.1 Centralized Seeding & Reset Configuration (`config/seed_data.json`)
+All seeding, reset rules, plan tier thresholds, and 100 user profiles for the demo organizations have been centralized into a single JSON file. This eliminates external CSV dependencies and hardcoded PHP arrays, making plan parameters and user details simple to update in one place.
 
-### 6.2 Advanced Reporting & Exports
-- **CSV Export Engine**: Managers on Silver or Gold plans can generate filtered CSV exports for payroll processing and auditing. Exports can be triggered across the whole organization or narrowed to specific users and months.
-- **Calendar & List Views**: The User Reports interface allows toggling between a visual Calendar overview and a chronological List View, accommodating different managerial auditing workflows.
-- **Dynamic Session Highlighting**: Managers can apply custom threshold filters (e.g., 30m, 45m, 1h, or custom inputs) to instantly highlight sessions that exceed expected durations, making overtime identification effortless.
+### 6.2 Organization ID Preservation during Demo Resets
+To prevent breaking active URL links, bookmarks, and sessions, the asynchronous database reset system (`ResetDemoDataHandler`) now preserves organization records in-place:
+- Instead of deleting and recreating the `basic-demo` and `golden-demo` organization rows (which increments primary keys), the handler updates them in-place.
+- It deletes only dependent rows (`work_sessions`, `audit_logs`, `org_users`, `categories`, and `managers`) matching those specific organization IDs using raw SQL queries prior to seeding new users.
 
-### 6.3 UI & Design System Stabilization
-- **Theme-Aware Utilities**: Extensive cleanup of legacy inline styles, transitioning them into centralized utility and component classes (`.grid-sidebar-layout`, `.pin-display-box`, `.badge-pin`, etc.). This guarantees consistent visual rendering across both Light and Dark mode user preferences, particularly inside `glass-panel` containers.
+### 6.3 Collapsible Sidebar Layout & Navigation
+The administrator dashboard uses a collapsible sidebar design (`#sidebarToggle`) that transitions smoothly:
+- **Responsive Collapsing**: Slides down to a slim menu strip on desktop and collapses entirely into a header hamburger drawer on mobile (under `900px`).
+- **Interactive Tooltips**: Fully-styled, theme-aware hover popovers (`.sidebar-link::after`) display menu labels when the sidebar is collapsed, preserving clarity and usability.
+
+### 6.4 Step-by-Step Reset Audits & Async Tracking
+Because the reset database workflow runs asynchronously via Symfony Messenger, we added step-by-step progress logging:
+- Logs `SYSTEM_DEMO_DATA_RESET_START` when the background process begins.
+- Logs `SYSTEM_DEMO_DATA_RESET_COMPLETE` once all database tables are refreshed and demo users are seeded.
+- Audits are stored with `organization_id = NULL` under the system category so platform admins can easily track background reset performance from the console.
+- Manual **Refresh** buttons have been integrated next to the titles in both Manager and Admin audit logs to quickly fetch updates.
+
+### 6.5 Tabbed & Mobile-Compliant Settings Dashboard
+The settings panels (both Manager Settings and Admin Global Settings) have been unified under a modern, tabbed panel layout:
+- **Responsive Flex Distribution**: On mobile screens (under `768px`), tabs automatically adjust using `flex: 1` to fill the width evenly, rendering a compact, balanced design.
+- **Tab State Persistence**: Utilizes `sessionStorage` to track the active tab, ensuring the page returns to the exact same setting tab after form submission or redirects.
+
+### 6.6 New Configurable Global Settings
+The following parameters are now stored dynamically in the `app_config` database table and can be edited from the Admin panel Settings page:
+- `new_signups_enabled` (boolean): Toggles public registration. When disabled, homepage CTAs show "Registration Closed", pricing selectors are blocked, and direct requests to `/signup` are redirected with a flash warning.
+- `session_sweep_throttle_seconds` (integer, default `60`): Configures the frequency lock of request-triggered database sweeps.
+- `demo_reset_history_days` (integer, default `150`): Controls how many days of historical employee sessions are seeded during a demo reset.
+- `audit_log_archive_dir` (string, default `/var/log/audit_archives`): Sets the directory where zipped database logs are archived.

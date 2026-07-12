@@ -21,6 +21,14 @@ use Symfony\Component\HttpKernel\KernelInterface;
     name: 'app:seed-data',
     description: 'Seeds the MySQL database with base plans, system administrator, organizations, managers, and orgUsers from seed_data.json.',
 )]
+/**
+ * CLI Command to initialize the database with system parameters and seed data.
+ * 
+ * Rationale:
+ * - Parses config/seed_data.json as the unified source of truth.
+ * - Seeds plan definitions, platform administrators, static organizations, categories, users, and sessions.
+ * - Seeds default global configuration parameters (such as signups, throttling, and storage paths).
+ */
 class SeedDataCommand extends Command
 {
     private EntityManagerInterface $entityManager;
@@ -35,6 +43,7 @@ class SeedDataCommand extends Command
         parent::__construct();
         $this->entityManager = $entityManager;
         $this->passwordHasher = $passwordHasher;
+        // Project directory parameter allows absolute file mapping during setup/CLI executions
         $this->projectDir = $kernel->getProjectDir();
     }
 
@@ -43,6 +52,7 @@ class SeedDataCommand extends Command
         $io = new SymfonyStyle($input, $output);
         $io->title('Starting Database Seeding...');
 
+        // 1. Locate and parse config/seed_data.json configuration file
         $configPath = $this->projectDir . '/config/seed_data.json';
         if (!file_exists($configPath)) {
             $io->error("Seed data configuration file not found at: {$configPath}");
@@ -55,7 +65,7 @@ class SeedDataCommand extends Command
             return Command::FAILURE;
         }
 
-        // 1. Seed Plans if they do not exist
+        // 2. Seed Subscription Plans (Basic, Silver, Gold tiers)
         $plans = [];
         $plansData = $config['plans'] ?? [];
 
@@ -83,7 +93,7 @@ class SeedDataCommand extends Command
         }
         $this->entityManager->flush();
 
-        // 2. Create System Administrator
+        // 3. Seed Platform Super Administrator Account
         $adminData = $config['admin'] ?? [];
         if ($adminData) {
             $existingAdmin = $this->entityManager->getRepository(Manager::class)->findOneBy(['email' => $adminData['email']]);
@@ -95,6 +105,7 @@ class SeedDataCommand extends Command
                 $admin->setRole('ROLE_SYSTEM_ADMIN');
                 $admin->setIsActive(true);
                 
+                // Hash credentials using standard Symfony password encoder
                 $hashedPassword = $this->passwordHasher->hashPassword($admin, $adminData['password']);
                 $admin->setPasswordHash($hashedPassword);
 
@@ -105,7 +116,7 @@ class SeedDataCommand extends Command
             }
         }
 
-        // 3. Create Organizations
+        // 4. Seed Static Organizations & Dependent Entities
         $orgsData = $config['static_organizations'] ?? [];
         foreach ($orgsData as $orgData) {
             $existingOrg = $this->entityManager->getRepository(Organization::class)->findOneBy(['slug' => $orgData['slug']]);
@@ -122,7 +133,7 @@ class SeedDataCommand extends Command
                 $this->entityManager->persist($org);
                 $io->success("Created organization: {$orgData['name']} (Slug: {$orgData['slug']})");
 
-                // Managers
+                // Seed organization managers
                 foreach ($orgData['managers'] ?? [] as $mgrData) {
                     $manager = new Manager();
                     $manager->setEmail($mgrData['email']);
@@ -138,7 +149,7 @@ class SeedDataCommand extends Command
                     $io->text("  Manager: {$mgrData['email']} (Password: {$mgrData['password']})");
                 }
 
-                // Categories
+                // Seed shift categories
                 $categories = [];
                 foreach ($orgData['categories'] ?? [] as $catData) {
                     $category = new Category();
@@ -150,7 +161,7 @@ class SeedDataCommand extends Command
                     $categories[] = $category;
                 }
 
-                // OrgUsers
+                // Seed employee records
                 foreach ($orgData['org_users'] ?? [] as $empData) {
                     $orgUser = new OrgUser();
                     $orgUser->setOrganization($org);
@@ -166,7 +177,7 @@ class SeedDataCommand extends Command
                     }
                     $this->entityManager->persist($orgUser);
 
-                    // Optional Sessions
+                    // Seed historical work sessions for the employee
                     foreach ($empData['sessions'] ?? [] as $sessData) {
                         $session = new WorkSession();
                         $session->setOrgUser($orgUser);
@@ -189,7 +200,7 @@ class SeedDataCommand extends Command
             }
         }
 
-        // 4. Seed Default Configurations
+        // 5. Seed Global Configurations into the app_config table
         $defaultConfigs = [
             'new_signups_enabled' => true,
             'allowed_phone_countries' => ['us'],

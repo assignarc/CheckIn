@@ -360,6 +360,8 @@ class AdminController extends AbstractController
             ->from(\App\Entity\AuditLog::class, 'a')
             ->orderBy('a.createdAt', 'DESC');
             
+        // Prevent SQL empty returns from stale filter parameters:
+        // Validate if the selected organization ID exists in the database before appending it to query constraints
         if ($orgId) {
             $orgExists = $em->getRepository(\App\Entity\Organization::class)->find($orgId);
             if ($orgExists) {
@@ -407,47 +409,57 @@ class AdminController extends AbstractController
     #[Route('/settings', name: 'app_admin_settings', methods: ['GET', 'POST'])]
     public function settings(Request $request, AppConfigService $configService, EntityManagerInterface $em): Response
     {
+        // 1. Process Form Submissions (POST requests)
         if ($request->isMethod('POST')) {
             $allowedCountries = $request->request->all('allowed_phone_countries');
             
-            // Remove empty values
+            // Clean phone country input array
             $allowedCountries = array_filter($allowedCountries, function($value) {
                 return !empty(trim($value));
             });
 
-            // If empty, fallback to ["us"]
+            // Default to US region if no boxes are checked
             if (empty($allowedCountries)) {
                 $allowedCountries = ['us'];
             }
             
             $configService->set('allowed_phone_countries', array_values($allowedCountries));
 
+            // Validate and set CSV row import limits
             $maxImportRecords = (int)$request->request->get('max_import_records', 100);
             if ($maxImportRecords < 1) $maxImportRecords = 100;
             $configService->set('max_import_records', $maxImportRecords);
 
+            // Validate and set password/token rotation limits for demo organizations
             $demoRotationHours = (int)$request->request->get('demo_rotation_hours', 12);
             if ($demoRotationHours < 1) $demoRotationHours = 12;
             $configService->set('demo_rotation_hours', $demoRotationHours);
 
+            // Toggle Captchas for console logins (Manager and Platform Admin)
             $captchaLoginEnabled = $request->request->get('captcha_login_enabled') === '1';
             $configService->set('captcha_login_enabled', $captchaLoginEnabled);
 
+            // Toggle Captchas for requesting demo credentials
             $captchaDemoEnabled = $request->request->get('captcha_demo_enabled') === '1';
             $configService->set('captcha_demo_enabled', $captchaDemoEnabled);
 
+            // Enable or disable new organization signups globally on the website
             $newSignupsEnabled = $request->request->get('new_signups_enabled') === '1';
             $configService->set('new_signups_enabled', $newSignupsEnabled);
 
+            // Define database retention days before archiving old audit records
             $auditLogArchiveDays = (int)$request->request->get('audit_log_archive_days', 180);
             $configService->set('audit_log_archive_days', $auditLogArchiveDays);
 
+            // Regulate request-triggered session sweeps using a seconds-based lock
             $sessionSweepThrottleSeconds = (int)$request->request->get('session_sweep_throttle_seconds', 60);
             $configService->set('session_sweep_throttle_seconds', $sessionSweepThrottleSeconds);
 
+            // Control history depth generated during database refreshes
             $demoResetHistoryDays = (int)$request->request->get('demo_reset_history_days', 150);
             $configService->set('demo_reset_history_days', $demoResetHistoryDays);
 
+            // Designate target directory path for zipped audit history files
             $auditLogArchiveDir = $request->request->get('audit_log_archive_dir', '/var/log/audit_archives');
             $configService->set('audit_log_archive_dir', $auditLogArchiveDir);
 

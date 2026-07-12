@@ -23,12 +23,39 @@ use Symfony\Component\Messenger\MessageBusInterface;
 #[AsMessageHandler]
 class ResetDemoDataHandler
 {
+    /**
+     * @var EntityManagerInterface Manage persistence state of entities
+     */
     private EntityManagerInterface $em;
+
+    /**
+     * @var MessageBusInterface For dispatching password and token rotations asynchronously
+     */
     private MessageBusInterface $messageBus;
+
+    /**
+     * @var ParameterBagInterface To read project root and config locations
+     */
     private ParameterBagInterface $params;
+
+    /**
+     * @var PinService Handles generation and caching of conforming 4-char employee PINs
+     */
     private PinService $pinService;
+
+    /**
+     * @var LicenseService Validates that employee creation fits plan-specific thresholds
+     */
     private LicenseService $licenseService;
+
+    /**
+     * @var \App\Service\SystemAuditLogger Logs platform-wide audit log indicators
+     */
     private \App\Service\SystemAuditLogger $auditLogger;
+
+    /**
+     * @var \App\Service\AppConfigService Handles platform configurations
+     */
     private \App\Service\AppConfigService $configService;
 
     public function __construct(
@@ -49,13 +76,21 @@ class ResetDemoDataHandler
         $this->configService = $configService;
     }
 
+    /**
+     * Resets both basic and golden demo organizations to a fresh state.
+     * 
+     * Rationale:
+     * - Preserves organization table IDs in-place using targeted raw SQL drops on child rows.
+     * - Seeds 100 demo employees from seed_data.json split 50/50 between the two organizations.
+     * - Generates historical work logs for each employee based on the configured history days.
+     */
     public function __invoke(ResetDemoDataMessage $message)
     {
         // Allow unlimited memory and time for massive entity creation + Symfony Profiler overhead
         ini_set('memory_limit', '-1');
         set_time_limit(0);
 
-        // Log that the background process has started
+        // 1. Audit Start: Let administrators know the asynchronous workflow has initiated
         $this->auditLogger->log('SYSTEM_DEMO_DATA_RESET_START', [
             'status' => 'started'
         ]);
@@ -67,7 +102,7 @@ class ResetDemoDataHandler
         $basicConf = $demoConfigs['basic'] ?? [];
         $goldenConf = $demoConfigs['golden'] ?? [];
 
-        // 1. Find existing Demo Organizations if they exist
+        // 2. Fetch existing Demo Organizations to see if we can reuse them (preserving IDs)
         $bOrg = $this->em->getRepository(Organization::class)->findOneBy(['slug' => $basicConf['slug'] ?? 'basic-demo']);
         $gOrg = $this->em->getRepository(Organization::class)->findOneBy(['slug' => $goldenConf['slug'] ?? 'golden-demo']);
 
@@ -80,6 +115,8 @@ class ResetDemoDataHandler
             $orgIds[] = $gOrg->getId();
         }
 
+        // Purge child/dependent records using raw SQL queries.
+        // This is much faster than loading entities and preserves Organization primary key IDs in-place.
         if (!empty($orgIds)) {
             $idsStr = implode(',', $orgIds);
             // Delete dependent records to start fresh under the same Org IDs
@@ -90,7 +127,7 @@ class ResetDemoDataHandler
             $this->em->getConnection()->executeStatement("DELETE FROM managers WHERE organization_id IN ({$idsStr})");
         }
 
-        // 2. Setup/Update Basic Demo Org (Basic Plan, Open Access)
+        // 3. Setup/Update Basic Demo Org (Basic Plan, Open Access)
         $basicPlan = $this->em->getRepository(Plan::class)->findOneBy(['name' => $basicConf['plan'] ?? 'basic']);
         if (!$bOrg) {
             $bOrg = new Organization();
@@ -126,7 +163,7 @@ class ResetDemoDataHandler
         $bCat->setMaxSessionDurationMinutes($bCatConf['max_duration_minutes'] ?? 480);
         $this->em->persist($bCat);
 
-        // 3. Setup/Update Golden Demo Org (Gold Plan, Secure Access)
+        // 4. Setup/Update Golden Demo Org (Gold Plan, Secure Access)
         $goldPlan = $this->em->getRepository(Plan::class)->findOneBy(['name' => $goldenConf['plan'] ?? 'gold']);
         if (!$gOrg) {
             $gOrg = new Organization();
@@ -156,7 +193,7 @@ class ResetDemoDataHandler
 
         $gCatConf = $goldenConf['category'] ?? [];
         $gCat = new Category();
-        $gCat->setName($gCatConf['name'] ?? 'Design Shift');
+        $gCat->setName($gCatConf['name'] ?? 'Creative Shift');
         $gCat->setIcon($gCatConf['icon'] ?? 'palette');
         $gCat->setColor($gCatConf['color'] ?? '#8b5cf6');
         $gCat->setOrganization($gOrg);
@@ -167,7 +204,7 @@ class ResetDemoDataHandler
         // Flush newly created/updated Organizations so they have database IDs for PinService to query
         $this->em->flush();
 
-        // 4. Seed Users from config (50/50 split)
+        // 5. Seed Users from config (50/50 split)
         $historyDays = (int)$this->configService->get('demo_reset_history_days', 150);
         $demoUsersData = $config['demo_users'] ?? [];
         
@@ -190,6 +227,7 @@ class ResetDemoDataHandler
             $phone = $row['phone'] ?? null;
             $email = $row['email'] ?? null;
             
+            // Allocate conforming unique PINs using PinService
             $pin = $this->pinService->generateUniquePin($targetOrg, null, $isGolden ? $usedGoldenPins : $usedBasicPins);
             if ($isGolden) {
                 $usedGoldenPins[] = $pin;
@@ -197,6 +235,7 @@ class ResetDemoDataHandler
                 $usedBasicPins[] = $pin;
             }
 
+            // Enforce license caps (Active status limits)
             $isActive = $this->licenseService->isNextUserActiveAllowed($targetOrg, $isGolden ? $activeGoldenCount : $activeBasicCount);
             if ($isActive) {
                 if ($isGolden) {
@@ -217,21 +256,23 @@ class ResetDemoDataHandler
             $orgUser->setIsActive($isActive);
             $this->em->persist($orgUser);
 
-
             // Generate history for configured number of days
             for ($day = $historyDays; $day >= 1; $day--) {
+                // 15% check-in rate per user per day to create a realistic sparse grid
                 if (random_int(1, 100) <= 15) {
                     $session = new WorkSession();
                     $session->setOrganization($targetOrg);
                     $session->setOrgUser($orgUser);
                     $session->setCategory($targetCat);
                     
+                    // Clock-in starts between 8 AM and 10 AM
                     $startHour = random_int(8, 10);
                     $startMin = random_int(0, 59);
                     $start = new \DateTime("-{$day} days");
                     $start->setTime($startHour, $startMin);
                     $session->setStartedAt($start);
                     
+                    // Shift duration ranges from 4 to 8 hours
                     $durationHours = random_int(4, 8);
                     $end = clone $start;
                     $end->modify("+{$durationHours} hours");
@@ -242,7 +283,7 @@ class ResetDemoDataHandler
                 }
             }
 
-            // 10% chance they are actively working today
+            // 10% chance they are actively working today (open sessions for dashboard demo)
             if (random_int(1, 10) === 1) {
                 $session = new WorkSession();
                 $session->setOrganization($targetOrg);
@@ -256,16 +297,16 @@ class ResetDemoDataHandler
             
             $usersCreated++;
 
-            // Batch flush to avoid memory bloat
+            // Batch flush to avoid PHP memory exhaustion with 15,000+ session entities
             if ($usersCreated % 20 === 0) {
                 $this->em->flush();
             }
         }
 
-        // Final flush
+        // Final flush for remaining entities
         $this->em->flush();
 
-        // 5. Dispatch rotation messages to secure the credentials
+        // 6. Dispatch password and token rotations asynchronously via Messenger to simulate rotation policies
         if ($bOrg->getId() && $bManager->getId()) {
             $this->messageBus->dispatch(new RotatePasswordMessage($bOrg->getId(), $bManager->getId()));
             $this->messageBus->dispatch(new RotateKioskTokenMessage($bOrg->getId(), $bOrg->getName()));
@@ -276,7 +317,7 @@ class ResetDemoDataHandler
             $this->messageBus->dispatch(new RotateKioskTokenMessage($gOrg->getId(), $gOrg->getName()));
         }
 
-        // Log completion of the demo reset process
+        // 7. Audit Complete: Record system metrics for platform administrators
         $this->auditLogger->log('SYSTEM_DEMO_DATA_RESET_COMPLETE', [
             'status' => 'completed',
             'basic_demo_org_id' => $bOrg->getId(),

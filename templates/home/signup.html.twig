@@ -162,7 +162,7 @@
                             {% if p.name == 'basic' %}stars{% elseif p.name == 'silver' %}workspace_premium{% else %}military_tech{% endif %}
                         </span>
                         <span class="fs-lg fw-700 mt-0" style="padding: .5rem; text-transform: capitalize">{{ p.name }}</span>
-                        <span class="fs-2xl fw-800 text-white m-0" >
+                        <span class="fs-2xl fw-800 m-0" >
                             {% if p.priceMonthly == 0 %}Free{% else %}${{ p.priceMonthly|round }}<span class="fs-sm fw-400">/mo</span>{% endif %}
                         </span>
                         <ul class="fs-sm text-center text-secondary d-flex flex-column gap-1 w-100" >

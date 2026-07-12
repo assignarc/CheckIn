@@ -26,7 +26,7 @@ Before beginning the deployment, ensure you have the following:
 
 ### 1.3 PHP Version
 1. Navigate to **Devs > PHP Manager**.
-2. Ensure the PHP version for your domain is set to **PHP 8.2** (or at least PHP 8.1).
+2. Ensure the PHP version for your domain is set to **PHP 8.4** (as required by composer.json).
 
 ---
 
@@ -95,8 +95,9 @@ composer install --no-dev --optimize-autoloader
 
 ---
 
-## Step 5: Database Migrations
+## Step 5: Database Migrations & Seeding
 
+### 5.1 Run Migrations
 Run the Doctrine migrations to build the necessary database tables:
 
 ```bash
@@ -104,6 +105,13 @@ php bin/console doctrine:migrations:migrate --no-interaction
 ```
 
 *Note: If you encounter memory limit issues, prefix the command with `php -d memory_limit=512M bin/console ...`.*
+
+### 5.2 Seed Default Platform Settings
+Execute the seeding command to prepopulate plans, platform settings, default categories, and the system administrator account:
+
+```bash
+php bin/console app:seed-data
+```
 
 ---
 
