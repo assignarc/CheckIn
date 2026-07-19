@@ -1,0 +1,248 @@
+{% extends 'admin/layout.html.twig' %}
+
+{% block title %}Billing & Revenue Dashboard - CenterTime{% endblock %}
+
+{% block admin_content %}
+<div class="d-flex align-items-center justify-content-between flex-wrap gap-4 mb-6">
+    <div>
+        <h2 class="mb-1">Billing & Revenue Dashboard</h2>
+        <p class="text-secondary m-0 fs-sm">Monitor subscriber statuses, global revenue metrics, Stripe syncing, and payment event trails.</p>
+    </div>
+</div>
+
+<!-- Metrics Overview -->
+<div class="grid-cols-3 mb-8">
+    <div class="metric-card">
+        <div class="metric-icon indigo-billing text-purple-500">
+            <span class="material-icons">attach_money</span>
+        </div>
+        <div class="metric-info">
+            <h3>${{ totalRevenue }}</h3>
+            <p>Total Revenue Collected</p>
+        </div>
+    </div>
+
+    <div class="metric-card">
+        <div class="metric-icon emerald-billing">
+            <span class="material-icons">card_membership</span>
+        </div>
+        <div class="metric-info">
+            <h3>{{ activeSubCount }}</h3>
+            <p>Active Paid Subscriptions</p>
+        </div>
+    </div>
+
+    <div class="metric-card">
+        <div class="metric-icon amber-billing">
+            <span class="material-icons">people</span>
+        </div>
+        <div class="metric-info">
+            <h3>{{ activePaidUsersCount }}</h3>
+            <p>Employees in Paid Plans</p>
+        </div>
+    </div>
+</div>
+
+<!-- Search & Filter Controls -->
+<div class="glass-panel p-4 mb-8 d-flex justify-content-between align-items-center flex-wrap gap-4">
+    <form method="get" class="d-flex align-items-center m-0 gap-2 w-100 w-md-auto search-container">
+        <div class="position-relative w-100">
+            <span class="material-icons position-absolute text-muted fs-md search-icon-inside">search</span>
+            <input type="text" name="q" value="{{ q }}" placeholder="Search by organization name or slug..." class="form-control form-control-sm m-0 search-input-padding">
+        </div>
+        <button type="submit" class="btn btn-primary btn-sm">Filter</button>
+        {% if q %}
+            <a href="{{ path('app_admin_billing') }}" class="btn btn-secondary btn-sm">Clear</a>
+        {% endif %}
+    </form>
+
+    <!-- Tab Buttons -->
+    <div class="btn-group bg-card rounded-md p-1 d-inline-flex tab-btn-wrapper">
+        <button type="button" class="tab-btn-custom active" id="tab-btn-tenants" onclick="switchBillingTab('tenants')">
+            <span class="material-icons fs-sm align-middle mr-1">business</span> Tenant Subscriptions
+        </button>
+        <button type="button" class="tab-btn-custom" id="tab-btn-payments" onclick="switchBillingTab('payments')">
+            <span class="material-icons fs-sm align-middle mr-1">history</span> Transaction History
+        </button>
+        <button type="button" class="tab-btn-custom" id="tab-btn-events" onclick="switchBillingTab('events')">
+            <span class="material-icons fs-sm align-middle mr-1">bolt</span> Event Log
+        </button>
+    </div>
+</div>
+
+<!-- Section Content Containers -->
+
+<!-- 1. Tenant Overview Tab -->
+<div id="billing-section-tenants" class="glass-panel p-0 overflow-hidden mb-8">
+    <div class="table-responsive">
+        <table class="table mb-0 fs-sm">
+            <thead>
+                <tr>
+                    <th>Organization / Slug</th>
+                    <th>Billing Plan</th>
+                    <th>Stripe IDs</th>
+                    <th>Stripe Status</th>
+                    <th>Last Transaction</th>
+                    <th>Next Renewal Date</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for tenant in tenantOverview %}
+                    <tr>
+                        <td>
+                            <div class="fw-600 text-white">{{ tenant.org.name }}</div>
+                            <div class="text-secondary font-mono fs-xs">{{ tenant.org.slug }}</div>
+                        </td>
+                        <td>
+                            <span class="badge {% if tenant.org.plan.name == 'gold' %}badge-success{% elseif tenant.org.plan.name == 'silver' %}badge-info{% else %}badge-warning{% endif %}">
+                                {{ tenant.org.plan.name|upper }}
+                            </span>
+                        </td>
+                        <td>
+                            <div class="fs-xs font-mono text-muted">
+                                Customer: <code>{{ tenant.org.stripeCustomerId|default('cus_None') }}</code>
+                            </div>
+                            <div class="fs-xs font-mono text-muted mt-1">
+                                Sub: <code>{{ tenant.org.stripeSubscriptionId|default('sub_None') }}</code>
+                            </div>
+                        </td>
+                        <td>
+                            {% if tenant.status == 'Active' %}
+                                <span class="badge badge-success d-inline-flex align-items-center gap-1">
+                                    <span class="material-icons fs-xs">check_circle</span> Active
+                                </span>
+                            {% else %}
+                                <span class="badge badge-danger d-inline-flex align-items-center gap-1">
+                                    <span class="material-icons fs-xs">error</span> Suspended
+                                </span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if tenant.latestPayment %}
+                                <div class="fw-700 text-white">${{ tenant.latestPayment.amount }}</div>
+                                <div class="text-secondary fs-xs">{{ tenant.latestPayment.paidAt|date('M d, Y') }}</div>
+                            {% else %}
+                                <span class="text-muted">--</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if tenant.nextRenewalDate %}
+                                <span class="fw-500 text-primary">{{ tenant.nextRenewalDate|date('M d, Y') }}</span>
+                            {% else %}
+                                <span class="text-muted">--</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                {% else %}
+                    <tr>
+                        <td colspan="6" class="text-center text-muted p-8">No organizations found.</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- 2. Global Payments Tab -->
+<div id="billing-section-payments" class="glass-panel p-0 overflow-hidden mb-8 d-none">
+    <div class="table-responsive">
+        <table class="table mb-0 fs-sm">
+            <thead>
+                <tr>
+                    <th>Invoice ID</th>
+                    <th>Organization</th>
+                    <th>Billing Amount</th>
+                    <th>Payment Period</th>
+                    <th>Paid At</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for pay in globalPayments %}
+                    <tr>
+                        <td class="font-mono text-primary">{{ pay.stripeInvoiceId }}</td>
+                        <td>
+                            <div class="fw-600 text-white">{{ pay.organization.name }}</div>
+                        </td>
+                        <td class="fw-700 text-white">${{ pay.amount }}</td>
+                        <td>{{ pay.periodStart|date('M d, Y') }} - {{ pay.periodEnd|date('M d, Y') }}</td>
+                        <td>{{ pay.paidAt|date('M d, Y, h:i A') }}</td>
+                        <td>
+                            <span class="badge badge-success">{{ pay.status }}</span>
+                        </td>
+                    </tr>
+                {% else %}
+                    <tr>
+                        <td colspan="6" class="text-center text-muted p-8">No global payment logs recorded.</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- 3. Webhook Event Log Tab -->
+<div id="billing-section-events" class="glass-panel p-0 overflow-hidden mb-8 d-none">
+    <div class="table-responsive">
+        <table class="table mb-0 fs-sm">
+            <thead>
+                <tr>
+                    <th>Date / Time</th>
+                    <th>Event Type</th>
+                    <th>Tenant Organization</th>
+                    <th>Trigger Details</th>
+                    <th>IP / User Agent</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for log in eventLogs %}
+                    <tr>
+                        <td>
+                            <div class="fw-600 text-white">{{ log.createdAt|date('M d, Y') }}</div>
+                            <div class="text-secondary fs-xs">{{ log.createdAt|date('h:i:s A') }}</div>
+                        </td>
+                        <td>
+                            <span class="badge {% if log.action == 'STRIPE_PAYMENT_SUCCESS' %}badge-success{% elseif log.action == 'STRIPE_PAYMENT_FAILED' %}badge-danger{% elseif log.action == 'TENANT_SIGNUP' %}badge-info{% else %}badge-secondary{% endif %}">
+                                {{ log.action }}
+                            </span>
+                        </td>
+                        <td>
+                            {{ log.organization ? log.organization.name : 'System-wide' }}
+                        </td>
+                        <td>
+                            <pre class="timeline-details-pre">{{ log.detailsJson|json_encode(constant('JSON_PRETTY_PRINT')) }}</pre>
+                        </td>
+                        <td>
+                            <div class="fs-xs font-mono">{{ log.ipAddress|default('Unknown IP') }}</div>
+                            <div class="text-secondary fs-xs mt-1 text-truncate truncate-text-wrapper" title="{{ log.userAgent }}">{{ log.userAgent|default('System Console') }}</div>
+                        </td>
+                    </tr>
+                {% else %}
+                    <tr>
+                        <td colspan="5" class="text-center text-muted p-8">No Stripe subscription or signup events recorded yet.</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+    function switchBillingTab(activeTab) {
+        const sections = ['tenants', 'payments', 'events'];
+        
+        sections.forEach(tab => {
+            const container = document.getElementById('billing-section-' + tab);
+            const btn = document.getElementById('tab-btn-' + tab);
+            
+            if (tab === activeTab) {
+                if(container) container.classList.remove('d-none');
+                if(btn) btn.classList.add('active');
+            } else {
+                if(container) container.classList.add('d-none');
+                if(btn) btn.classList.remove('active');
+            }
+        });
+    }
+</script>
+{% endblock %}

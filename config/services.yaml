@@ -10,6 +10,9 @@ parameters:
     default_fallback_salt_change_me_in_prod: 'placeholder_salt_value'
     import_hash_salt: '%env(string:default:default_fallback_salt_change_me_in_prod:IMPORT_HASH_SALT)%'
     cron_secret_token: '%env(string:CRON_SECRET_TOKEN)%'
+    stripe_public_key: '%env(string:STRIPE_PUBLIC_KEY)%'
+    stripe_secret_key: '%env(string:STRIPE_SECRET_KEY)%'
+    stripe_webhook_secret: '%env(string:STRIPE_WEBHOOK_SECRET)%'
 
 services:
     # default configuration for services in *this* file

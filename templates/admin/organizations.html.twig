@@ -1,6 +1,50 @@
 {% extends 'admin/layout.html.twig' %}
 
-{% block title %}Manage Tenants - TimeFlow{% endblock %}
+{% block title %}Manage Tenants - CenterTime{% endblock %}
+
+{% block stylesheets %}
+    {{ parent() }}
+    <style>
+        .org-details-container {
+            display: grid;
+            grid-template-columns: 2fr 1fr 1fr;
+            gap: 2rem;
+        }
+        .org-details-right {
+            border-left: 1px solid rgba(255, 255, 255, 0.06);
+            padding-left: 2.5rem;
+        }
+        
+        @media (max-width: 1200px) {
+            .grid-cols-3 {
+                grid-template-columns: repeat(2, 1fr) !important;
+            }
+        }
+        
+        @media (max-width: 992px) {
+            .org-details-container {
+                grid-template-columns: 1fr;
+                gap: 1.5rem;
+            }
+            .org-details-right {
+                border-left: none !important;
+                padding-left: 0 !important;
+                border-top: 1px solid rgba(255, 255, 255, 0.06);
+                padding-top: 1.5rem;
+            }
+            .grid-cols-3 {
+                grid-template-columns: 1fr !important;
+            }
+        }
+
+        /* Responsive table helpers to adjust column layouts on mobile */
+        @media (max-width: 768px) {
+            .hide-on-mobile {
+                display: none !important;
+            }
+        }
+    </style>
+{% endblock %}
 
 {% block admin_content %}
 <div class="glass-panel mb-8 p-6">
@@ -11,13 +55,13 @@
             <thead>
                 <tr>
                     <th>Organization</th>
-                    <th>Slug</th>
+                    <th class="hide-on-mobile">Slug</th>
                     <th>Plan Level</th>
-                    <th>Sub. Status</th>
-                    <th>Users</th>
-                    <th>Managers</th>
-                    <th>Session Limit</th>
-                    <th>Exports</th>
+                    <th class="hide-on-mobile">Sub. Status</th>
+                    <th class="hide-on-mobile">Users</th>
+                    <th class="hide-on-mobile">Managers</th>
+                    <th class="hide-on-mobile">Session Limit</th>
+                    <th class="hide-on-mobile">Exports</th>
                     <th class="text-right">Actions</th>
                 </tr>
             </thead>
@@ -25,39 +69,43 @@
                 {% for item in organizations %}
                     {% set org = item.org %}
                     <tr>
-                        <td class="fs-lg fw-700 text-white">{{ org.name }}</td>
-                        <td><code>{{ org.slug }}</code></td>
+                        <td class="fs-sm fw-600 text-white">{{ org.name }}</td>
+                        <td class="hide-on-mobile"><code>{{ org.slug }}</code></td>
                         <td>
                             <span class="badge {% if org.plan.name == 'gold' %}badge-success{% elseif org.plan.name == 'silver' %}badge-info{% else %}badge-warning{% endif %}">
                                 {{ org.plan.name }}
                             </span>
                         </td>
-                        <td>
-                            {% if org.isSubscriptionActive %}
-                                <span class="badge badge-success text-success" style="background:rgba(16,185,129,0.1)">Paid</span>
+                        <td class="hide-on-mobile">
+                            {% if org.isArchived %}
+                                <span class="badge badge-danger">Archived</span>
                             {% else %}
-                                <span class="badge badge-danger">Delinquent</span>
+                                {% if org.isSubscriptionActive %}
+                                    <span class="badge badge-success text-success" style="background:rgba(16,185,129,0.1)">Paid</span>
+                                {% else %}
+                                    <span class="badge badge-warning">Delinquent</span>
+                                {% endif %}
                             {% endif %}
                         </td>
-                        <td>
+                        <td class="hide-on-mobile">
                             {{ item.empCount }} <span class="fs-xs text-muted">/ {{ org.maxOrgUsers }}</span>
                             {% if org.maxOrgUsersOverride %}
                                 <span class="fs-xs text-purple-300" title="Overridden">*</span>
                             {% endif %}
                         </td>
-                        <td>
+                        <td class="hide-on-mobile">
                             {{ item.mgrCount }} <span class="fs-xs text-muted">/ {{ org.maxManagers }}</span>
                             {% if org.maxManagersOverride %}
                                 <span class="fs-xs text-purple-300" title="Overridden">*</span>
                             {% endif %}
                         </td>
-                        <td>
+                        <td class="hide-on-mobile">
                             {{ org.sessionLimitHours }} hrs
                             {% if org.sessionLimitHoursOverride %}
                                 <span class="fs-xs text-purple-300" title="Overridden">*</span>
                             {% endif %}
                         </td>
-                        <td>
+                        <td class="hide-on-mobile">
                             {% if org.isExportsEnabled %}
                                 <span class="badge badge-success">Yes</span>
                             {% else %}
@@ -69,15 +117,15 @@
                         </td>
                         <td class="text-right">
                             <button type="button" class="btn btn-secondary btn-sm" onclick="toggleDetails('org-actions-{{ org.id }}')">
-                                <span class="material-icons fs-md" style="vertical-align:middle">build</span> Overrides
+                                <span class="material-icons fs-md" style="vertical-align:middle">build</span> <span class="hide-on-mobile">Overrides</span>
                             </button>
                         </td>
                     </tr>
                     
                     <!-- Action drawer (Limit overrides & password reset form) -->
-                    <tr id="org-actions-{{ org.id }}" class="d-none" style="background:rgba(20,27,45,0.35)">
-                        <td colspan="9" class="p-8" style="border-left: 3px solid #8b5cf6">
-                            <div class="d-grid gap-12" style="grid-template-columns: 2fr 1fr">
+                    <tr id="org-actions-{{ org.id }}" class="d-none">
+                        <td colspan="9" class="p-8">
+                            <div class="org-details-container">
                                 
                                 <!-- Form 1: Plan overrides -->
                                 <div>
@@ -139,23 +187,23 @@
                                             </select>
                                         </div>
 
-                                        <button type="submit" class="btn btn-primary btn-sm text-purple-500 bg-purple-500" style="align-self:flex-start; border-">
+                                        <button type="submit" class="btn btn-primary btn-sm" style="align-self:flex-start;">
                                             Save Settings & Overrides
                                         </button>
                                     </form>
                                 </div>
 
                                 <!-- Form 2: Password Reset -->
-                                <div class="border-l" style="padding-left: 2.5rem">
+                                <div class="org-details-right">
                                     <h4 class="fs-md text-purple-300 d-flex align-items-center gap-1 mb-5">
                                         <span class="material-icons fs-lg">lock_reset</span> Reset Manager Password
                                     </h4>
-                                    <form action="{{ path('app_admin_reset_manager_password', {id: org.id}) }}" method="post" class="confirm-form" data-confirm="Are you sure you want to reset the manager's password?" class="d-flex flex-column gap-5">
-                                        <div class="form-group m-0">
+                                    <form action="{{ path('app_admin_reset_manager_password', {id: org.id}) }}" method="post" class="confirm-form" data-confirm="Are you sure you want to reset the manager's password?">
+                                        <div class="form-group mb-5">
                                             <label class="form-label fs-sm">Manager Email Address</label>
                                             <input type="email" name="manager_email" class="form-control" required placeholder="manager@company.com">
                                         </div>
-                                        <div class="form-group m-0">
+                                        <div class="form-group mb-5">
                                             <label class="form-label fs-sm">New Password</label>
                                             <input type="password" name="new_password" class="form-control" required placeholder="Enter new password">
                                         </div>
@@ -165,7 +213,30 @@
                                     </form>
                                 </div>
 
-                            </div>
+                                <!-- Form 3: Archive & Deletion -->
+                                <div class="org-details-right">
+                                    <h4 class="fs-md text-danger d-flex align-items-center gap-1 mb-5">
+                                        <span class="material-icons fs-lg">warning</span> Archiving &amp; Deletion
+                                    </h4>
+                                    <div class="d-flex flex-column gap-3">
+                                        <!-- Archive Toggle Form -->
+                                        <form action="{{ path('app_admin_organization_archive_toggle', {id: org.id}) }}" method="post" class="confirm-form m-0" data-confirm="Are you sure you want to change the archive status of {{ org.name }}?">
+                                            <button type="submit" class="btn {% if org.isArchived %}btn-outline-primary{% else %}btn-warning{% endif %} btn-sm w-100 d-inline-flex align-items-center justify-content-center gap-1">
+                                                <span class="material-icons fs-md">{% if org.isArchived %}unarchive{% else %}archive{% endif %}</span>
+                                                {% if org.isArchived %}Unarchive Org{% else %}Archive Org{% endif %}
+                                            </button>
+                                        </form>
+
+                                        <!-- Hard Delete Form -->
+                                        <form action="{{ path('app_admin_organization_delete', {id: org.id}) }}" method="post" class="confirm-form m-0" data-confirm="DANGER: This will permanently delete {{ org.name }} and backup all data to a ZIP file. Are you absolutely sure?">
+                                            <button type="submit" class="btn btn-danger btn-sm w-100 d-inline-flex align-items-center justify-content-center gap-1">
+                                                <span class="material-icons fs-md">delete_forever</span> Delete &amp; Backup
+                                            </button>
+                                        </form>
+                                    </div>
+                                </div>
+
+                             </div>
                         </td>
                     </tr>
                 {% endfor %}

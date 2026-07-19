@@ -1,0 +1,62 @@
+{% extends 'support/layout.html.twig' %}
+
+{% block support_title %}Reports &amp; Filters Help Guide{% endblock %}
+
+{% block support_content %}
+<h2 class="fs-2xl fw-800 text-white mb-2">Reports &amp; Filters Help Guide</h2>
+<p class="fs-md text-secondary mb-6 lh-relaxed">
+    This page explains how to search, filter, and extract payroll timesheets and attendance reports for your organization.
+</p>
+
+<div class="support-split-view mb-8">
+    <div>
+        <h3 class="fs-lg fw-700 text-white mb-3">1. Live Filters &amp; Query Options</h3>
+        <p class="fs-sm text-secondary mb-4 lh-relaxed">
+            The reports page displays a list of completed check-in sessions. You can narrow down logs using the filter bar:
+        </p>
+        <ul class="fs-sm text-secondary d-flex flex-column gap-2 pl-5 lh-relaxed">
+            <li><strong>Date Presets:</strong> Quickly jump between time intervals using the preset buttons: <em>Today</em>, <em>Yesterday</em>, <em>Last 7 Days</em>, <em>Last 30 Days</em>, <em>This Month</em>, and <em>Last Month</em>.</li>
+            <li><strong>Custom Date Range:</strong> Click the calendars to set a precise start and end range for auditing past pay periods.</li>
+            <li><strong>Search Query:</strong> Type any part of an employee's name to display only their individual records.</li>
+            <li><strong>Category / Code:</strong> Filter logs by specific categories (e.g. only show "Development" or "Design" hours).</li>
+        </ul>
+    </div>
+    <div class="glass-panel p-2 d-flex flex-column align-items-center" style="border-radius: var(--radius-sm); border: 1px solid rgba(255,255,255,0.08); background: rgba(0,0,0,0.2);">
+        <img src="{{ asset('img/support/reports.png') }}" alt="Reports Page Filters" style="width: 100%; border-radius: var(--radius-xs); height: auto; box-shadow: var(--shadow-md);">
+        <span class="fs-xs text-muted mt-2 text-center">Reports Filtering Dashboard</span>
+    </div>
+</div>
+
+<hr class="my-6" style="border: 0; border-top: 1px solid rgba(255,255,255,0.08)">
+
+<h3 class="fs-lg fw-700 text-white mb-3">2. Understanding Log Flag Types</h3>
+<p class="fs-sm text-secondary mb-4 lh-relaxed">
+    Each check-in row lists the check-in time, checkout time, and calculated duration. The system applies status labels to help audit payroll compliance:
+</p>
+<ul class="fs-sm text-secondary d-flex flex-column gap-3 pl-5 lh-relaxed mb-6">
+    <li><strong>Standard Check-In:</strong> Employee checked in and checked out normally at the kiosk. No flags.</li>
+    <li><strong><span class="text-purple-300">Overridden / Edited:</span></strong> The session details or duration were manually edited by a manager. The system keeps the original timestamps cached for audit purposes.</li>
+    <li><strong><span class="text-danger">Auto-Terminated:</span></strong> The employee forgot to check out, and the session was closed automatically by the system sweep worker after reaching your organization's max session duration.</li>
+</ul>
+
+<hr class="my-6" style="border: 0; border-top: 1px solid rgba(255,255,255,0.08)">
+
+<h3 class="fs-lg fw-700 text-white mb-3">3. Generating Timesheet Exports</h3>
+<p class="fs-sm text-secondary mb-4 lh-relaxed">
+    To process payroll, you can export your filtered view using the buttons at the top of the report:
+</p>
+<div class="d-grid gap-4" style="grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));">
+    <div class="p-4 rounded-sm bg-input border" style="border-left: 4px solid var(--primary) !important;">
+        <h4 class="fs-md fw-600 text-white mb-1">Export Excel</h4>
+        <p class="fs-sm text-secondary m-0 lh-relaxed">
+            Downloads a formatted Microsoft Excel spreadsheet. The document automatically creates a summarized cover sheet showing total hours worked per employee, followed by individual sheets listing their specific check-in records.
+        </p>
+    </div>
+    <div class="p-4 rounded-sm bg-input border" style="border-left: 4px solid var(--info) !important;">
+        <h4 class="fs-md fw-600 text-white mb-1">Export CSV</h4>
+        <p class="fs-sm text-secondary m-0 lh-relaxed">
+            Downloads a flat comma-separated values file containing raw data columns. Ideal for importing timesheets into external accounting software or payroll platforms.
+        </p>
+    </div>
+</div>
+{% endblock %}

@@ -4,10 +4,10 @@
 <div class="dashboard-layout">
     <!-- Sidebar Navigation -->
     <aside class="sidebar" id="sidebar">
-        <div class="sidebar-logo">
-            <span class="material-icons text-primary">alarm</span>
-            <span>Time<span class="accent">Flow</span></span>
-        </div>
+        <a href="{{ path('app_home') }}" class="sidebar-logo text-decoration-none text-inherit" style="display: flex; align-items: center; gap: 8px; color: inherit; text-decoration: none;">
+            <img src="{{ asset('img/logo.png') }}?v=1.0.4" alt="CenterTime Logo" style="height: 40px; width: 40px; object-fit: contain;">
+            <span>Center<span class="accent">Time</span></span>
+        </a>
         
         <nav class="sidebar-nav">
             <a href="{{ path('app_manager_dashboard') }}" class="sidebar-link {% if app.request.attributes.get('_route') == 'app_manager_dashboard' %}active{% endif %}" data-tooltip="Dashboard">
@@ -18,6 +18,9 @@
             </a>
             <a href="{{ path('app_manager_users') }}" class="sidebar-link {% if 'app_manager_user' in app.request.attributes.get('_route') and app.request.attributes.get('_route') != 'app_manager_users_checked_in' %}active{% endif %}" data-tooltip="Users & Managers">
                 <span class="material-icons">people</span> <span>Users & Managers</span>
+            </a>
+            <a href="{{ path('app_manager_print_barcodes') }}" class="sidebar-link {% if app.request.attributes.get('_route') == 'app_manager_print_barcodes' %}active{% endif %}" data-tooltip="Sticker Badges">
+                <span class="material-icons">qr_code_2</span> <span>Sticker Badges</span>
             </a>
             <a href="{{ path('app_manager_categories') }}" class="sidebar-link {% if app.request.attributes.get('_route') == 'app_manager_categories' %}active{% endif %}" data-tooltip="Categories">
                 <span class="material-icons">category</span> <span>Categories</span>
@@ -36,6 +39,9 @@
             </a>
             <a href="{{ path('app_manager_billing') }}" class="sidebar-link {% if app.request.attributes.get('_route') == 'app_manager_billing' %}active{% endif %}" data-tooltip="Billing & Subscription">
                 <span class="material-icons">credit_card</span> <span>Billing & Subscription</span>
+            </a>
+            <a href="{{ path('app_support_index') }}" target="_blank" class="sidebar-link {% if 'app_support' in app.request.attributes.get('_route') %}active{% endif %}" data-tooltip="Help & Support">
+                <span class="material-icons text-primary">help_outline</span> <span>Help & Support</span>
             </a>
         </nav>
     </aside>
@@ -97,6 +103,14 @@
 
                     <!-- Action Links -->
                     <div class="header-dropdown-section">
+                        <a href="{{ path('app_manager_dashboard') }}" class="header-dropdown-item">
+                            <span class="material-icons fs-lg text-primary">dashboard</span>
+                            <span>Dashboard</span>
+                        </a>
+                        <a href="{{ path('app_support_index') }}" target="_blank" class="header-dropdown-item">
+                            <span class="material-icons fs-lg text-info">help</span>
+                            <span>Help Center</span>
+                        </a>
                         <a href="/org/{{ app.user.organization.slug }}/kiosk/{{ app.user.organization.checkInLinkToken }}" target="_blank" class="header-dropdown-item">
                             <span class="material-icons fs-lg text-primary">tablet_mac</span>
                             <span>Launch Kiosk</span>
@@ -105,7 +119,7 @@
                             <span class="material-icons fs-lg text-muted">settings</span>
                             <span>Settings</span>
                         </a>
-                        <a href="{{ path('app_logout') }}" class="header-dropdown-item text-danger">
+                        <a href="{{ path('app_logout') }}" class="header-dropdown-item text-danger" data-turbo="false">
                             <span class="material-icons fs-lg">logout</span>
                             <span>Sign Out</span>
                         </a>
@@ -115,6 +129,13 @@
         </header>
 
         <div class="dashboard-body flex-1">
+            {% if app.user.organization.isArchived %}
+                <div class="alert alert-danger mb-6">
+                    <span class="material-icons">archive</span>
+                    <span><strong>Organization Archived:</strong> Your account is currently in archive mode due to unpaid invoices. Check-in kiosks and registry updates are disabled. Please update your billing details on this page to resume service.</span>
+                </div>
+            {% endif %}
+
             {% for type, messages in app.flashes %}
                 {% for message in messages %}
                     <div class="alert alert-{{ type }}">

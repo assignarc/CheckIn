@@ -1,41 +1,315 @@
-{% extends 'base.html.twig' %}
+{% extends 'home/layout.html.twig' %}
 
-{% block title %}TimeFlow - Multi-Tenant Time Tracking & Check-In Platform{% endblock %}
+{% block title %}CenterTime - Multi-Tenant Time Tracking & Check-In Platform{% endblock %}
 {% block stylesheets %}
+    <style>
+        /* Custom scroll-reveal styles for premium homepage layout */
+        .reveal-hero {
+            opacity: 0;
+            transform: scale(0.96) translateY(20px);
+            transition: opacity 1.2s cubic-bezier(0.16, 1, 0.3, 1), transform 1.2s cubic-bezier(0.16, 1, 0.3, 1);
+            will-change: opacity, transform;
+        }
+        .reveal-hero.active {
+            opacity: 1;
+            transform: scale(1) translateY(0);
+        }
 
-    
+        .reveal-left {
+            opacity: 0;
+            transform: translateX(-40px);
+            transition: opacity 1s cubic-bezier(0.16, 1, 0.3, 1), transform 1s cubic-bezier(0.16, 1, 0.3, 1);
+            will-change: opacity, transform;
+        }
+        .reveal-left.active {
+            opacity: 1;
+            transform: translateX(0);
+        }
+
+        .reveal-right {
+            opacity: 0;
+            transform: translateX(40px);
+            transition: opacity 1s cubic-bezier(0.16, 1, 0.3, 1), transform 1s cubic-bezier(0.16, 1, 0.3, 1);
+            will-change: opacity, transform;
+        }
+        .reveal-right.active {
+            opacity: 1;
+            transform: translateX(0);
+        }
+
+        .reveal-scale {
+            opacity: 0;
+            transform: scale(0.92);
+            transition: opacity 1s cubic-bezier(0.34, 1.56, 0.64, 1), transform 1s cubic-bezier(0.34, 1.56, 0.64, 1);
+            will-change: opacity, transform;
+        }
+        .reveal-scale.active {
+            opacity: 1;
+            transform: scale(1);
+        }
+
+        /* Disable scroll reveal on mobile/tablet viewports to prevent rendering and overflow issues */
+        @media (max-width: 768px) {
+            .reveal-hero, .reveal-left, .reveal-right, .reveal-scale {
+                opacity: 1 !important;
+                transform: none !important;
+                transition: none !important;
+            }
+        }
+
+        .grid-cols-5 {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 1.5rem;
+        }
+        @media (max-width: 1200px) {
+            .grid-cols-5 {
+                grid-template-columns: repeat(3, 1fr);
+            }
+        }
+        @media (max-width: 768px) {
+            .grid-cols-5 {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        .grid-cols-4 {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 1.5rem;
+        }
+        @media (max-width: 1024px) {
+            .grid-cols-4 {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+        @media (max-width: 600px) {
+            .grid-cols-4 {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Interactive Audit Event Console styles */
+        .audit-event-tab {
+            background: transparent;
+            border: 1px solid transparent;
+            border-radius: var(--radius-sm);
+            color: var(--text-primary);
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+        .audit-event-tab:hover {
+            background: rgba(255, 255, 255, 0.05);
+            border-color: rgba(255, 255, 255, 0.08);
+        }
+        
+        /* Interactive Kiosk Mode switcher tabs */
+        .kiosk-mode-tab {
+            background: transparent;
+            border: 1px solid transparent;
+            border-radius: var(--radius-sm);
+            color: var(--text-secondary);
+            padding: 0.5rem 1rem;
+            font-family: var(--font-sans);
+            font-weight: 500;
+            font-size: 0.85rem;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+            transition: all var(--transition-fast);
+            cursor: pointer;
+            outline: none;
+        }
+        .kiosk-mode-tab:hover {
+            background: var(--bg-hover);
+            color: var(--text-primary);
+        }
+        .kiosk-mode-tab.active {
+            background: var(--primary-glow) !important;
+            border-color: rgba(99, 102, 241, 0.3) !important;
+            color: var(--primary) !important;
+        }
+        .kiosk-mode-tab.active .material-icons {
+            color: var(--primary) !important;
+        }
+        .audit-event-tab.active {
+            background: rgba(99, 102, 241, 0.15) !important;
+            border-color: rgba(99, 102, 241, 0.3) !important;
+        }
+        .audit-event-tab.active .material-icons {
+            transform: translateX(4px);
+            transition: transform 0.2s ease;
+        }
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.4; }
+        }
+        @media (min-width: 576px) {
+            .sm-rotate-0 {
+                transform: rotate(0deg) !important;
+            }
+        }
+
+        /* Onboarding Slide Animation Styles */
+        .onboarding-slide {
+            display: none;
+            opacity: 0;
+            transition: opacity 0.5s ease-in-out;
+        }
+        .onboarding-slide.active {
+            display: block;
+            opacity: 1;
+        }
+
+        .dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #888888 !important;
+            opacity: 0.55 !important;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            display: inline-block;
+            margin: 0 4px;
+            border: 1px solid rgba(0, 0, 0, 0.12);
+        }
+        .dot:hover {
+            background: var(--primary) !important;
+            opacity: 0.95 !important;
+            transform: scale(1.2);
+        }
+        .dot.active {
+            background: var(--primary) !important;
+            opacity: 1 !important;
+            box-shadow: 0 0 10px var(--primary);
+            width: 28px;
+            border-radius: 6px;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.1); opacity: 0.7; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
+        /* Demo simulation visual elements */
+        .demo-sim-screen {
+            background: #0f172a;
+            border: 1px solid #334155;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.3), 0 10px 10px -5px rgba(0, 0, 0, 0.3);
+            position: relative;
+        }
+        .sim-browser-bar {
+            background: #1e293b;
+            padding: 8px 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            border-bottom: 1px solid #334155;
+        }
+        .sim-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+        }
+        .sim-dot-red { background: #ef4444; }
+        .sim-dot-yellow { background: #f59e0b; }
+        .sim-dot-green { background: #10b981; }
+        .sim-address-bar {
+            background: #0f172a;
+            border-radius: 6px;
+            color: #94a3b8;
+            font-size: 0.75rem;
+            padding: 4px 12px;
+            flex-grow: 1;
+            margin-left: 12px;
+            font-family: monospace;
+            border: 1px solid #334155;
+        }
+
+        .mock-user-row {
+            border: 1px solid #334155;
+            background: #1e293b;
+            border-radius: 8px;
+            padding: 10px 16px;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+        .mock-user-row.active-click {
+            background: var(--primary-glow) !important;
+            border-color: var(--primary) !important;
+            transform: scale(0.98);
+        }
+        .mock-cursor {
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            pointer-events: none;
+            z-index: 100;
+            transition: all 1.2s cubic-bezier(0.25, 1, 0.5, 1);
+            opacity: 0;
+        }
+        .laser-line {
+            position: absolute;
+            left: 0;
+            width: 100%;
+            height: 3px;
+            background: #ef4444;
+            box-shadow: 0 0 8px #ef4444;
+            animation: laser-sweep 2s ease-in-out infinite;
+            z-index: 10;
+        }
+        .laser-line.scan-success {
+            background: #10b981;
+            box-shadow: 0 0 8px #10b981;
+        }
+        .mock-badge {
+            transition: all 1s cubic-bezier(0.25, 1, 0.5, 1);
+            transform: translateY(120px);
+            opacity: 0;
+        }
+        .mock-badge.scanning {
+            transform: translateY(0);
+            opacity: 1;
+        }
+        .mock-keypad-btn.active-key {
+            background: var(--primary) !important;
+            color: #white !important;
+            box-shadow: 0 0 12px var(--primary) !important;
+            transform: scale(0.95);
+        }
+
+        /* Compact Keypad overrides for homepage preview card */
+        .glass-panel .pin-grid {
+            gap: 0.4rem !important;
+            max-width: 200px !important;
+        }
+        .glass-panel .pin-btn {
+            width: 42px !important;
+            height: 42px !important;
+            font-size: 1.05rem !important;
+        }
+        .glass-panel .pin-dot {
+            width: 12px !important;
+            height: 12px !important;
+            font-size: 1.05rem !important;
+        }
+
+        @keyframes laser-sweep {
+            0% { top: 10%; }
+            50% { top: 90%; }
+            100% { top: 10%; }
+        }
+    </style>
 {% endblock %}
 
-{% block body %}
-<header class="dashboard-header" style="z-index: 100;">
-    <div class="d-flex align-items-center gap-3">
-        <span class="material-icons fs-3xl text-primary">alarm</span>
-        <h1 class="fs-2xl fw-800 m-0" style="letter-spacing: -0.02em">TimeFlow</h1>
-    </div>
-    <div class="d-flex align-items-center gap-4">
-        <div class="theme-selector">
-            <button type="button" class="theme-option" data-value="light" onclick="setTheme('light')" title="Light Mode">
-                <span class="material-icons">light_mode</span>
-            </button>
-            <button type="button" class="theme-option" data-value="dark" onclick="setTheme('dark')" title="Dark Mode">
-                <span class="material-icons">dark_mode</span>
-            </button>
-            <button type="button" class="theme-option" data-value="system" onclick="setTheme('system')" title="System Theme">
-                <span class="material-icons">settings_brightness</span>
-            </button>
-        </div>
-        <a href="{{ path('app_login') }}" class="btn btn-secondary fs-sm" >Login</a>
-        {% if new_signups_enabled %}
-            <a href="{{ path('app_signup') }}" class="btn btn-primary fs-sm" >Start Free Trial</a>
-        {% else %}
-            <button class="btn btn-primary fs-sm" disabled style="opacity: 0.6; cursor: not-allowed;">Signups Closed</button>
-        {% endif %}
-    </div>
-</header>
-
-<!-- Main Container -->
-<main class="app-container d-flex flex-column home-main-container">
-    
+{% block content %}
     {% for type, messages in app.flashes %}
         {% for message in messages %}
             <div class="alert alert-{{ type }} mb-6">
@@ -48,7 +322,7 @@
     {% endfor %}
     
     <!-- Hero Section -->
-    <section class="hero-grid align-items-center gap-16 reveal">
+    <section class="hero-grid align-items-center gap-16">
         <div>
             <div class="d-inline-flex align-items-center gap-2 mb-6 p-0 rounded-full" style="padding: .35rem 1rem; background: var(--primary-glow); border: 1px solid rgba(99,102,241,0.2)">
                 <span class="material-icons fs-md text-primary">bolt</span>
@@ -76,49 +350,143 @@
             </div>
         </div>
         
-        <div class="glass-panel d-flex flex-column gap-6 p-8">
-            <h3 class="fs-xl d-flex align-items-center gap-2 mb-2">
-                <span class="material-icons text-primary">tablet_mac</span> Interactive Kiosk Preview
-            </h3>
-            <div class="text-center bg-input p-5 rounded-md border" style="zoom: 0.7;">
-                <div class="fs-sm text-uppercase text-muted mb-2">Acme Corp Check-In</div>
-                <div class="fs-2xl fw-700 mb-4">Enter Security PIN</div>
-                <div class="d-flex justify-content-center gap-3 mb-5">
-                    <div class="pin-dot filled"></div>
-                    <div class="pin-dot filled"></div>
-                    <div class="pin-dot"></div>
-                    <div class="pin-dot"></div>
+        <div class="glass-panel d-flex flex-column gap-4 p-6 position-relative" style="min-height: 440px; overflow: hidden;">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+                <h3 class="fs-xl d-flex align-items-center gap-2 m-0">
+                    <span class="material-icons text-primary">tablet_mac</span> Kiosk Mode Demo
+                </h3>
+            </div>
+
+            <!-- Mode Switcher Tabs -->
+            <div class="d-flex border-b pb-1" style="gap: 0.5rem;">
+                <button type="button" class="kiosk-mode-tab active" onclick="setKioskMode('basic', true)">
+                    <span class="material-icons fs-md">search</span> Basic Search
+                </button>
+                <button type="button" class="kiosk-mode-tab" onclick="setKioskMode('pin', true)">
+                    <span class="material-icons fs-md">dialpad</span> Secure PIN
+                </button>
+                <button type="button" class="kiosk-mode-tab" onclick="setKioskMode('barcode', true)">
+                    <span class="material-icons fs-md">qr_code_scanner</span> Barcode / QR
+                </button>
+            </div>
+
+            <div class="position-relative flex-grow-1" style="zoom: 0.75;">
+                <!-- Mock Mouse Cursor for Basic mode -->
+                <span class="material-icons mock-cursor" id="kiosk-mock-cursor" style="color: #ffffff; text-shadow: 0 2px 4px rgba(0,0,0,0.5);">near_me</span>
+
+                <!-- 1. BASIC LIST MODE CONTAINER -->
+                <div class="kiosk-frame" id="kiosk-frame-basic">
+                    <div class="fs-xs text-uppercase text-muted mb-3 text-center">Acme Corp Open Kiosk</div>
+                    <div class="d-flex flex-column gap-3" id="kiosk-basic-list">
+                        <!-- Search Box Container -->
+                        <div id="kiosk-basic-search-container" class="position-relative">
+                            <input type="text" id="kiosk-basic-search" class="form-control w-100 bg-input border rounded-sm p-3 fs-sm" placeholder="Search your name..." readonly style="color: var(--text-primary); pointer-events: none;">
+                            <span class="material-icons position-absolute text-muted" style="right: 12px; top: 12px;">search</span>
+                        </div>
+
+                        <!-- User Row 2 (Target) - Hidden initially, shown after typing -->
+                        <div class="mock-user-row d-flex justify-content-between align-items-center p-3 rounded-sm bg-input border" id="mock-row-2" style="display: none !important;">
+                            <div class="d-flex align-items-center gap-3">
+                                <div class="avatar bg-success text-white rounded-full d-flex align-items-center justify-content-center fw-600" style="width: 36px; height: 36px;">BJ</div>
+                                <div class="fw-700 fs-sm">Bob Johnson</div>
+                            </div>
+                            <div class="d-flex gap-2">
+                                <button type="button" class="btn btn-success fs-xs py-1 px-2" id="mock-checkin-btn" style="pointer-events: none;">Check In</button>
+                                <button type="button" class="btn btn-secondary fs-xs py-1 px-2" id="mock-checkout-btn" disabled style="opacity: 0.5;">Check Out</button>
+                            </div>
+                        </div>
+
+                        <!-- Check-In Success State -->
+                        <div id="mock-basic-success" style="display: none;" class="p-6 rounded-md bg-success-glow text-center d-flex flex-column align-items-center justify-content-center gap-3 border" style="border-color: rgba(16,185,129,0.3) !important;">
+                            <span class="material-icons text-success fs-3xl" style="animation: scale-up 0.5s ease">check_circle</span>
+                            <div>
+                                <div class="fs-lg fw-800 text-success">Verified: Bob Johnson</div>
+                                <div class="fs-xs text-secondary mt-1">Checked In Successfully • 10:45 AM</div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
-                <div class="pin-grid">
-                    <div class="pin-btn pin-btn-special">A</div>
-                    <div class="pin-btn pin-btn-special">B</div>
-                    <div class="pin-btn pin-btn-special">C</div>
-                    <div class="pin-btn">1</div>
-                    <div class="pin-btn">2</div>
-                    <div class="pin-btn">3</div>
-                    <div class="pin-btn">4</div>
-                    <div class="pin-btn">5</div>
-                    <div class="pin-btn">6</div>
-                    <div class="pin-btn">7</div>
-                    <div class="pin-btn">8</div>
-                    <div class="pin-btn">9</div>
-                    <div class="pin-btn pin-btn-clear" style="font-size: 0.9rem;">Clear</div>
-                    <div class="pin-btn">0</div>
-                    <div class="pin-btn"><span class="material-icons">backspace</span></div>
+
+                <!-- 2. PIN MODE CONTAINER -->
+                <div class="kiosk-frame" id="kiosk-frame-pin" style="display: none;">
+                    <div class="fs-xs text-uppercase text-muted mb-2 text-center">Acme Corp Secure Kiosk</div>
+                    
+                    <div id="kiosk-pin-keypad-view">
+                        <div class="fs-xl fw-700 mb-3 text-center">Enter Security PIN</div>
+                        <div class="d-flex justify-content-center gap-3 mb-4" id="kiosk-pin-dots">
+                            <div class="pin-dot" id="pin-dot-1"></div>
+                            <div class="pin-dot" id="pin-dot-2"></div>
+                            <div class="pin-dot" id="pin-dot-3"></div>
+                            <div class="pin-dot" id="pin-dot-4"></div>
+                        </div>
+                        <div class="pin-grid">
+                            <div class="pin-btn pin-btn-special mock-keypad-btn" id="key-C">C</div>
+                            <div class="pin-btn pin-btn-special mock-keypad-btn" id="key-B">B</div>
+                            <div class="pin-btn pin-btn-special mock-keypad-btn" id="key-A">A</div>
+                            <div class="pin-btn mock-keypad-btn" id="key-1">1</div>
+                            <div class="pin-btn mock-keypad-btn" id="key-2">2</div>
+                            <div class="pin-btn mock-keypad-btn" id="key-3">3</div>
+                            <div class="pin-btn mock-keypad-btn" id="key-4">4</div>
+                            <div class="pin-btn mock-keypad-btn" id="key-5">5</div>
+                            <div class="pin-btn mock-keypad-btn" id="key-6">6</div>
+                            <div class="pin-btn mock-keypad-btn" id="key-7">7</div>
+                            <div class="pin-btn mock-keypad-btn" id="key-8">8</div>
+                            <div class="pin-btn mock-keypad-btn" id="key-9">9</div>
+                            <div class="pin-btn pin-btn-clear" style="font-size: 0.9rem;">Clear</div>
+                            <div class="pin-btn mock-keypad-btn" id="key-0">0</div>
+                            <div class="pin-btn"><span class="material-icons">backspace</span></div>
+                        </div>
+                    </div>
+
+                    <!-- PIN Success Screen -->
+                    <div id="kiosk-pin-success-view" style="display: none;" class="p-6 rounded-md bg-success-glow text-center d-flex flex-column align-items-center justify-content-center gap-3 border" style="border-color: rgba(16,185,129,0.3) !important;">
+                        <span class="material-icons text-success fs-3xl" style="animation: scale-up 0.5s ease">check_circle</span>
+                        <div>
+                            <div class="fs-lg fw-800 text-success">Verified: Sarah Miller</div>
+                            <div class="fs-xs text-secondary mt-1">Checked In Successfully • 10:45 AM</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 3. BARCODE MODE CONTAINER -->
+                <div class="kiosk-frame" id="kiosk-frame-barcode" style="display: none;">
+                    <div class="fs-xs text-uppercase text-muted mb-3 text-center">Contactless Badge Scanner</div>
+                    
+                    <!-- Scanner Viewport Mockup -->
+                    <div class="position-relative rounded-md border bg-black d-flex align-items-center justify-content-center" style="height: 220px; overflow: hidden; background: #0c0f1d;">
+                        <div class="laser-line" id="kiosk-laser-line"></div>
+                        
+                        <!-- Overlay targeting bracket square -->
+                        <div style="position: absolute; width: 120px; height: 120px; border: 2px dashed rgba(255,255,255,0.3); z-index: 5; border-radius: var(--radius-sm);"></div>
+
+                        <!-- Scannable Badge Graphic -->
+                        <div class="mock-badge bg-card border p-3 rounded-md d-flex align-items-center gap-3" id="kiosk-mock-badge" style="width: 180px; box-shadow: var(--shadow-lg); z-index: 8;">
+                            <div class="flex-grow-1">
+                                <div class="fw-700" style="font-size: 0.7rem; color: var(--text-main);">John Doe</div>
+                                <div class="text-secondary" style="font-size: 0.55rem;">PIN: C831</div>
+                            </div>
+                            <img src="https://api.qrserver.com/v1/create-qr-code/?size=50x50&data=C831" style="width: 32px; height: 32px;" alt="QR">
+                        </div>
+
+                        <!-- Scan Success message toast overlay -->
+                        <div id="kiosk-barcode-success" style="display: none; position: absolute; bottom: 10px; left: 10px; right: 10px; z-index: 12;" class="p-2 rounded-sm bg-success text-white text-center fs-xs fw-700">
+                            ✓ Badge Verified: John Doe Checked In!
+                        </div>
+                    </div>
                 </div>
             </div>
-            <p class="fs-sm text-center text-secondary m-0">
-                Kiosk can be locked with a 4-char PIN or toggleable open list mode.
+            <p class="fs-xs text-center text-secondary m-0">
+                Switch modes to see standard roster listings, secure keyboard locks, or fast camera badge scanners.
             </p>
         </div>
     </section>
 
     <!-- Key Platform Benefits Section -->
-    <section class="d-flex flex-column gap-12 reveal">
+    <section class="d-flex flex-column gap-12 reveal-scale">
         <div class="text-center">
             <h2 class="fs-3xl">Engineered for <span class="text-gradient">Precision</span> and Control</h2>
             <p class="fs-lg text-secondary mt-2 ml-auto mr-auto max-w-700">
-                TimeFlow provides managers with high-fidelity control over shifts logs, auditing, and compliance constraints.
+                CenterTime provides managers with high-fidelity control over shifts logs, auditing, and compliance constraints.
             </p>
         </div>
 
@@ -169,77 +537,339 @@
             </div>
         </div>
     </section>
+
+    <!-- Real-Time Event & Audit Stream Catalog -->
+    <section class="d-flex flex-column gap-12 mt-16 mb-12 reveal-scale">
+        <div class="text-center">
+            <h2 class="fs-3xl">Traceability & Audit: <span class="text-gradient">10 Core System Events</span></h2>
+            <p class="fs-lg text-secondary mt-2 ml-auto mr-auto max-w-700">
+                CenterTime logs every critical business mutation to ensure security, automated compliance, and absolute accountability. Explore our core audit logs below.
+            </p>
+        </div>
+
+        <div class="grid-cols-5 gap-6">
+            <!-- Event 1 -->
+            <div class="glass-panel p-6 d-flex flex-column justify-content-between" style="border-top: 4px solid var(--primary); min-height: 250px;">
+                <div>
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <span class="material-icons text-primary fs-xl" style="font-size: 1.5rem;">login</span>
+                        <span class="fs-xs fw-600 text-muted">Attendance</span>
+                    </div>
+                    <h4 class="fs-md fw-700 mb-2">User Check-In / Out</h4>
+                    <p class="fs-xs text-secondary lh-base mb-3">
+                        Fired when an employee clocks in or out at the kiosk using their PIN or barcode.
+                    </p>
+                </div>
+                <div class="border-t pt-3">
+                    <span class="fs-xs text-success fw-600">Why it matters:</span>
+                    <p class="m-0 fs-xs text-secondary mt-1">Crucial for payroll accuracy, tracking labor hours, and calculating timesheets.</p>
+                </div>
+            </div>
+
+            <!-- Event 2 -->
+            <div class="glass-panel p-6 d-flex flex-column justify-content-between" style="border-top: 4px solid #10b981; min-height: 250px;">
+                <div>
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <span class="material-icons text-success fs-xl" style="font-size: 1.5rem;">cloud_upload</span>
+                        <span class="fs-xs fw-600 text-muted">Onboarding</span>
+                    </div>
+                    <h4 class="fs-md fw-700 mb-2">Bulk User Import</h4>
+                    <p class="fs-xs text-secondary lh-base mb-3">
+                        Emitted when a manager imports multiple employee records using the CSV Wizard.
+                    </p>
+                </div>
+                <div class="border-t pt-3">
+                    <span class="fs-xs text-success fw-600">Why it matters:</span>
+                    <p class="m-0 fs-xs text-secondary mt-1">Saves hours of data entry and audits newly added, updated, or skipped employee counts.</p>
+                </div>
+            </div>
+
+            <!-- Event 3 -->
+            <div class="glass-panel p-6 d-flex flex-column justify-content-between" style="border-top: 4px solid #f59e0b; min-height: 250px;">
+                <div>
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <span class="material-icons text-warning fs-xl" style="font-size: 1.5rem;">lock_reset</span>
+                        <span class="fs-xs fw-600 text-muted">Security</span>
+                    </div>
+                    <h4 class="fs-md fw-700 mb-2">Manager Password Reset</h4>
+                    <p class="fs-xs text-secondary lh-base mb-3">
+                        Fired when a manager updates their password or when an admin overrides credentials.
+                    </p>
+                </div>
+                <div class="border-t pt-3">
+                    <span class="fs-xs text-success fw-600">Why it matters:</span>
+                    <p class="m-0 fs-xs text-secondary mt-1">Essential security audit checkpoint to satisfy SOC2 compliance and prevent credential fraud.</p>
+                </div>
+            </div>
+
+            <!-- Event 4 -->
+            <div class="glass-panel p-6 d-flex flex-column justify-content-between" style="border-top: 4px solid #ef4444; min-height: 250px;">
+                <div>
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <span class="material-icons text-danger fs-xl" style="font-size: 1.5rem;">vpn_key</span>
+                        <span class="fs-xs fw-600 text-muted">Credentials</span>
+                    </div>
+                    <h4 class="fs-md fw-700 mb-2">PIN Modification</h4>
+                    <p class="fs-xs text-secondary lh-base mb-3">
+                        Triggered when an employee's check-in PIN is generated, updated, or reset.
+                    </p>
+                </div>
+                <div class="border-t pt-3">
+                    <span class="fs-xs text-success fw-600">Why it matters:</span>
+                    <p class="m-0 fs-xs text-secondary mt-1">Prevents "buddy punching" and ensures each user has a unique, authenticated PIN.</p>
+                </div>
+            </div>
+
+            <!-- Event 5 -->
+            <div class="glass-panel p-6 d-flex flex-column justify-content-between" style="border-top: 4px solid #8b5cf6; min-height: 250px;">
+                <div>
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <span class="material-icons text-indigo fs-xl" style="font-size: 1.5rem;">business</span>
+                        <span class="fs-xs fw-600 text-muted">Configuration</span>
+                    </div>
+                    <h4 class="fs-md fw-700 mb-2">Profile Modification</h4>
+                    <p class="fs-xs text-secondary lh-base mb-3">
+                        Logged when organization settings (branding, name, address) are updated.
+                    </p>
+                </div>
+                <div class="border-t pt-3">
+                    <span class="fs-xs text-success fw-600">Why it matters:</span>
+                    <p class="m-0 fs-xs text-secondary mt-1">Maintains organization profile integrity and logs CRM sync actions.</p>
+                </div>
+            </div>
+
+            <!-- Event 6 -->
+            <div class="glass-panel p-6 d-flex flex-column justify-content-between" style="border-top: 4px solid #ec4899; min-height: 250px;">
+                <div>
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <span class="material-icons text-pink fs-xl" style="font-size: 1.5rem;">credit_card</span>
+                        <span class="fs-xs fw-600 text-muted">Billing</span>
+                    </div>
+                    <h4 class="fs-md fw-700 mb-2">Subscription Change</h4>
+                    <p class="fs-xs text-secondary lh-base mb-3">
+                        Logged when the organization upgrades, downgrades, or modifies its plan limits.
+                    </p>
+                </div>
+                <div class="border-t pt-3">
+                    <span class="fs-xs text-success fw-600">Why it matters:</span>
+                    <p class="m-0 fs-xs text-secondary mt-1">Enables financial alignment and tracks limit/quota updates instantly.</p>
+                </div>
+            </div>
+
+            <!-- Event 7 -->
+            <div class="glass-panel p-6 d-flex flex-column justify-content-between" style="border-top: 4px solid #3b82f6; min-height: 250px;">
+                <div>
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <span class="material-icons text-blue fs-xl" style="font-size: 1.5rem;">timer</span>
+                        <span class="fs-xs fw-600 text-muted">Automation</span>
+                    </div>
+                    <h4 class="fs-md fw-700 mb-2">Auto-Termination</h4>
+                    <p class="fs-xs text-secondary lh-base mb-3">
+                        Fired when the system automatically ends a work session that exceeded its maximum duration.
+                    </p>
+                </div>
+                <div class="border-t pt-3">
+                    <span class="fs-xs text-success fw-600">Why it matters:</span>
+                    <p class="m-0 fs-xs text-secondary mt-1">Ensures data hygiene by preventing indefinitely open sessions.</p>
+                </div>
+            </div>
+
+            <!-- Event 8 -->
+            <div class="glass-panel p-6 d-flex flex-column justify-content-between" style="border-top: 4px solid #06b6d4; min-height: 250px;">
+                <div>
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <span class="material-icons text-cyan fs-xl" style="font-size: 1.5rem;">calculate</span>
+                        <span class="fs-xs fw-600 text-muted">Payroll Rules</span>
+                    </div>
+                    <h4 class="fs-md fw-700 mb-2">Overtime Rules Changed</h4>
+                    <p class="fs-xs text-secondary lh-base mb-3">
+                        Logged when overtime multipliers or grace period limits are adjusted.
+                    </p>
+                </div>
+                <div class="border-t pt-3">
+                    <span class="fs-xs text-success fw-600">Why it matters:</span>
+                    <p class="m-0 fs-xs text-secondary mt-1">Ensures compliance with labor regulations and tracks changes to cost multipliers.</p>
+                </div>
+            </div>
+
+            <!-- Event 9 -->
+            <div class="glass-panel p-6 d-flex flex-column justify-content-between" style="border-top: 4px solid #f97316; min-height: 250px;">
+                <div>
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <span class="material-icons text-orange fs-xl" style="font-size: 1.5rem;">toggle_on</span>
+                        <span class="fs-xs fw-600 text-muted">Licensing</span>
+                    </div>
+                    <h4 class="fs-md fw-700 mb-2">Status Activation Toggle</h4>
+                    <p class="fs-xs text-secondary lh-base mb-3">
+                        Triggered when a manager enables or disables an employee's active status.
+                    </p>
+                </div>
+                <div class="border-t pt-3">
+                    <span class="fs-xs text-success fw-600">Why it matters:</span>
+                    <p class="m-0 fs-xs text-secondary mt-1">Ensures inactive users cannot check in and tracks active license quota utilization.</p>
+                </div>
+            </div>
+
+            <!-- Event 10 -->
+            <div class="glass-panel p-6 d-flex flex-column justify-content-between" style="border-top: 4px solid #14b8a6; min-height: 250px;">
+                <div>
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <span class="material-icons text-teal fs-xl" style="font-size: 1.5rem;">category</span>
+                        <span class="fs-xs fw-600 text-muted">Operations</span>
+                    </div>
+                    <h4 class="fs-md fw-700 mb-2">Category Limit Change</h4>
+                    <p class="fs-xs text-secondary lh-base mb-3">
+                        Emitted when max session duration limits are configured per specific work category.
+                    </p>
+                </div>
+                <div class="border-t pt-3">
+                    <span class="fs-xs text-success fw-600">Why it matters:</span>
+                    <p class="m-0 fs-xs text-secondary mt-1">Tracks adjustments made to granular department constraints.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
     <!-- Spreadsheet Onboarding Wizard Section -->
-    <section class="d-flex flex-column gap-12 mt-12 mb-12 reveal">
+    <section class="d-flex flex-column gap-12 mt-12 mb-12 reveal-left">
         <div class="text-center">
             <h2 class="fs-3xl">Streamlined <span class="text-gradient">Spreadsheet Onboarding</span></h2>
             <p class="fs-lg text-secondary mt-2 ml-auto mr-auto max-w-700">
-                Move your users from legacy systems to TimeFlow instantly using our high-fidelity CSV mapping tool.
+                Move your users from legacy systems to CenterTime instantly using our high-fidelity CSV mapping tool.
             </p>
         </div>
 
         <div class="grid-cols-2 gap-8 align-items-center">
             <!-- Left Side: Interactive Mockup of mapping columns -->
-            <div class="glass-panel p-6">
-                <div class="d-flex justify-content-between align-items-center mb-5 pb-3 border-b">
+            <!-- Left Side: Interactive Mockup showing all onboarding steps -->
+            <div class="glass-panel p-6" style="min-height: 380px; display: flex; flex-direction: column; justify-content: space-between;">
+                <!-- Header (Dynamic based on step) -->
+                <div class="d-flex justify-content-between align-items-center mb-6 border-b" style="padding-bottom: 1.25rem !important;">
                     <div class="d-flex align-items-center gap-2">
-                        <span class="material-icons text-primary">view_week</span>
-                        <span class="fs-sm fw-700 text-indigo-200 text-uppercase tracking-wider">CSV Header Mapping</span>
+                        <span class="material-icons text-primary" id="onboarding-step-icon">upload_file</span>
+                        <span class="fs-sm fw-700 text-indigo-200 text-uppercase tracking-wider" id="onboarding-step-title">Upload Roster CSV</span>
                     </div>
-                    <span class="badge bg-primary-glow text-primary fs-xs fw-700">Step 2 of 5</span>
+                    <span class="badge bg-primary-glow text-primary fs-xs fw-700" id="onboarding-step-badge">Step 1 of 5</span>
                 </div>
 
-                <div class="d-flex flex-column gap-4">
-                    <!-- Mapping Card 1 -->
-                    <div class="d-flex align-items-center justify-content-between p-3 rounded-sm bg-input border">
-                        <div>
-                            <span class="fs-xs text-secondary d-block">CSV Column Header</span>
-                            <span class="fs-sm fw-700">user_first_name</span>
-                        </div>
-                        <span class="material-icons text-secondary">trending_flat</span>
-                        <div style="text-align: right;">
-                            <span class="fs-xs text-secondary d-block">TimeFlow Property</span>
-                            <span class="badge bg-success-glow text-success fs-xs fw-600">First Name <span class="material-icons fs-xs align-middle">check</span></span>
-                        </div>
-                    </div>
-
-                    <!-- Mapping Card 2 -->
-                    <div class="d-flex align-items-center justify-content-between p-3 rounded-sm bg-input border">
-                        <div>
-                            <span class="fs-xs text-secondary d-block">CSV Column Header</span>
-                            <span class="fs-sm fw-700">contact_email_addr</span>
-                        </div>
-                        <span class="material-icons text-secondary">trending_flat</span>
-                        <div style="text-align: right;">
-                            <span class="fs-xs text-secondary d-block">TimeFlow Property</span>
-                            <span class="badge bg-success-glow text-success fs-xs fw-600">Email Address <span class="material-icons fs-xs align-middle">check</span></span>
+                <!-- Slide Container -->
+                <div class="flex-grow-1 d-flex flex-column justify-content-center" style="min-height: 220px;">
+                    <!-- Step 1: Upload Roster CSV -->
+                    <div class="onboarding-slide active" id="onboarding-slide-1">
+                        <div class="p-6 rounded-md border bg-input text-center d-flex flex-column align-items-center justify-content-center gap-3" style="border-style: dashed !important; border-width: 2px !important; border-color: rgba(99, 102, 241, 0.4) !important;">
+                            <span class="material-icons text-primary fs-3xl" style="animation: pulse 1.5s infinite">cloud_upload</span>
+                            <div>
+                                <div class="fs-sm fw-600">roster_export_july.csv</div>
+                                <div class="fs-xs text-secondary mt-1">12.4 KB • Ready to map</div>
+                            </div>
+                            <div class="w-100 bg-secondary rounded-full" style="height: 6px; overflow: hidden;">
+                                <div class="bg-primary" style="width: 100%; height: 100%; animation: slide-progress 2.5s ease-in-out infinite"></div>
+                            </div>
                         </div>
                     </div>
 
-                    <!-- Mapping Card 3 -->
-                    <div class="d-flex align-items-center justify-content-between p-3 rounded-sm bg-input border">
-                        <div>
-                            <span class="fs-xs text-secondary d-block">CSV Column Header</span>
-                            <span class="fs-sm fw-700">personal_kiosk_pin</span>
+                    <!-- Step 2: CSV Header Mapping -->
+                    <div class="onboarding-slide" id="onboarding-slide-2">
+                        <div class="d-flex flex-column gap-3">
+                            <div class="d-flex align-items-center justify-content-between p-2 rounded-sm bg-input border" style="font-size: 0.85rem;">
+                                <div>
+                                    <span class="fs-xs text-secondary d-block">CSV Column</span>
+                                    <span class="fw-700">user_first_name</span>
+                                </div>
+                                <span class="material-icons text-secondary fs-sm">trending_flat</span>
+                                <div style="text-align: right;">
+                                    <span class="fs-xs text-secondary d-block">CenterTime Property</span>
+                                    <span class="badge bg-success-glow text-success fs-xs fw-600">First Name <span class="material-icons fs-xs align-middle">check</span></span>
+                                </div>
+                            </div>
+                            <div class="d-flex align-items-center justify-content-between p-2 rounded-sm bg-input border" style="font-size: 0.85rem;">
+                                <div>
+                                    <span class="fs-xs text-secondary d-block">CSV Column</span>
+                                    <span class="fw-700">contact_email_addr</span>
+                                </div>
+                                <span class="material-icons text-secondary fs-sm">trending_flat</span>
+                                <div style="text-align: right;">
+                                    <span class="fs-xs text-secondary d-block">CenterTime Property</span>
+                                    <span class="badge bg-success-glow text-success fs-xs fw-600">Email Address <span class="material-icons fs-xs align-middle">check</span></span>
+                                </div>
+                            </div>
+                            <div class="d-flex align-items-center justify-content-between p-2 rounded-sm bg-input border" style="font-size: 0.85rem;">
+                                <div>
+                                    <span class="fs-xs text-secondary d-block">CSV Column</span>
+                                    <span class="fw-700">personal_kiosk_pin</span>
+                                </div>
+                                <span class="material-icons text-secondary fs-sm">trending_flat</span>
+                                <div style="text-align: right;">
+                                    <span class="fs-xs text-secondary d-block">CenterTime Property</span>
+                                    <span class="badge bg-secondary-glow text-secondary fs-xs fw-600">Secure PIN (Auto-Seeded)</span>
+                                </div>
+                            </div>
                         </div>
-                        <span class="material-icons text-secondary">trending_flat</span>
-                        <div style="text-align: right;">
-                            <span class="fs-xs text-secondary d-block">TimeFlow Property</span>
-                            <span class="badge bg-secondary-glow text-secondary fs-xs fw-600">Secure PIN (Auto-Seeded)</span>
+                    </div>
+
+                    <!-- Step 3: Fuzzy Matching Checks -->
+                    <div class="onboarding-slide" id="onboarding-slide-3">
+                        <div class="p-4 rounded-md border bg-input">
+                            <div class="d-flex align-items-center gap-2 mb-3">
+                                <span class="material-icons text-warning spinner" style="animation: spin 2s linear infinite">sync</span>
+                                <span class="fs-sm fw-600">Reconciling records with database...</span>
+                            </div>
+                            <div class="d-flex flex-column gap-2" style="font-size: 0.8rem;">
+                                <div class="d-flex justify-content-between text-success">
+                                    <span>✓ Alphanumeric PIN collisions checked</span>
+                                    <span>Passed</span>
+                                </div>
+                                <div class="d-flex justify-content-between text-success">
+                                    <span>✓ Duplicate emails resolved</span>
+                                    <span>0 conflicts</span>
+                                </div>
+                                <div class="d-flex justify-content-between text-warning">
+                                    <span>⚠ Formatting phone area codes...</span>
+                                    <span>Auto-formatted</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Step 4: License Quota Verification -->
+                    <div class="onboarding-slide" id="onboarding-slide-4">
+                        <div class="p-4 rounded-md border bg-input text-center">
+                            <h4 class="fs-sm mb-2 text-indigo-200">Silver Plan Verification</h4>
+                            <div class="d-flex justify-content-between fs-xs text-secondary mb-1">
+                                <span>Users Quota Limit</span>
+                                <span>15 / 100 Used</span>
+                            </div>
+                            <div class="w-100 bg-secondary rounded-full mb-3" style="height: 10px; overflow: hidden;">
+                                <div class="bg-success" style="width: 15%; height: 100%;"></div>
+                                <div class="bg-primary" style="width: 35%; height: 100%; animation: fill-bar 1.5s ease-out"></div>
+                            </div>
+                            <p class="fs-xs text-success m-0 d-flex align-items-center justify-content-center gap-1">
+                                <span class="material-icons fs-sm">check_circle</span> Importing +35 users is fully within your plan limits.
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- Step 5: Finalized & PINs Generated -->
+                    <div class="onboarding-slide" id="onboarding-slide-5">
+                        <div class="p-4 rounded-md border bg-success-glow text-center d-flex flex-column align-items-center gap-2" style="border-color: rgba(16, 185, 129, 0.3) !important;">
+                            <span class="material-icons text-success fs-3xl" style="animation: scale-up 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275)">done_all</span>
+                            <h4 class="fs-md mb-1 text-success fw-700">Import Complete!</h4>
+                            <p class="fs-xs text-secondary lh-base max-w-300">
+                                35 users successfully imported. Security PINs and Avery scannable PDF sheets have been updated.
+                            </p>
                         </div>
                     </div>
                 </div>
 
-                <!-- Live Status Metrics -->
-                <div class="d-flex gap-4 mt-6">
-                    <div class="flex-1 p-3 rounded-sm bg-input text-center border">
-                        <span class="fs-xs text-secondary d-block">Fuzzy Matches</span>
-                        <span class="fs-sm fw-700 text-warning">0 Conflicts</span>
+                <div class="d-flex justify-content-between align-items-center mt-6 pt-4 border-t">
+                    <div class="d-flex gap-2 align-items-center" id="onboarding-dots" style="padding: 0.25rem 0;">
+                        <span class="dot active" onclick="setOnboardingStep(1, true)" title="Step 1: Upload CSV"></span>
+                        <span class="dot" onclick="setOnboardingStep(2, true)" title="Step 2: CSV Mapping"></span>
+                        <span class="dot" onclick="setOnboardingStep(3, true)" title="Step 3: Fuzzy Matching"></span>
+                        <span class="dot" onclick="setOnboardingStep(4, true)" title="Step 4: Quota Check"></span>
+                        <span class="dot" onclick="setOnboardingStep(5, true)" title="Step 5: Import Success"></span>
                     </div>
-                    <div class="flex-1 p-3 rounded-sm bg-input text-center border">
-                        <span class="fs-xs text-secondary d-block">License Check</span>
-                        <span class="fs-sm fw-700 text-success">Within Quota</span>
-                    </div>
+                    <span class="fs-xs text-muted" style="letter-spacing: 0.05em; font-weight: 600;" id="autoplay-indicator">AUTOPLAYING</span>
                 </div>
             </div>
 
@@ -288,15 +918,15 @@
     </section>
 
     <!-- Use Cases & SMB Business Benefits Section -->
-    <section class="d-flex flex-column gap-12 mt-12 mb-12 reveal">
+    <section class="d-flex flex-column gap-12 mt-12 mb-12 reveal-right">
         <div class="text-center">
             <h2 class="fs-3xl">Built for Every <span class="text-gradient">Check-In Scenario</span></h2>
             <p class="fs-lg text-secondary mt-2 ml-auto mr-auto max-w-700">
-                TimeFlow adapts to your organization's workflow, whether tracking shift hours, class attendance, or event promoter activities.
+                CenterTime adapts to your organization's workflow, whether tracking shift hours, class attendance, or event promoter activities.
             </p>
         </div>
 
-        <div class="grid-cols-4 gap-6">
+        <div class="grid-cols-5 gap-6">
             <!-- Use Case 1: Shift Workers -->
             <div class="glass-panel p-6 d-flex flex-column justify-content-between hover-scale" style="background: linear-gradient(180deg, rgba(255,255,255,0.01) 0%, rgba(16,185,129,0.02) 100%);">
                 <div>
@@ -360,11 +990,27 @@
                     <span class="material-icons fs-sm">trending_up</span> Cuts administrative audit time by 60%
                 </div>
             </div>
+
+            <!-- Use Case 5: Avery Sticker Badges & QR/Barcode Scanning -->
+            <div class="glass-panel p-6 d-flex flex-column justify-content-between hover-scale" style="background: linear-gradient(180deg, rgba(255,255,255,0.01) 0%, rgba(236,72,153,0.02) 100%);">
+                <div>
+                    <div class="text-pink d-inline-flex align-items-center justify-content-center mb-4 rounded-sm icon-40" style="background: rgba(236,72,153,0.1); color: #ec4899;">
+                        <span class="material-icons">qr_code_scanner</span>
+                    </div>
+                    <h4 class="fs-lg mb-2 fw-600">Avery Badges & Scanning</h4>
+                    <p class="fs-sm text-secondary lh-base">
+                        Generate scannable badges optimized for Avery templates. Scan badges directly via any camera-equipped kiosk for instant check-in / check-out.
+                    </p>
+                </div>
+                <div class="fs-xs fw-600 mt-4 d-flex align-items-center gap-1" style="color: #ec4899;">
+                    <span class="material-icons fs-sm">trending_up</span> Contactless checkin/out in 0.5s
+                </div>
+            </div>
         </div>
     </section>
 
     <!-- Interactive Sales Tools Section -->
-    <section class="d-flex flex-column gap-12 mt-12 mb-12 reveal">
+    <section class="d-flex flex-column gap-12 mt-12 mb-12 reveal-left">
         <div class="text-center">
             <h2 class="fs-3xl">Analyze Your <span class="text-gradient">Operational Savings</span></h2>
             <p class="fs-lg text-secondary mt-2 ml-auto mr-auto max-w-700">
@@ -424,7 +1070,7 @@
                         <span class="fs-2xl fw-800" id="roi-savings-output">$146,250</span>
                     </div>
                     <div class="d-flex justify-content-between align-items-center border-t pt-3">
-                        <span class="fs-sm text-secondary">TimeFlow Plan Cost:</span>
+                        <span class="fs-sm text-secondary">CenterTime Plan Cost:</span>
                         <span class="fs-sm fw-600 text-indigo-200" id="roi-cost-output">$348 / year</span>
                     </div>
                 </div>
@@ -517,7 +1163,7 @@
     </section>
 
     <!-- Pricing Section -->
-    <section id="pricing-section" class="d-flex flex-column gap-12 reveal">
+    <section id="pricing-section" class="d-flex flex-column gap-12 reveal-scale">
         <div class="text-center">
             <h2 class="fs-3xl">Simple, Transparent <span class="text-gradient">Subscription Tiers</span></h2>
             <p class="fs-lg text-secondary mt-2 ml-auto mr-auto max-w-700">
@@ -525,7 +1171,7 @@
             </p>
         </div>
 
-        <div class="grid-cols-3 align-items-stretch gap-6">
+        <div class="align-items-stretch gap-6" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));">
             {% for plan in plans %}
                 <div class="glass-panel text-primary d-flex flex-column justify-content-between position-relative" style="padding: 2.25rem; {% if plan.name == 'silver' %}border: 1px solid var(--primary); box-shadow: var(--shadow-glow);{% else %}border-color: var(--border-color);{% endif %}">
                     {% if plan.name == 'silver' %}
@@ -535,7 +1181,7 @@
                     {% endif %}
                     <div>
                         <h3 class="fs-xl text-indigo-200 d-flex align-items-center gap-2" style="text-transform: capitalize">
-                            <span class="material-icons text-primary">{% if plan.name == 'basic' %}tag{% elseif plan.name == 'silver' %}stars{% else %}military_tech{% endif %}</span> {{ plan.name }} Plan
+                            <span class="material-icons text-primary">{% if plan.name == 'basic' %}tag{% elseif plan.name == 'silver' %}stars{% elseif plan.name == 'gold' %}military_tech{% else %}workspace_premium{% endif %}</span> {{ plan.name }} Plan
                         </h3>
                         <div style="margin: 1.5rem 0;">
                             <span class="fw-800 fs-3xl">${{ plan.priceMonthly|round }}</span>
@@ -562,15 +1208,17 @@
                                 <span class="material-icons fs-lg text-success">check_circle</span>
                                 {{ plan.retentionDays }} days history retention
                             </li>
-                            <li class="d-flex align-items-center gap-2">
-                                <span class="material-icons fs-lg text-success">check_circle</span>
-                                Open Kiosk (Dropdown list)
+                            <li class="{% if not plan.hasClickList %}text-muted {% endif %}d-flex align-items-center gap-2">
+                                <span class="material-icons fs-lg {% if plan.hasClickList %}text-success{% else %}text-muted{% endif %}">
+                                    {% if plan.hasClickList %}check_circle{% else %}cancel{% endif %}
+                                </span>
+                                Click List - Check in
                             </li>
                             <li class="{% if not plan.hasSecureKiosk %}text-muted {% endif %}d-flex align-items-center gap-2">
                                 <span class="material-icons fs-lg {% if plan.hasSecureKiosk %}text-success{% else %}text-muted{% endif %}">
                                     {% if plan.hasSecureKiosk %}check_circle{% else %}cancel{% endif %}
                                 </span>
-                                Secure Kiosk (PIN verification)
+                                Secure pin - Check in
                             </li>
                             <li class="text-muted d-flex align-items-center gap-2" >
                                 <span class="material-icons fs-lg text-muted {% if plan.hasCustomSessionDurations %}text-success{% endif %}" >
@@ -589,6 +1237,12 @@
                                     {% if plan.exportsEnabled %}check_circle{% else %}cancel{% endif %}
                                 </span>
                                 Excel / CSV logs downloads
+                            </li>
+                            <li class="{% if not plan.hasBarcodeFeatures %}text-muted {% endif %}d-flex align-items-center gap-2" >
+                                <span class="material-icons fs-lg {% if plan.hasBarcodeFeatures %}text-success{% else %}text-muted{% endif %}" >
+                                    {% if plan.hasBarcodeFeatures %}check_circle{% else %}cancel{% endif %}
+                                </span>
+                                barcode scan - Check in
                             </li>
                         </ul>
                     </div>
@@ -650,9 +1304,39 @@
                             {% endfor %}
                         </tr>
                         <tr>
-                            <td class="fw-600">Kiosk Mode</td>
+                            <td class="fw-600">Click List - Check in</td>
                             {% for plan in plans %}
-                                <td>{% if plan.hasSecureKiosk %}Secure (PIN Block){% else %}Open (Click List){% endif %}</td>
+                                <td>
+                                    {% if plan.hasClickList %}
+                                        <span class="text-success">Yes</span>
+                                    {% else %}
+                                        <span class="text-danger">No</span>
+                                    {% endif %}
+                                </td>
+                            {% endfor %}
+                        </tr>
+                        <tr>
+                            <td class="fw-600">Secure pin - Check in</td>
+                            {% for plan in plans %}
+                                <td>
+                                    {% if plan.hasSecureKiosk %}
+                                        <span class="text-success">Yes</span>
+                                    {% else %}
+                                        <span class="text-danger">No</span>
+                                    {% endif %}
+                                </td>
+                            {% endfor %}
+                        </tr>
+                        <tr>
+                            <td class="fw-600">barcode scan - Check in</td>
+                            {% for plan in plans %}
+                                <td>
+                                    {% if plan.hasBarcodeFeatures %}
+                                        <span class="text-success">Yes</span>
+                                    {% else %}
+                                        <span class="text-danger">No</span>
+                                    {% endif %}
+                                </td>
                             {% endfor %}
                         </tr>
                         <tr>
@@ -691,6 +1375,7 @@
                                 </td>
                             {% endfor %}
                         </tr>
+
                         <tr>
                             <td class="fw-600">Roster CSV upload</td>
                             {% for plan in plans %}
@@ -710,7 +1395,7 @@
     </section>
 
     <!-- Interactive Demos Sandbox Section -->
-    <section id="demo-section" class="pt-20 border-t reveal">
+    <section id="demo-section" class="pt-20 border-t reveal-scale">
         <h2 class="fs-3xl text-center mb-12">Explore Pre-Seeded <span class="text-gradient">Sandbox Environments</span></h2>
         
         <div class="grid-cols-3 gap-6">
@@ -775,7 +1460,7 @@
     </section>
 
     <!-- FAQ Section -->
-    <section class="d-flex flex-column gap-12 mb-8 reveal">
+    <section class="d-flex flex-column gap-12 mb-8 reveal-right">
         <div class="text-center">
             <h2 class="fs-3xl">Frequently Asked <span class="text-gradient">Questions</span></h2>
             <p class="fs-lg text-secondary mt-2">
@@ -784,6 +1469,27 @@
         </div>
 
         <div class="d-flex flex-column gap-6 m-0 w-100 max-w-800" >
+            <div class="glass-panel p-5" >
+                <h4 class="fs-lg mb-2">How do subscription licensing limits affect my organization?</h4>
+                <p class="fs-md text-secondary lh-base">
+                    Licensing plans restrict user limits, history retention windows, and kiosk features. Basic plans support open lists, whereas Silver, Gold, and Platinum tiers unlock the secure PIN keypad. Contactless barcode scan modes and PDF badge generation are restricted to Gold and Platinum plans.
+                </p>
+            </div>
+            <div class="glass-panel p-5" >
+                <h4 class="fs-lg mb-2">What check-in and checkout kiosk modes are available?</h4>
+                <p class="fs-md text-secondary lh-base">
+                    We support three distinct checkout/check-in methods:
+                    1. <strong>Click List - Check in</strong>: Tap on names from an open roster dropdown.
+                    2. <strong>Secure pin - Check in</strong>: Enter a unique 4-digit PIN to clock in.
+                    3. <strong>barcode scan - Check in</strong>: Scan scannable badges via webcam/camera scanner for hands-free instant logging.
+                </p>
+            </div>
+            <div class="glass-panel p-5" >
+                <h4 class="fs-lg mb-2">How does the CSV spreadsheet roster import work?</h4>
+                <p class="fs-md text-secondary lh-base">
+                    The spreadsheet importer maps columns dynamically to user profiles. It checks for duplicates using fuzzy matching matching rules, warns you if you are exceeding your license user quotas, and lets you verify name matches before finalizing the onboarding.
+                </p>
+            </div>
             <div class="glass-panel p-5" >
                 <h4 class="fs-lg mb-2">How do custom overrides work?</h4>
                 <p class="fs-md text-secondary lh-base">
@@ -814,24 +1520,10 @@
                     If a user enters an incorrect PIN 3 times in a row, the platform triggers an anti-brute force lockout. The user account is immediately disabled, blocking all further check-in attempts until a manager clears the lockout in the dashboard.
                 </p>
             </div>
-            <div class="glass-panel p-5" >
-                <h4 class="fs-lg mb-2">Can we migrate existing rosters from another payroll provider?</h4>
-                <p class="fs-md text-secondary lh-base">
-                    Yes. Managers can upload a standard CSV file using the interactive import wizard. The wizard maps CSV columns (First Name, Last Name, Phone, Email) to organization properties and runs fuzzy-name matches to prevent duplicates.
-                </p>
-            </div>
         </div>
     </section>
 
-</main>
-
-<footer class="fs-sm text-center text-muted mt-auto p-8 border-t">
-    <div class="app-container">
-        <p>&copy; 2026 TimeFlow. Powered by PHP Symfony and MySQL. All rights reserved.</p>
-    </div>
-</footer>
-
-<script>
+    <script>
     // ROI Calculator logic
     const empInput = document.getElementById('roi-emp-input');
     const wageInput = document.getElementById('roi-wage-input');
@@ -956,9 +1648,10 @@
 
     // Scroll Reveal Calculation Initialization
     function checkScroll() {
-        const reveals = document.querySelectorAll('.reveal');
+        const reveals = document.querySelectorAll('.reveal, .reveal-hero, .reveal-left, .reveal-right, .reveal-scale');
         const triggerPoint = window.innerHeight * 0.85; // trigger when element is 85% from top
         const exitPoint = window.innerHeight * 0.05;   // trigger exit when element is 5% from top
+        const hasActiveState = ['reveal', 'reveal-hero', 'reveal-left', 'reveal-right', 'reveal-scale'];
 
         reveals.forEach(el => {
             const rect = el.getBoundingClientRect();
@@ -971,10 +1664,258 @@
         });
     }
 
+    // Onboarding Steps Cycler
+    const onboardingSteps = [
+        { title: "Upload Roster CSV", icon: "upload_file", badge: "Step 1 of 5" },
+        { title: "CSV Header Mapping", icon: "view_week", badge: "Step 2 of 5" },
+        { title: "Fuzzy Matching Checks", icon: "rule", badge: "Step 3 of 5" },
+        { title: "License Quota Check", icon: "verified", badge: "Step 4 of 5" },
+        { title: "Onboarding Complete", icon: "done_all", badge: "Step 5 of 5" }
+    ];
+
+    let currentOnboardingStep = 1;
+    let onboardingInterval = null;
+
+    window.setOnboardingStep = function(stepNum, manual = false) {
+        if (manual && onboardingInterval) {
+            clearInterval(onboardingInterval);
+            const indicator = document.getElementById('autoplay-indicator');
+            if (indicator) {
+                indicator.textContent = "PAUSED";
+                indicator.style.color = "var(--warning)";
+            }
+        }
+        currentOnboardingStep = stepNum;
+        
+        // Update slides
+        document.querySelectorAll('.onboarding-slide').forEach(slide => {
+            slide.classList.remove('active');
+        });
+        const activeSlide = document.getElementById(`onboarding-slide-${stepNum}`);
+        if (activeSlide) {
+            activeSlide.classList.add('active');
+        }
+
+        // Update dots
+        const dots = document.querySelectorAll('#onboarding-dots .dot');
+        dots.forEach((dot, idx) => {
+            if (idx === (stepNum - 1)) {
+                dot.classList.add('active');
+            } else {
+                dot.classList.remove('active');
+            }
+        });
+
+        // Update titles / badges
+        const info = onboardingSteps[stepNum - 1];
+        document.getElementById('onboarding-step-icon').textContent = info.icon;
+        document.getElementById('onboarding-step-title').textContent = info.title;
+        document.getElementById('onboarding-step-badge').textContent = info.badge;
+    };
+
+    function startOnboardingCycle() {
+        onboardingInterval = setInterval(() => {
+            let nextStep = currentOnboardingStep + 1;
+            if (nextStep > 5) {
+                nextStep = 1;
+            }
+            window.setOnboardingStep(nextStep);
+        }, 3500);
+    }
+
+    // Kiosk Mode Simulation Engine
+    let kioskModeInterval = null;
+    let currentKioskMode = 'basic';
+    let kioskSimTimeout = null;
+
+    window.setKioskMode = function(mode, manual = false) {
+        if (manual && kioskModeInterval) {
+            clearInterval(kioskModeInterval);
+        }
+        currentKioskMode = mode;
+
+        // Clear ongoing timeouts
+        if (kioskSimTimeout) clearTimeout(kioskSimTimeout);
+
+        // Update tabs
+        document.querySelectorAll('.kiosk-mode-tab').forEach(tab => {
+            tab.classList.remove('active');
+            if (tab.getAttribute('onclick').includes(`'${mode}'`)) {
+                tab.classList.add('active');
+            }
+        });
+
+        // Update frames
+        document.querySelectorAll('.kiosk-frame').forEach(frame => {
+            frame.style.display = 'none';
+        });
+        const activeFrame = document.getElementById(`kiosk-frame-${mode}`);
+        if (activeFrame) activeFrame.style.display = 'block';
+
+        runKioskSimulation(mode);
+    };
+
+    function runKioskSimulation(mode) {
+        // Reset everything
+        const cursor = document.getElementById('kiosk-mock-cursor');
+        cursor.style.opacity = '0';
+        cursor.style.top = '250px';
+        cursor.style.left = '80%';
+
+        const searchInput = document.getElementById('kiosk-basic-search');
+        if (searchInput) searchInput.value = '';
+        const searchContainer = document.getElementById('kiosk-basic-search-container');
+        if (searchContainer) searchContainer.style.display = 'block';
+
+        const row2 = document.getElementById('mock-row-2');
+        if (row2) {
+            row2.style.setProperty('display', 'none', 'important');
+            row2.classList.remove('active-click');
+        }
+        const successBasic = document.getElementById('mock-basic-success');
+        if (successBasic) successBasic.style.display = 'none';
+
+        const checkinBtn = document.getElementById('mock-checkin-btn');
+        if (checkinBtn) checkinBtn.classList.remove('active-click');
+
+        // PIN resets
+        document.getElementById('kiosk-pin-keypad-view').style.display = 'block';
+        document.getElementById('kiosk-pin-success-view').style.display = 'none';
+        document.querySelectorAll('.pin-dot').forEach(dot => dot.className = 'pin-dot');
+        document.querySelectorAll('.mock-keypad-btn').forEach(btn => btn.classList.remove('active-key'));
+
+        // Barcode resets
+        const laser = document.getElementById('kiosk-laser-line');
+        laser.className = 'laser-line';
+        const mockBadge = document.getElementById('kiosk-mock-badge');
+        mockBadge.className = 'mock-badge bg-card border p-3 rounded-md d-flex align-items-center gap-3';
+        document.getElementById('kiosk-barcode-success').style.display = 'none';
+
+        if (mode === 'basic') {
+            // Simulation sequence for basic search + check-in
+            kioskSimTimeout = setTimeout(() => {
+                // Type "B"
+                if (searchInput) searchInput.value = 'B';
+                kioskSimTimeout = setTimeout(() => {
+                    // Type "Bo"
+                    if (searchInput) searchInput.value = 'Bo';
+                    kioskSimTimeout = setTimeout(() => {
+                        // Type "Bob"
+                        if (searchInput) searchInput.value = 'Bob';
+                        // Show row 2
+                        if (row2) row2.style.setProperty('display', 'flex', 'important');
+
+                        kioskSimTimeout = setTimeout(() => {
+                            // Show cursor
+                            cursor.style.opacity = '1';
+                            cursor.style.top = '120px';
+                            cursor.style.left = '80%';
+
+                            kioskSimTimeout = setTimeout(() => {
+                                // Move cursor to Check In button
+                                cursor.style.top = '112px';
+                                cursor.style.left = '75%';
+
+                                kioskSimTimeout = setTimeout(() => {
+                                    // Click Check In button
+                                    if (checkinBtn) checkinBtn.classList.add('active-click');
+
+                                    kioskSimTimeout = setTimeout(() => {
+                                        // Check-in success state
+                                        if (checkinBtn) checkinBtn.classList.remove('active-click');
+                                        if (row2) row2.style.setProperty('display', 'none', 'important');
+                                        if (searchContainer) searchContainer.style.display = 'none';
+                                        if (successBasic) successBasic.style.display = 'block';
+                                        cursor.style.opacity = '0';
+
+                                        // Loop simulation after 4 seconds
+                                        kioskSimTimeout = setTimeout(() => {
+                                            runKioskSimulation('basic');
+                                        }, 4000);
+                                    }, 600);
+                                }, 1200);
+                            }, 1000);
+                        }, 800);
+                    }, 300);
+                }, 300);
+            }, 800);
+
+        } else if (mode === 'pin') {
+            // Simulation sequence for PIN input (C-8-3-1)
+            const keys = ['C', '8', '3', '1'];
+            
+            function typeKey(idx) {
+                if (idx >= keys.length) {
+                    // Submit & Verify
+                    kioskSimTimeout = setTimeout(() => {
+                        document.getElementById('kiosk-pin-keypad-view').style.display = 'none';
+                        document.getElementById('kiosk-pin-success-view').style.display = 'flex';
+                        
+                        kioskSimTimeout = setTimeout(() => {
+                            runKioskSimulation('pin');
+                        }, 4000);
+                    }, 400);
+                    return;
+                }
+
+                kioskSimTimeout = setTimeout(() => {
+                    const keyChar = keys[idx];
+                    const keyBtn = document.getElementById(`key-${keyChar}`);
+                    if (keyBtn) keyBtn.classList.add('active-key');
+                    
+                    const dot = document.getElementById(`pin-dot-${idx+1}`);
+                    if (dot) dot.classList.add('filled');
+
+                    kioskSimTimeout = setTimeout(() => {
+                        if (keyBtn) keyBtn.classList.remove('active-key');
+                        typeKey(idx + 1);
+                    }, 200);
+                }, 400);
+            }
+
+            typeKey(0);
+
+        } else if (mode === 'barcode') {
+            // Simulation sequence for barcode badge scanning
+            kioskSimTimeout = setTimeout(() => {
+                // Slide badge up
+                mockBadge.classList.add('scanning');
+
+                kioskSimTimeout = setTimeout(() => {
+                    // Flash laser scanner success green
+                    laser.classList.add('scan-success');
+
+                    kioskSimTimeout = setTimeout(() => {
+                        // Show scan success toast
+                        document.getElementById('kiosk-barcode-success').style.display = 'block';
+
+                        kioskSimTimeout = setTimeout(() => {
+                            runKioskSimulation('barcode');
+                        }, 4000);
+                    }, 500);
+                }, 1500);
+            }, 500);
+        }
+    }
+
+    function startKioskAutoplay() {
+        kioskModeInterval = setInterval(() => {
+            let nextMode = 'basic';
+            if (currentKioskMode === 'basic') nextMode = 'pin';
+            else if (currentKioskMode === 'pin') nextMode = 'barcode';
+            window.setKioskMode(nextMode);
+        }, 8000);
+    }
+
+
+
     document.addEventListener('DOMContentLoaded', () => {
         window.addEventListener('scroll', checkScroll);
         window.addEventListener('resize', checkScroll);
         checkScroll(); // initial trigger
+        startOnboardingCycle();
+        window.setKioskMode('basic');
+        startKioskAutoplay();
     });
 </script>
 {% endblock %}

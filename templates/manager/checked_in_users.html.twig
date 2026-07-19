@@ -1,6 +1,6 @@
 {% extends 'manager/layout.html.twig' %}
 
-{% block title %}Active Sessions - TimeFlow{% endblock %}
+{% block title %}Active Sessions - CenterTime{% endblock %}
 {% block header_title %}Checked In Now{% endblock %}
 
 {% block manager_content %}
@@ -9,7 +9,7 @@
     <div class="d-flex align-items-center justify-content-between mb-6">
         <div>
             <h3 class="fs-xl mb-1">Active Sessions</h3>
-            <p class="fs-sm text-secondary">Real-time overview of users currently logged into kiosks.</p>
+            <p class="fs-sm text-secondary">Real-time overview of users currently logged into kiosks. Maximum session limit is configured to {{ org.sessionLimitHours }} hours.</p>
         </div>
         <div class="badge badge-success p-2 fs-sm d-flex align-items-center gap-1">
             <span class="material-icons fs-md">fiber_manual_record</span>
@@ -24,7 +24,7 @@
                 <thead>
                     <tr>
                         <th>User</th>
-                        <th>Email / Details</th>
+                        <th>Phone / Details</th>
                         <th>Category</th>
                         <th>Check-In Time</th>
                         <th>Time Elapsed</th>
@@ -32,21 +32,22 @@
                     </tr>
                 </thead>
                 <tbody>
-                    {% for session in activeSessions %}
+                    {% for data in sessionsData %}
+                        {% set session = data.session %}
                         <tr>
                             <td>
-                                <div class="d-flex align-items-center gap-3">
-                                    <div class="user-avatar icon-36 fs-xs">
+                                <a href="{{ path('app_manager_users', {q: data.encodedPin}) }}" class="d-flex align-items-center gap-3 text-decoration-none" style="color: inherit;">
+                                    <div class="user-avatar icon-36 fs-xs" style="flex-shrink: 0;">
                                         {{ session.orgUser.firstName|slice(0, 1) }}{{ session.orgUser.lastName|slice(0, 1) }}
                                     </div>
                                     <div>
-                                        <div class="fw-600 fs-sm">{{ session.orgUser.firstName }} {{ session.orgUser.lastName }}</div>
+                                        <div class="fw-600 fs-sm text-primary-hover">{{ session.orgUser.firstName }} {{ session.orgUser.lastName }}</div>
                                         <div class="fs-xs text-muted">PIN: {{ session.orgUser.pin }}</div>
                                     </div>
-                                </div>
+                                </a>
                             </td>
                             <td>
-                                <div class="fs-sm">{{ session.orgUser.email }}</div>
+                                <div class="fs-sm">{{ data.formattedPhone }}</div>
                                 <div class="fs-xs text-muted">Method: {{ session.startMethod|capitalize }}</div>
                             </td>
                             <td>
@@ -60,7 +61,14 @@
                             </td>
                             <td>
                                 <div class="fs-sm fw-600 text-primary">
-                                    <span class="session-timer" data-start="{{ session.startedAt.timestamp }}">Calculating...</span>
+                                    {% set elapsed = 'now'|date('U') - session.startedAt.timestamp %}
+                                    {% set h = (elapsed / 3600)|round(0, 'floor') %}
+                                    {% set m = ((elapsed % 3600) / 60)|round(0, 'floor') %}
+                                    {% set s = elapsed % 60 %}
+                                    {% set initial = '' %}
+                                    {% if h > 0 %}{% set initial = initial ~ h ~ 'h ' %}{% endif %}
+                                    {% set initial = initial ~ m ~ 'm ' ~ s ~ 's' %}
+                                    <span class="session-timer" data-start="{{ session.startedAt.timestamp }}">{{ initial }}</span>
                                 </div>
                             </td>
                             <td style="text-align: right;">
@@ -88,28 +96,25 @@
 </div>
 
 <script>
-document.addEventListener('DOMContentLoaded', () => {
+(function () {
     function updateTimers() {
         const now = Math.floor(Date.now() / 1000);
         document.querySelectorAll('.session-timer').forEach(el => {
             const start = parseInt(el.getAttribute('data-start'));
             const diff = now - start;
-            if (diff < 0) {
-                el.innerText = 'Just now';
-                return;
-            }
-            const hours = Math.floor(diff / 3600);
+            if (diff < 0) { el.innerText = 'Just now'; return; }
+            const hours   = Math.floor(diff / 3600);
             const minutes = Math.floor((diff % 3600) / 60);
             const seconds = diff % 60;
-            
             let text = '';
             if (hours > 0) text += hours + 'h ';
             text += minutes + 'm ' + seconds + 's';
             el.innerText = text;
         });
     }
+    // Run immediately on script parse — no DOMContentLoaded delay
     updateTimers();
     setInterval(updateTimers, 1000);
-});
+})();
 </script>
 {% endblock %}

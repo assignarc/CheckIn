@@ -6,6 +6,7 @@ use App\Entity\Category;
 use App\Entity\OrgUser;
 use App\Entity\Organization;
 use App\Entity\WorkSession;
+use App\Service\LicenseService;
 use App\Service\PinService;
 use App\Service\SessionSweeperService;
 use Doctrine\ORM\EntityManagerInterface;
@@ -25,12 +26,47 @@ class KioskController extends AbstractController
         $this->pinService = $pinService;
     }
 
+    #[Route('/org/{slug}/kiosk-redirect/{semiPermanentToken}', name: 'app_kiosk_redirect')]
+    public function redirectKiosk(string $slug, string $semiPermanentToken, EntityManagerInterface $entityManager): Response
+    {
+        $org = $entityManager->getRepository(Organization::class)->findOneBy(['slug' => $slug]);
+        if (!$org) {
+            throw $this->createNotFoundException('Organization not found');
+        }
+
+        if ($org->getSemiPermanentKioskToken() !== $semiPermanentToken) {
+            return $this->render('kiosk/error.html.twig', [
+                'org_name' => $org->getName(),
+                'error' => 'This semi-permanent kiosk link is invalid. Please contact your manager.'
+            ]);
+        }
+
+        if ($org->isArchived()) {
+            return $this->render('kiosk/error.html.twig', [
+                'org_name' => $org->getName(),
+                'error' => 'This organization has been archived. Check-in and checkout kiosks are currently disabled. Please contact support.'
+            ]);
+        }
+
+        return $this->redirectToRoute('app_kiosk', [
+            'slug' => $slug,
+            'token' => $org->getCheckInLinkToken(),
+        ]);
+    }
+
     #[Route('/org/{slug}/kiosk/{token}', name: 'app_kiosk')]
     public function index(string $slug, string $token, EntityManagerInterface $entityManager, SessionSweeperService $sessionSweeper): Response
     {
         $org = $entityManager->getRepository(Organization::class)->findOneBy(['slug' => $slug]);
         if (!$org) {
             throw $this->createNotFoundException('Organization not found');
+        }
+
+        if ($org->isArchived()) {
+            return $this->render('kiosk/error.html.twig', [
+                'org_name' => $org->getName(),
+                'error' => 'This organization has been archived. Check-in and checkout kiosks are currently disabled. Please contact support.'
+            ]);
         }
 
         $sessionSweeper->sweepActiveSessions($org);
@@ -70,6 +106,10 @@ class KioskController extends AbstractController
         $org = $entityManager->getRepository(Organization::class)->findOneBy(['slug' => $slug]);
         if (!$org || $org->getCheckInLinkToken() !== $token) {
             return new JsonResponse(['success' => false, 'message' => 'Invalid kiosk configuration'], 400);
+        }
+
+        if ($org->isArchived()) {
+            return new JsonResponse(['success' => false, 'message' => 'This organization has been archived. Kiosk access is disabled.'], 403);
         }
 
         $sessionSweeper->sweepActiveSessions($org);
@@ -153,6 +193,10 @@ class KioskController extends AbstractController
         $org = $entityManager->getRepository(Organization::class)->findOneBy(['slug' => $slug]);
         if (!$org || $org->getCheckInLinkToken() !== $token) {
             return new JsonResponse(['success' => false, 'message' => 'Invalid kiosk configuration'], 400);
+        }
+
+        if ($org->isArchived()) {
+            return new JsonResponse(['success' => false, 'message' => 'This organization has been archived. Kiosk access is disabled.'], 403);
         }
 
         $sessionSweeper->sweepActiveSessions($org);
@@ -302,5 +346,76 @@ class KioskController extends AbstractController
         $last  = mb_substr($lastName, -1, 1);
         $stars = str_repeat('*', $len - 2);
         return $first . $stars . $last;
+    }
+
+    #[Route('/org/{slug}/kiosk/{token}/scan', name: 'app_kiosk_scan', methods: ['POST'])]
+    public function scan(string $slug, string $token, Request $request, EntityManagerInterface $entityManager, SessionSweeperService $sessionSweeper, LicenseService $licenseService): JsonResponse
+    {
+        $org = $entityManager->getRepository(Organization::class)->findOneBy(['slug' => $slug]);
+        if (!$org || $org->getCheckInLinkToken() !== $token) {
+            return new JsonResponse(['success' => false, 'message' => 'Invalid kiosk configuration'], 400);
+        }
+
+        if ($org->isArchived()) {
+            return new JsonResponse(['success' => false, 'message' => 'This organization has been archived. Kiosk access is disabled.'], 403);
+        }
+
+        if (!$licenseService->isBarcodeEnabled($org)) {
+            return new JsonResponse(['success' => false, 'message' => 'Barcode scanning is disabled on the Basic plan. Please upgrade to a higher tier.'], 403);
+        }
+
+        $sessionSweeper->sweepActiveSessions($org);
+
+        $pin = $request->request->get('pin');
+        if (!$pin) {
+            return new JsonResponse(['success' => false, 'message' => 'Missing barcode scan value'], 400);
+        }
+
+        // Look up the active user by PIN within this organization
+        $orgUser = $entityManager->getRepository(OrgUser::class)->findOneBy([
+            'organization' => $org,
+            'pin' => $pin,
+            'isActive' => true
+        ]);
+
+        if (!$orgUser) {
+            return new JsonResponse(['success' => false, 'message' => 'User not found or inactive'], 404);
+        }
+
+        // Reset lockout Key just in case they had failed manual PIN attempts
+        $session = $request->getSession();
+        $lockoutKey = 'kiosk_attempts_' . $orgUser->getId();
+        $session->remove($lockoutKey);
+
+        // Check if there is an active work session
+        $activeSession = $entityManager->getRepository(WorkSession::class)->findOneBy([
+            'orgUser' => $orgUser,
+            'endedAt' => null
+        ]);
+
+        if ($activeSession) {
+            return new JsonResponse([
+                'success' => true,
+                'action' => 'checkout_prompt',
+                'orgUser' => [
+                    'id' => $orgUser->getId(),
+                    'name' => $orgUser->getFirstName() . ' ' . ($org->isMaskLastName() ? $this->maskLastName($orgUser->getLastName()) : $orgUser->getLastName()),
+                ],
+                'session' => [
+                    'id' => $activeSession->getId(),
+                    'startedAt' => $activeSession->getStartedAt()->format('Y-m-d H:i:s'),
+                    'category' => $activeSession->getCategory() ? $activeSession->getCategory()->getName() : 'General',
+                ]
+            ]);
+        }
+
+        return new JsonResponse([
+            'success' => true,
+            'action' => 'checkin_prompt',
+            'orgUser' => [
+                'id' => $orgUser->getId(),
+                'name' => $orgUser->getFirstName() . ' ' . ($org->isMaskLastName() ? $this->maskLastName($orgUser->getLastName()) : $orgUser->getLastName()),
+            ]
+        ]);
     }
 }

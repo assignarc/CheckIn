@@ -1,0 +1,614 @@
+{% extends 'manager/layout.html.twig' %}
+
+{% set template_name = 'Avery L7156 (Small)' %}
+{% if template == '5160' %}
+    {% set template_name = 'Avery 5160 (Medium)' %}
+{% elseif template == '6572' %}
+    {% set template_name = 'Avery 6572 (Large)' %}
+{% endif %}
+
+{% block title %}Print Sticker Badges ({{ template_name }}) - {{ org.name }}{% endblock %}
+{% block header_title %}Sticker Badges — {{ template_name }}{% endblock %}
+
+{% block stylesheets %}
+<style>
+    /* Styling for print settings controls */
+    .print-controls {
+        background: var(--bg-card);
+        border: 1px solid var(--border-color);
+        padding: 1.5rem;
+        border-radius: var(--radius-md);
+        margin-bottom: 2rem;
+    }
+    
+    /* Layout Definitions for Avery Sheets */
+    .avery-print-container {
+        box-sizing: border-box;
+        padding: 0;
+        margin: 0;
+    }
+
+    .avery-page {
+        box-sizing: border-box;
+        background: white;
+        color: black;
+        font-family: Arial, sans-serif;
+        overflow: hidden;
+        page-break-after: always;
+        page-break-inside: avoid;
+    }
+
+    /* Template Avery 5160 - 30 labels (3x10) */
+    .template-5160 {
+        width: 8.5in;
+        height: 11in;
+        padding-top: 0.5in;
+        padding-bottom: 0.5in;
+        padding-left: 0.2197in;
+        padding-right: 0.2197in;
+        display: grid;
+        grid-template-columns: 2.625in 2.625in 2.625in;
+        grid-template-rows: repeat(10, 1.0in);
+        column-gap: 0.135in;
+        row-gap: 0in;
+    }
+
+    /* Template Avery L7156 - 45 labels (3x15) */
+    .template-L7156 {
+        width: 210mm;
+        height: 297mm;
+        padding-top: 8.5mm;
+        padding-bottom: 8.5mm;
+        padding-left: 8mm;
+        padding-right: 8mm;
+        display: grid;
+        grid-template-columns: 64mm 64mm 64mm;
+        grid-template-rows: repeat(15, 18.5mm);
+        column-gap: 4.5mm;
+        row-gap: 0mm;
+    }
+
+    /* Template Avery 6572 - 15 labels (3x5) */
+    .template-6572 {
+        width: 8.5in;
+        height: 11in;
+        padding-top: 0.5in;
+        padding-bottom: 0.5in;
+        padding-left: 0.156in;
+        padding-right: 0.156in;
+        display: grid;
+        grid-template-columns: 2.625in 2.625in 2.625in;
+        grid-template-rows: repeat(5, 2.0in);
+        column-gap: 0.135in;
+        row-gap: 0in;
+    }
+
+    /* Individual Label Box Styling */
+    .avery-label {
+        box-sizing: border-box;
+        overflow: hidden;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        border: 1px dashed #e2e8f0; /* Dashed border for alignment helper, invisible in print */
+        position: relative;
+    }
+
+    /* Sizing rules for each template */
+    .template-L7156 .avery-label {
+        padding: 2mm 6px;
+        font-size: 8pt;
+    }
+    .template-L7156 .label-info {
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        height: 100%;
+        min-height: 12.5mm;
+        box-sizing: border-box;
+    }
+    .template-L7156 .label-org {
+        font-size: 5pt;
+        text-transform: uppercase;
+        color: #718096;
+        opacity: 0.8;
+        line-height: 1.1;
+    }
+    .template-L7156 .label-name-wrap {
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        flex-grow: 1;
+        margin: 1px 0;
+    }
+    .template-L7156 .label-first-name,
+    .template-L7156 .label-last-name {
+        font-size: 7.5pt;
+        font-weight: bold;
+        color: #1a202c;
+        line-height: 1.1;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+    .template-L7156 .label-pin-small {
+        font-size: 5.5pt;
+        color: #718096;
+        font-family: monospace;
+        line-height: 1.1;
+        opacity: 0.8;
+    }
+    .template-L7156 .label-code img {
+        width: 14mm;
+        height: 14mm;
+    }
+
+    .template-5160 .avery-label {
+        padding: 4mm 12px;
+        font-size: 10pt;
+    }
+    .template-5160 .label-info {
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        height: 100%;
+        min-height: 20mm;
+        box-sizing: border-box;
+    }
+    .template-5160 .label-org {
+        font-size: 6.5pt;
+        text-transform: uppercase;
+        color: #718096;
+        opacity: 0.8;
+        line-height: 1.1;
+    }
+    .template-5160 .label-name-wrap {
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        flex-grow: 1;
+        margin: 2px 0;
+    }
+    .template-5160 .label-first-name,
+    .template-5160 .label-last-name {
+        font-size: 9.5pt;
+        font-weight: bold;
+        color: #1a202c;
+        line-height: 1.1;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+    .template-5160 .label-pin-medium {
+        font-size: 7.5pt;
+        color: #718096;
+        font-family: monospace;
+        line-height: 1.1;
+        opacity: 0.8;
+    }
+    .template-5160 .label-code img {
+        width: 20mm;
+        height: 20mm;
+    }
+
+    .template-6572 .avery-label {
+        padding: 6px 10px;
+        flex-direction: column;
+        justify-content: space-between;
+        align-items: center;
+    }
+    .template-6572 .label-org {
+        font-size: 7pt;
+        text-transform: uppercase;
+        color: #718096;
+        font-weight: bold;
+        width: 100%;
+        text-align: center;
+        opacity: 0.8;
+    }
+    .template-6572 .label-name {
+        font-size: 8.5pt;
+        color: #4a5568;
+        font-weight: bold;
+        width: 100%;
+        text-align: center;
+        opacity: 0.8;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+    .template-6572 .label-middle-row {
+        position: relative;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 100%;
+        height: 34mm;
+    }
+    .template-6572 .label-pin-vertical {
+        font-family: monospace;
+        font-weight: bold;
+        color: #718096;
+        font-size: 8.5pt;
+        transform: rotate(-90deg);
+        white-space: nowrap;
+        position: absolute;
+        left: -15px;
+        transform-origin: center;
+        width: 80px;
+        text-align: center;
+    }
+    .template-6572 .label-syslogo-vertical {
+        font-family: Arial, sans-serif;
+        font-weight: bold;
+        color: #718096;
+        font-size: 8.5pt;
+        transform: rotate(90deg);
+        white-space: nowrap;
+        position: absolute;
+        right: -15px;
+        transform-origin: center;
+        width: 80px;
+        text-align: center;
+        opacity: 0.85;
+    }
+    .template-6572 .label-code {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 100%;
+    }
+    .template-6572 .label-code img {
+        width: 32mm;
+        height: 32mm;
+    }
+
+    .label-info {
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        max-width: 65%;
+    }
+
+    .label-org {
+        text-transform: uppercase;
+        color: #718096;
+        font-weight: bold;
+    }
+
+    .label-name {
+        font-weight: bold;
+        color: #1a202c;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .label-pin {
+        font-family: monospace;
+        font-weight: bold;
+        color: #4a5568;
+    }
+
+    .label-code {
+        width: 30%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .label-code img {
+        object-fit: contain;
+        border: 1px solid #cbd5e1;
+        border-radius: 4px;
+        padding: 2px;
+        background: white;
+    }
+
+    /* Screen Preview Decoration */
+    @media screen {
+        .avery-page {
+            margin: 2rem auto !important;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+            border: 1px solid #cbd5e1;
+            border-radius: 4px;
+        }
+    }
+
+    /* Print Specific Overrides */
+    @media print {
+        @page {
+            margin: 0 !important;
+        }
+        body {
+            background: white !important;
+            color: black !important;
+            margin: 0 !important;
+            padding: 0 !important;
+        }
+        .app-container {
+            padding: 0 !important;
+            margin: 0 !important;
+            max-width: none !important;
+            width: auto !important;
+        }
+        .no-print {
+            display: none !important;
+        }
+        .avery-label {
+            border: 1px transparent !important; /* Hide dashed boundaries in prints */
+        }
+        .label-org,
+        .label-first-name,
+        .label-last-name,
+        .label-name,
+        .label-pin,
+        .label-pin-small,
+        .label-pin-medium,
+        .label-pin-vertical,
+        .label-syslogo-vertical {
+            color: #000000 !important;
+            opacity: 1 !important;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+        }
+        .avery-page {
+            margin: 0 !important;
+            border: none !important;
+            box-shadow: none !important;
+            page-break-after: always !important;
+            page-break-inside: avoid !important;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block manager_content %}
+    <!-- Configuration Panel (no-print) -->
+    <div class="print-controls no-print" style="padding: 1.5rem; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-md); margin-bottom: 2rem;">
+        <form method="get" class="d-flex flex-column gap-4 w-100 m-0">
+            {% if app.request.query.get('id') %}
+                <input type="hidden" name="id" value="{{ app.request.query.get('id') }}">
+            {% endif %}
+            
+            <!-- Top Row: Title & Actions -->
+            <div class="d-flex flex-column md-flex-row justify-content-between align-items-start md-align-items-center gap-3">
+                <div>
+                    <h2 class="fs-2xl fw-700 m-0" style="font-size: 1.5rem;">Print Badge Labels - {{ template_name }}</h2>
+                    <p class="fs-sm text-secondary m-0 mt-1">Generate and print sheets of sticker badges with QR codes and PINs.</p>
+                </div>
+                <div class="d-flex flex-wrap gap-2">
+                    <button type="button" onclick="downloadPdf()" id="btn-download-pdf" class="btn btn-success d-flex align-items-center gap-2" style="padding: 0.5rem 1rem;">
+                        <span class="material-icons fs-md">download</span> Download PDF
+                    </button>
+                    <button type="button" onclick="window.print()" class="btn btn-primary d-flex align-items-center gap-2" style="padding: 0.5rem 1rem;">
+                        <span class="material-icons fs-md">print</span> Print Page
+                    </button>
+                    <a href="{{ path('app_manager_users') }}" class="btn btn-secondary" style="padding: 0.5rem 1rem;">Back to Users</a>
+                </div>
+            </div>
+
+            <!-- Middle Row: Filters & Sticker Template Select -->
+            <div class="d-flex flex-wrap align-items-end gap-3 p-3" style="background: rgba(0,0,0,0.15); border-radius: var(--radius-sm); border: 1px solid var(--border-color);">
+                <div style="flex: 1; min-width: 200px;">
+                    <label class="form-label fs-xs fw-600 text-secondary mb-1 d-block" for="start-date-input">Created From</label>
+                    <input type="date" id="start-date-input" name="start_date" class="form-control w-100" value="{{ app.request.query.get('start_date', '') }}" style="height: 38px; padding: 0.375rem 0.75rem;">
+                </div>
+                <div style="flex: 1; min-width: 200px;">
+                    <label class="form-label fs-xs fw-600 text-secondary mb-1 d-block" for="end-date-input">Created To</label>
+                    <input type="date" id="end-date-input" name="end_date" class="form-control w-100" value="{{ app.request.query.get('end_date', '') }}" style="height: 38px; padding: 0.375rem 0.75rem;">
+                </div>
+                <div style="flex: 1.5; min-width: 280px;">
+                    <label class="form-label fs-xs fw-600 text-secondary mb-1 d-block" for="template-select">Sticker Template</label>
+                    <select id="template-select" name="template" class="form-control w-100 form-select" onchange="this.form.submit()" style="height: 38px; padding: 0.375rem 0.75rem;">
+                        <option value="L7156" {% if template == 'L7156' %}selected{% endif %}>Small - Avery L7156 (45 per page)</option>
+                        <option value="5160" {% if template == '5160' %}selected{% endif %}>Medium - Avery 5160 (30 per page)</option>
+                        <option value="6572" {% if template == '6572' %}selected{% endif %}>Large - Avery 6572 (15 per page)</option>
+                    </select>
+                </div>
+                <div class="d-flex gap-2" style="height: 38px;">
+                    <button type="submit" class="btn btn-secondary d-flex align-items-center justify-content-center" style="width: 42px; height: 38px; padding: 0;" title="Apply Filter">
+                        <span class="material-icons">filter_alt</span>
+                    </button>
+                    {% if app.request.query.get('start_date') or app.request.query.get('end_date') %}
+                        <a href="{{ path('app_manager_print_barcodes', {template: template}) }}" class="btn btn-secondary d-flex align-items-center justify-content-center" style="width: 42px; height: 38px; padding: 0;" title="Clear Filters">
+                            <span class="material-icons">clear</span>
+                        </a>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Bottom Row: Note Banner -->
+            <div class="alert alert-info py-2.5 px-3 fs-xs d-flex align-items-center gap-2 mb-0 w-100" style="background: rgba(99, 102, 241, 0.08); border: 1px solid rgba(99, 102, 241, 0.2); border-radius: var(--radius-sm);">
+                <span class="material-icons text-primary" style="font-size: 1.1rem;">info</span>
+                <span class="text-secondary" style="font-size: 0.8rem;">
+                    <strong>Note:</strong> Badges can only be printed for <strong>active</strong> users in the system. Inactive users are not allowed to check in or out.
+                </span>
+            </div>
+        </form>
+    </div>
+
+    <!-- Batch Paginated Avery Sheets -->
+    {% set limit = 30 %}
+    {% if template == 'L7156' %}
+        {% set limit = 45 %}
+    {% elseif template == '6572' %}
+        {% set limit = 15 %}
+    {% endif %}
+
+    <div class="avery-print-container">
+        {% for page_users in users|batch(limit) %}
+            <div class="avery-page template-{{ template }}">
+                {% for user in page_users %}
+                    {% if template == 'L7156' %}
+                        {% include 'manager/barcode/_small.html.twig' with {user: user, org: org} %}
+                    {% elseif template == '5160' %}
+                        {% include 'manager/barcode/_medium.html.twig' with {user: user, org: org} %}
+                    {% elseif template == '6572' %}
+                        {% include 'manager/barcode/_large.html.twig' with {user: user, org: org} %}
+                    {% endif %}
+                {% endfor %}
+                {# Fill the remaining grid cells to ensure layout alignment helper borders look complete #}
+                {% if page_users|length < limit %}
+                    {% for i in (page_users|length + 1)..limit %}
+                        <div class="avery-label empty-label" style="border: 1px dashed transparent;"></div>
+                    {% endfor %}
+                {% endif %}
+            </div>
+        {% endfor %}
+    </div>
+
+
+<!-- PDF generation: jsPDF + html2canvas loaded from CDN -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+<!-- PDF Progress Overlay -->
+<div id="pdf-overlay" style="
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.65);
+    backdrop-filter: blur(4px);
+    z-index: 9999;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 1.5rem;
+" class="no-print">
+    <div style="
+        background: var(--bg-card, #fff);
+        border-radius: 16px;
+        padding: 2.5rem 3rem;
+        text-align: center;
+        box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        min-width: 320px;
+    ">
+        <div style="font-size: 2.5rem; margin-bottom: 0.75rem;">📄</div>
+        <div style="font-size: 1.1rem; font-weight: 700; margin-bottom: 0.5rem; color: var(--text-primary, #1a202c);" id="pdf-status-title">Generating PDF…</div>
+        <div style="font-size: 0.85rem; color: var(--text-secondary, #718096); margin-bottom: 1.25rem;" id="pdf-status-msg">Preparing pages…</div>
+        <!-- Progress bar -->
+        <div style="background: var(--border-color, #e2e8f0); border-radius: 999px; height: 8px; overflow: hidden;">
+            <div id="pdf-progress-bar" style="height: 100%; width: 0%; background: linear-gradient(90deg, #6366f1, #8b5cf6); border-radius: 999px; transition: width 0.3s ease;"></div>
+        </div>
+        <div style="font-size: 0.75rem; color: var(--text-muted, #a0aec0); margin-top: 0.5rem;" id="pdf-progress-text">0%</div>
+    </div>
+</div>
+
+<script>
+    function changeTemplate(val) {
+        const url = new URL(window.location.href);
+        url.searchParams.set('template', val);
+        window.location.href = url.toString();
+    }
+
+    async function downloadPdf() {
+        const overlay     = document.getElementById('pdf-overlay');
+        const progressBar = document.getElementById('pdf-progress-bar');
+        const progressTxt = document.getElementById('pdf-progress-text');
+        const statusMsg   = document.getElementById('pdf-status-msg');
+        const statusTitle = document.getElementById('pdf-status-title');
+        const dlBtn       = document.getElementById('btn-download-pdf');
+
+        // Show overlay
+        overlay.style.display = 'flex';
+        dlBtn.disabled = true;
+
+        function setProgress(pct, msg) {
+            progressBar.style.width = pct + '%';
+            progressTxt.textContent = Math.round(pct) + '%';
+            if (msg) statusMsg.textContent = msg;
+        }
+
+        try {
+            // ── Step 1: Wait for all QR images to fully load ──────────────────
+            setProgress(5, 'Waiting for QR codes to load…');
+            const allImgs = Array.from(document.querySelectorAll('.avery-print-container img'));
+            await Promise.all(allImgs.map(img => {
+                if (img.complete && img.naturalWidth > 0) return Promise.resolve();
+                return new Promise(res => {
+                    img.onload  = res;
+                    img.onerror = res; // continue even if one fails
+                });
+            }));
+
+            // ── Step 2: Determine page size from template ─────────────────────
+            const templateEl  = document.querySelector('.avery-page');
+            const templateCls = templateEl ? [...templateEl.classList].find(c => c.startsWith('template-')) : 'template-5160';
+            // L7156 is A4 (210×297mm), everything else is US Letter (215.9×279.4mm)
+            const isA4 = templateCls === 'template-L7156';
+            const pdfW = isA4 ? 210 : 215.9;   // mm
+            const pdfH = isA4 ? 297 : 279.4;   // mm
+
+            const { jsPDF } = window.jspdf;
+            const pdf = new jsPDF({
+                orientation: 'portrait',
+                unit: 'mm',
+                format: isA4 ? 'a4' : 'letter',
+            });
+
+            // ── Step 3: Render each page ─────────────────────────────────────
+            const pages = Array.from(document.querySelectorAll('.avery-print-container .avery-page'));
+            if (pages.length === 0) throw new Error('No pages found to render.');
+
+            for (let i = 0; i < pages.length; i++) {
+                const pct = 10 + ((i / pages.length) * 85);
+                setProgress(pct, `Rendering page ${i + 1} of ${pages.length}…`);
+
+                // Temporarily hide dashed borders for cleaner PDF output
+                pages[i].querySelectorAll('.avery-label').forEach(l => {
+                    l.dataset._origBorder = l.style.border;
+                    l.style.border = 'none';
+                });
+
+                const canvas = await html2canvas(pages[i], {
+                    scale: 2,              // 2× for crisp output
+                    useCORS: true,         // allow QR code images (external CDN)
+                    allowTaint: false,
+                    backgroundColor: '#ffffff',
+                    logging: false,
+                    width:  pages[i].offsetWidth,
+                    height: pages[i].offsetHeight,
+                });
+
+                // Restore borders
+                pages[i].querySelectorAll('.avery-label').forEach(l => {
+                    l.style.border = l.dataset._origBorder || '';
+                });
+
+                if (i > 0) pdf.addPage(isA4 ? 'a4' : 'letter', 'portrait');
+
+                pdf.addImage(
+                    canvas.toDataURL('image/jpeg', 0.92),
+                    'JPEG',
+                    0, 0,
+                    pdfW, pdfH
+                );
+            }
+
+            // ── Step 4: Save ─────────────────────────────────────────────────
+            setProgress(100, 'Saving file…');
+            statusTitle.textContent = 'Done!';
+
+            const orgName   = document.title.split(' - ')[1] || 'badges';
+            const tmpl      = new URL(window.location.href).searchParams.get('template') || '5160';
+            const filename  = `badges-${orgName.toLowerCase().replace(/\s+/g, '-')}-${tmpl}.pdf`;
+            pdf.save(filename);
+
+            // Brief pause then close
+            await new Promise(r => setTimeout(r, 800));
+        } catch (err) {
+            console.error('PDF generation error:', err);
+            statusTitle.textContent = 'Error';
+            statusMsg.textContent   = err.message || 'Something went wrong. Please try again.';
+            await new Promise(r => setTimeout(r, 2500));
+        } finally {
+            overlay.style.display = 'none';
+            dlBtn.disabled = false;
+            progressBar.style.width = '0%';
+            statusTitle.textContent = 'Generating PDF…';
+            statusMsg.textContent   = 'Preparing pages…';
+        }
+    }
+</script>
+{% endblock %}

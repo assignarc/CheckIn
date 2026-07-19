@@ -1,0 +1,24 @@
+<div class="avery-label" style="position: relative;">
+    <!-- Top line: Org logo + name, small and subtle -->
+    <div style="display: flex; align-items: center; justify-content: center; gap: 4px; width: 100%;">
+        <img src="{{ path('app_org_logo', {slug: org.slug}) }}"
+             alt=""
+             style="width: 16px; height: 16px; border-radius: 3px; object-fit: cover; flex-shrink: 0;">
+        <div class="label-org" style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{ org.name }}</div>
+    </div>
+
+    <!-- Middle: left vertical PIN · center QR code · right vertical system logo -->
+    <div class="label-middle-row">
+        <div class="label-pin-vertical">PIN: {{ user.pin }}</div>
+        {% if org.isBarcodeEnabled() %}
+        <div class="label-code">
+            <img src="https://api.qrserver.com/v1/create-qr-code/?size=100x100&data={{ user.pin }}" alt="QR Code">
+        </div>
+        {% endif %}
+        <!-- System logo: vertical on right side of QR code, same font size as PIN -->
+        <div class="label-syslogo-vertical">⏰ CenterTime</div>
+    </div>
+
+    <!-- Bottom line: User name, small and subtle -->
+    <div class="label-name">{{ user.firstName }} {{ user.lastName }}</div>
+</div>

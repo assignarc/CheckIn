@@ -1,0 +1,50 @@
+{% extends 'admin/layout.html.twig' %}
+
+{% block title %}Email Templates - CenterTime{% endblock %}
+
+{% block admin_content %}
+<div class="mb-6">
+    <h2 class="mb-1">Transactional Email Templates</h2>
+    <p class="text-secondary m-0 fs-sm">View and customize the HTML/Twig structures of emails dispatched to managers on signup, renewal, failures, and updates.</p>
+</div>
+
+<div class="glass-panel p-0 overflow-hidden">
+    <div class="table-responsive">
+        <table class="table mb-0 fs-sm">
+            <thead>
+                <tr>
+                    <th>Template Name / File</th>
+                    <th>Description</th>
+                    <th>Supported Placeholders</th>
+                    <th class="text-right">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for temp in templates %}
+                    <tr>
+                        <td>
+                            <div class="fw-700 text-white">{{ temp.name|replace({'_': ' '})|title }}</div>
+                            <div class="text-secondary font-mono fs-xs mt-1">{{ temp.filename }}</div>
+                        </td>
+                        <td>
+                            <p class="m-0 text-secondary lh-base">{{ temp.description }}</p>
+                        </td>
+                        <td>
+                            <div class="d-flex flex-wrap gap-1">
+                                {% for var in temp.variables %}
+                                    <span class="badge badge-secondary font-mono">{{ var }}</span>
+                                {% endfor %}
+                            </div>
+                        </td>
+                        <td class="text-right">
+                            <a href="{{ path('app_admin_email_edit', {templateName: temp.name}) }}" class="btn btn-sm btn-outline-primary d-inline-flex align-items-center gap-1">
+                                <span class="material-icons fs-lg">edit</span> Customize HTML
+                            </a>
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

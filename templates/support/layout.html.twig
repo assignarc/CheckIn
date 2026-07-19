@@ -1,0 +1,75 @@
+{% extends 'home/layout.html.twig' %}
+
+{% block title %}{% block support_title %}Help Center{% endblock %} - CenterTime{% endblock %}
+
+{% block content %}
+<div class="grid-cols-4 gap-8 py-10" style="grid-template-columns: 280px 1fr;">
+    <!-- Sidebar Navigation -->
+    <aside class="d-flex flex-column gap-3">
+        <div class="glass-panel p-4 d-flex flex-column gap-2" style="border-radius: var(--radius-md);">
+            <div class="fs-xs text-uppercase text-muted fw-700 tracking-wider mb-2" style="padding-left: 0.5rem;">Topics</div>
+            <a href="{{ path('app_support_index') }}" class="sidebar-link {% if app.request.attributes.get('_route') == 'app_support_index' %}active{% endif %}" style="text-decoration: none; padding: 0.6rem 0.75rem; border-radius: var(--radius-sm); font-size: 0.875rem;">
+                <span class="material-icons fs-md align-middle mr-2">library_books</span> Overview Guide
+            </a>
+            <a href="{{ path('app_support_kiosk') }}" class="sidebar-link {% if app.request.attributes.get('_route') == 'app_support_kiosk' %}active{% endif %}" style="text-decoration: none; padding: 0.6rem 0.75rem; border-radius: var(--radius-sm); font-size: 0.875rem;">
+                <span class="material-icons fs-md align-middle mr-2">tablet_mac</span> Kiosk Deployment
+            </a>
+            <a href="{{ path('app_support_users') }}" class="sidebar-link {% if app.request.attributes.get('_route') == 'app_support_users' %}active{% endif %}" style="text-decoration: none; padding: 0.6rem 0.75rem; border-radius: var(--radius-sm); font-size: 0.875rem;">
+                <span class="material-icons fs-md align-middle mr-2">people</span> Users &amp; Managers
+            </a>
+            <a href="{{ path('app_support_reports') }}" class="sidebar-link {% if app.request.attributes.get('_route') == 'app_support_reports' %}active{% endif %}" style="text-decoration: none; padding: 0.6rem 0.75rem; border-radius: var(--radius-sm); font-size: 0.875rem;">
+                <span class="material-icons fs-md align-middle mr-2">bar_chart</span> Reports &amp; Filters
+            </a>
+            <a href="{{ path('app_support_audit_settings') }}" class="sidebar-link {% if app.request.attributes.get('_route') == 'app_support_audit_settings' %}active{% endif %}" style="text-decoration: none; padding: 0.6rem 0.75rem; border-radius: var(--radius-sm); font-size: 0.875rem;">
+                <span class="material-icons fs-md align-middle mr-2">history</span> Logs &amp; Settings
+            </a>
+        </div>
+        
+        <div class="glass-panel p-5 d-flex flex-column gap-3 text-center" style="border-radius: var(--radius-md);">
+            <span class="material-icons text-primary fs-3xl">contact_support</span>
+            <div class="fs-sm fw-600">Need direct help?</div>
+            <p class="fs-xs text-secondary m-0">Contact our administrator system support for assistance.</p>
+            <a href="mailto:support@centertime.us" class="btn btn-secondary btn-sm" style="font-size: 0.75rem;">Email Support</a>
+        </div>
+    </aside>
+
+    <!-- Main Support Content -->
+    <article class="glass-panel p-8" style="border-radius: var(--radius-md); min-height: 500px;">
+        {% block support_content %}{% endblock %}
+    </article>
+</div>
+
+<style>
+    /* Support sidebar styling */
+    .sidebar-link {
+        color: var(--text-secondary);
+        display: flex;
+        align-items: center;
+        transition: all 0.2s ease;
+    }
+    .sidebar-link:hover {
+        background: var(--bg-hover);
+        color: var(--text-primary);
+    }
+    .sidebar-link.active {
+        background: var(--primary-glow) !important;
+        color: var(--primary) !important;
+        font-weight: 600;
+    }
+    .support-split-view {
+        display: grid;
+        grid-template-columns: 1fr 280px;
+        gap: 1.5rem;
+        align-items: start;
+    }
+    @media (max-width: 900px) {
+        .grid-cols-4 {
+            grid-template-columns: 1fr !important;
+            gap: 1.5rem !important;
+        }
+        .support-split-view {
+            grid-template-columns: 1fr !important;
+        }
+    }
+</style>
+{% endblock %}

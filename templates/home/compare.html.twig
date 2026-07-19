@@ -1,0 +1,157 @@
+{% extends 'home/layout.html.twig' %}
+
+{% block title %}Compare Plans - CenterTime{% endblock %}
+
+{% block content %}
+<div class="container" style="max-width: 1000px; margin: 2rem auto; padding: 0 1.5rem;">
+    <div class="text-center mb-10">
+        <span class="badge bg-primary-glow text-primary fs-xs fw-700 px-3 py-1.5 mb-3" style="border-radius: 99px; text-transform: uppercase; letter-spacing: 0.05em;">Pricing Matrix</span>
+        <h1 class="fs-4xl fw-800">Detailed <span class="text-gradient">Plan Comparison</span></h1>
+        <p class="text-secondary mt-2 fs-lg max-w-600 mx-auto">Compare features, limits, and capabilities side-by-side to choose the perfect plan for your organization.</p>
+    </div>
+
+    <!-- Features Comparison Table -->
+    <div class="glass-panel p-0 overflow-hidden mb-12" style="border-radius: var(--radius-md); border: 1px solid var(--border-color);">
+        <div class="table-responsive">
+            <table class="table m-0" style="width: 100%; border-collapse: collapse; text-align: left;">
+                <thead>
+                    <tr style="background: rgba(0,0,0,0.15); border-bottom: 1px solid var(--border-color);">
+                        <th class="p-5 fs-md fw-700 text-uppercase tracking-wider text-muted" style="width: 35%;">Core Features</th>
+                        {% for plan in plans %}
+                            <th class="p-5 text-center" style="width: 20%;">
+                                <div class="fs-md fw-800 text-primary text-capitalize">{{ plan.name }}</div>
+                                <div class="fs-xl fw-800 mt-1">
+                                    {% if plan.priceMonthly == 0 %}
+                                        Free
+                                    {% else %}
+                                        ${{ plan.priceMonthly|round }}<span class="fs-xs fw-400 text-secondary">/mo</span>
+                                    {% endif %}
+                                </div>
+                            </th>
+                        {% endfor %}
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- Row 1: Max Users -->
+                    <tr style="border-bottom: 1px solid var(--border-color);">
+                        <td class="p-5 fs-md fw-600 text-primary">Maximum Active Users</td>
+                        {% for plan in plans %}
+                            <td class="p-5 text-center text-secondary fs-md">
+                                {{ plan.maxOrgUsers|number_format }} employees
+                            </td>
+                        {% endfor %}
+                    </tr>
+
+                    <!-- Row 2: Max Managers -->
+                    <tr style="border-bottom: 1px solid var(--border-color);">
+                        <td class="p-5 fs-md fw-600 text-primary">Manager Administrators</td>
+                        {% for plan in plans %}
+                            <td class="p-5 text-center text-secondary fs-md">
+                                {% if plan.maxManagers >= 9999 %}
+                                    <span class="badge bg-success-glow text-success px-2.5 py-1 rounded-sm">Unlimited</span>
+                                {% else %}
+                                    {{ plan.maxManagers }} seats
+                                {% endif %}
+                            </td>
+                        {% endfor %}
+                    </tr>
+
+                    <!-- Row 3: Session Duration Limit -->
+                    <tr style="border-bottom: 1px solid var(--border-color);">
+                        <td class="p-5 fs-md fw-600 text-primary">Max Shift Duration</td>
+                        {% for plan in plans %}
+                            <td class="p-5 text-center text-secondary fs-md">
+                                {{ plan.sessionLimitHours }} hours
+                            </td>
+                        {% endfor %}
+                    </tr>
+
+                    <!-- Row 4: Retention Period -->
+                    <tr style="border-bottom: 1px solid var(--border-color);">
+                        <td class="p-5 fs-md fw-600 text-primary">Data Retention Period</td>
+                        {% for plan in plans %}
+                            <td class="p-5 text-center text-secondary fs-md">
+                                {{ plan.retentionDays }} days
+                            </td>
+                        {% endfor %}
+                    </tr>
+
+                    <!-- Row 5: Kiosk Security Mode -->
+                    <tr style="border-bottom: 1px solid var(--border-color);">
+                        <td class="p-5 fs-md fw-600 text-primary">Kiosk Check-In Mode</td>
+                        {% for plan in plans %}
+                            <td class="p-5 text-center text-secondary fs-md">
+                                {% if plan.name == 'basic' %}
+                                    Open List Select
+                                {% else %}
+                                    Secure PIN Pad Code
+                                {% endif %}
+                            </td>
+                        {% endfor %}
+                    </tr>
+
+                    <!-- Row 6: Barcode Printing & Badge Generation -->
+                    <tr style="border-bottom: 1px solid var(--border-color);">
+                        <td class="p-5 fs-md fw-600 text-primary">Barcode Scan &amp; Badges</td>
+                        {% for plan in plans %}
+                            <td class="p-5 text-center fs-md">
+                                {% if plan.name == 'gold' %}
+                                    <span class="material-icons text-success">check_circle</span>
+                                    <div class="fs-xs text-muted mt-1">Direct PDF printing</div>
+                                {% elseif plan.name == 'silver' %}
+                                    <span class="material-icons text-warning">info</span>
+                                    <div class="fs-xs text-muted mt-1">Manual generation only</div>
+                                {% else %}
+                                    <span class="material-icons text-secondary" style="opacity: 0.4;">cancel</span>
+                                    <div class="fs-xs text-muted mt-1">Not supported</div>
+                                {% endif %}
+                            </td>
+                        {% endfor %}
+                    </tr>
+
+                    <!-- Row 7: Spreadsheet Exports -->
+                    <tr style="border-bottom: 1px solid var(--border-color);">
+                        <td class="p-5 fs-md fw-600 text-primary">Excel/CSV Reports Exports</td>
+                        {% for plan in plans %}
+                            <td class="p-5 text-center fs-md">
+                                {% if plan.exportsEnabled %}
+                                    <span class="material-icons text-success">check_circle</span>
+                                    <div class="fs-xs text-muted mt-1">Enabled</div>
+                                {% else %}
+                                    <span class="material-icons text-secondary" style="opacity: 0.4;">cancel</span>
+                                    <div class="fs-xs text-muted mt-1">Disabled</div>
+                                {% endif %}
+                            </td>
+                        {% endfor %}
+                    </tr>
+
+                    <!-- Row 8: Support Tier -->
+                    <tr>
+                        <td class="p-5 fs-md fw-600 text-primary">Customer Support SLA</td>
+                        {% for plan in plans %}
+                            <td class="p-5 text-center text-secondary fs-md">
+                                {% if plan.name == 'gold' %}
+                                    Priority 24/7 Email &amp; Phone
+                                {% elseif plan.name == 'silver' %}
+                                    Email (24-hour turnaround)
+                                {% else %}
+                                    Community Forums only
+                                {% endif %}
+                            </td>
+                        {% endfor %}
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Help Banner -->
+    <div class="glass-panel p-6 d-flex flex-column sm-flex-row justify-content-between align-items-center gap-4 text-center sm-text-left" style="border-radius: var(--radius-sm); border: 1px solid var(--border-color);">
+        <div>
+            <h4 class="fs-lg fw-700 m-0">Need custom scale or enterprise terms?</h4>
+            <p class="fs-sm text-secondary m-0 mt-1">We offer custom active user volumes, dedicated hosting options, and customized SLAs for large companies.</p>
+        </div>
+        <button type="button" class="btn btn-primary" onclick="window.close();">Close Window</button>
+    </div>
+</div>
+{% endblock %}

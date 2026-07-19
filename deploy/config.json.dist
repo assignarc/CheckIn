@@ -1,0 +1,8 @@
+{
+  "host": "ftp.example.com",
+  "port": 21,
+  "username": "your_ftp_username",
+  "password": "your_ftp_password",
+  "remote_dir": "/",
+  "use_ssl": true
+}

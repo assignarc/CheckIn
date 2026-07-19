@@ -1,5 +1,5 @@
 
-# TimeFlow - Multi-Tenant Time Tracking Platform
+# CenterTime - Multi-Tenant Time Tracking Platform
 
 ## Product Requirement Document (PRD)
 
@@ -7,7 +7,7 @@
 
 ## 1. Executive Summary & TL;DR
 
-TimeFlow is a secure, web-first, multi-tenant check-in/checkout and time-tracking platform designed for organizations ranging from small local businesses to large enterprises. The system allows organizations (tenants) to manage employee attendance, track categorized work hours, configure automated attendance policies (session limits, overtime, check-in windows), and generate detailed exportable reports.
+CenterTime is a secure, web-first, multi-tenant check-in/checkout and time-tracking platform designed for organizations ranging from small local businesses to large enterprises. The system allows organizations (tenants) to manage employee attendance, track categorized work hours, configure automated attendance policies (session limits, overtime, check-in windows), and generate detailed exportable reports.
 
 Built with **PHP 8.5** and **Symfony 8.1**, the platform focuses on high performance, tight data separation, and scalability. It features an interactive Kiosk interface for physical workspace tablet check-ins, a spreadsheet-driven user onboarding wizard, a self-service Stripe billing simulator, and a comprehensive platform-wide administrator control console.
 
@@ -139,3 +139,27 @@ Exposed three new settings parameters in the administrative console:
 - `session_sweep_throttle_seconds` (integer): Regulates execution frequency of background database sweeps.
 - `demo_reset_history_days` (integer): Determines length of generated employee history.
 - `audit_log_archive_dir` (string): Specifies file storage paths for zipped database logs.
+
+### 6.7 Organization Archiving & Restriction Control
+- **Dunning Flow**: Stripe webhook failures set `isSubscriptionActive` to `false`. Once their paid monthly period ends, the cron sweeper toggles `isArchived` to `true` and writes a `ORGANIZATION_AUTO_ARCHIVED_PAYMENT_FAILED` audit log.
+- **Access Blocks**: Kiosks and scanner actions are completely disabled, displaying a clear archive message. Managers attempting non-billing actions are redirected back to the billing overview with a red warning notification banner. CSV importing is strictly rejected.
+
+### 6.8 Administrative Data ZIP Export Backups
+- **Cascading Deletions**: Administrators can hard delete delinquent tenants. Before doing so, the system queries and serializes all organizational entities (Managers, Users, Categories, Sessions, Audit logs, Payments) into JSON, saves it as a compressed ZIP under `var/archives/`, and performs cascading database removals.
+
+### 6.9 Dynamic Audit Log Retention Schedule
+- **Schedule Configuration**: Administrators can customize the database retention cleanups via settings, selecting first-of-month, last-of-month, weekly (Sunday/Monday), or daily execution bounds. The cron evaluator matches settings before executing `AuditArchiveService::archiveLogs()`.
+
+### 6.10 Technical Archiving & Deletion Lifecycle Workflow
+```mermaid
+graph TD
+    A[Stripe invoice.payment_failed] -->|Sets subscription active = false| B[Organization In Dunning]
+    B -->|Paid Month Period Expires| C[Cron Sweep Archiver]
+    C -->|Toggles isArchived = true| D[Archived Organization]
+    D -->|Kiosk Actions Blocked| E[Kiosk Displays Archive Page]
+    D -->|Manager Restricted| F[Redirects back to Billing overview]
+    D -->|Manager Alerted| G[Banner: Update Billing Info]
+    H[Platform Admin] -->|Unarchive Toggle| D
+    H -->|Hard Delete Organization| I[Backup JSON Export & ZIP generated]
+    I -->|Cascade Deletions| J[Clean DB Removal]
+```

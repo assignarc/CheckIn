@@ -1,6 +1,6 @@
 {% extends 'manager/layout.html.twig' %}
 
-{% block title %}Dashboard - TimeFlow{% endblock %}
+{% block title %}Dashboard - CenterTime{% endblock %}
 {% block header_title %}Organization Dashboard{% endblock %}
 
 {% block manager_content %}
@@ -161,14 +161,21 @@
                                     {% set shouldTerminate = true %}
                                 {% endif %}
 
-                                <span class="badge badge-success ticking-timer" 
-                                      data-started="{{ session.startedAt|date('c') }}" 
-                                      data-max-duration="{{ maxDurationSeconds }}"
-                                      data-terminate="{{ shouldTerminate ? 'true' : 'false' }}" class="fs-sm d-inline-flex align-items-center gap-1 p-0 tracking-wide" style="font-family: monospace; ; .35rem 0.6rem; ; text-transform: none" 
-                                      title="Active Session">
-                                    <span class="ticking-dot"></span>
-                                    <span class="timer-text">00:00:00</span>
-                                </span>
+                                <div class="d-flex align-items-center gap-2">
+                                    <span class="badge badge-success ticking-timer d-inline-flex align-items-center gap-1 font-mono fs-sm" 
+                                          data-started="{{ session.startedAt|date('c') }}" 
+                                          data-max-duration="{{ maxDurationSeconds }}"
+                                          data-terminate="{{ shouldTerminate ? 'true' : 'false' }}"
+                                          title="Active Session">
+                                        <span class="ticking-dot"></span>
+                                        <span class="timer-text">00:00:00</span>
+                                    </span>
+                                    <form action="{{ path('app_manager_reports_force_end', {id: session.id}) }}" method="post" class="m-0 confirm-form" data-confirm="Are you sure you want to end this worker session?">
+                                        <button type="submit" class="btn-action-trigger" title="Force Check Out">
+                                            <span class="material-icons fs-sm m-0">logout</span>
+                                        </button>
+                                    </form>
+                                </div>
                             {% endif %}
                         </td>
                         <td>

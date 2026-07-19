@@ -1,0 +1,73 @@
+{% extends 'support/layout.html.twig' %}
+
+{% block support_title %}Users &amp; Managers Help Guide{% endblock %}
+
+{% block support_content %}
+<h2 class="fs-2xl fw-800 text-white mb-2">Users &amp; Managers Help Guide</h2>
+<p class="fs-md text-secondary mb-6 lh-relaxed">
+    This section covers employee directory configuration, user profile editing, manager seat definitions, security lockouts, and the CSV spreadsheet import wizard.
+</p>
+
+<div class="support-split-view mb-8">
+    <div>
+        <h3 class="fs-lg fw-700 text-white mb-3">1. Roster Management &amp; Filters</h3>
+        <p class="fs-sm text-secondary mb-4 lh-relaxed">
+            The employee directory lists all active and inactive staff members authorized to use the kiosk.
+        </p>
+        <ul class="fs-sm text-secondary d-flex flex-column gap-2 pl-5 lh-relaxed mb-4">
+            <li><strong>Quick Search:</strong> Filter the user list by first name, last name, phone number, or email. The search is case-insensitive.</li>
+            <li><strong>Employee Status:</strong> Users can be toggled between <strong>Active</strong> (can check in/out) and <strong>Inactive</strong> (blocked from the kiosk).</li>
+            <li><strong>PIN Reset:</strong> Managers can trigger a secure, random PIN generation or manually set a specific 4-digit PIN for any user.</li>
+        </ul>
+    </div>
+    <div class="glass-panel p-2 d-flex flex-column align-items-center" style="border-radius: var(--radius-sm); border: 1px solid rgba(255,255,255,0.08); background: rgba(0,0,0,0.2);">
+        <img src="{{ asset('img/support/users.png') }}" alt="Users List View" style="width: 100%; border-radius: var(--radius-xs); height: auto; box-shadow: var(--shadow-md);">
+        <span class="fs-xs text-muted mt-2 text-center">Roster Management View</span>
+    </div>
+</div>
+
+<hr class="my-6" style="border: 0; border-top: 1px solid rgba(255,255,255,0.08)">
+
+<h3 class="fs-lg fw-700 text-white mb-3">2. Manager Roles &amp; Authorization</h3>
+<p class="fs-sm text-secondary mb-4 lh-relaxed">
+    You can delegate administration duties by creating additional manager profiles. There are two roles available:
+</p>
+<div class="d-flex flex-column gap-4 mb-6">
+    <div class="p-4 rounded-sm bg-input border" style="border-left: 4px solid var(--primary) !important;">
+        <h4 class="fs-md fw-600 text-white mb-1">Full Administrator</h4>
+        <p class="fs-sm text-secondary m-0 lh-relaxed">
+            Has full access to the manager panel, including settings, billing/subscriptions, category editing, and adding/removing other managers.
+        </p>
+    </div>
+    <div class="p-4 rounded-sm bg-input border" style="border-left: 4px solid var(--info) !important;">
+        <h4 class="fs-md fw-600 text-white mb-1">Supervisor</h4>
+        <p class="fs-sm text-secondary m-0 lh-relaxed">
+            Can view dashboards, look up user lists, clock out active users, and download reports. They are blocked from modifying organization settings, changing billing plans, or altering category parameters.
+        </p>
+    </div>
+</div>
+
+<hr class="my-6" style="border: 0; border-top: 1px solid rgba(255,255,255,0.08)">
+
+<h3 class="fs-lg fw-700 text-white mb-3">3. Managing PIN Lockouts</h3>
+<p class="fs-sm text-secondary mb-4 lh-relaxed">
+    If an employee inputs an incorrect PIN code three consecutive times on the kiosk keypad, the system automatically blocks their account to prevent brute-force attacks.
+</p>
+<ul class="fs-sm text-secondary d-flex flex-column gap-2 pl-5 lh-relaxed mb-6">
+    <li><strong>Visual Indicator:</strong> The status column next to the employee will show a red <strong>Blocked (PIN Lockout)</strong> status.</li>
+    <li><strong>Unlocking:</strong> Click the user options in the directory, and select <strong>Unlock Account</strong>. This resets their failed attempt counter, returning them to active status.</li>
+</ul>
+
+<hr class="my-6" style="border: 0; border-top: 1px solid rgba(255,255,255,0.08)">
+
+<h3 class="fs-lg fw-700 text-white mb-3">4. The CSV Import Wizard</h3>
+<p class="fs-sm text-secondary mb-4 lh-relaxed">
+    Instead of entering employees manually, you can upload your entire company roster in bulk using a CSV spreadsheet:
+</p>
+<ol class="fs-sm text-secondary d-flex flex-column gap-3 pl-5 lh-relaxed">
+    <li><strong>Upload file:</strong> Navigate to <em>Users &gt; Import CSV</em> and upload your `.csv` file.</li>
+    <li><strong>Column Mapping:</strong> Map your spreadsheet columns (e.g. `phone_num` or `first`) to CenterTime's standard fields. You do not need to alter your file's header names beforehand.</li>
+    <li><strong>Duplicate Resolution &amp; Fuzzy Matching:</strong> The wizard checks names, phone numbers, and email addresses against your existing database. If duplicates are detected, you will be prompted to overwrite the existing record, ignore/skip the duplicate, or force-add as a new user.</li>
+    <li><strong>License Quota Check:</strong> The system validates the import size against your active subscription plan. If you import more users than your plan's user quota, excess users are set to pending until your subscription is upgraded.</li>
+</ol>
+{% endblock %}

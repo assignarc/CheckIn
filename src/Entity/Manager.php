@@ -51,6 +51,9 @@ class Manager implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\Column(type: "datetime_immutable")]
     private \DateTimeImmutable $updatedAt;
 
+    #[ORM\Column(type: "datetime_immutable", nullable: true)]
+    private ?\DateTimeImmutable $acceptedPoliciesAt = null;
+
     public function __construct()
     {
         $this->createdAt = new \DateTimeImmutable();
@@ -193,6 +196,17 @@ class Manager implements UserInterface, PasswordAuthenticatedUserInterface
     public function setPhone(?string $phone): self
     {
         $this->phone = $phone;
+        return $this;
+    }
+
+    public function getAcceptedPoliciesAt(): ?\DateTimeImmutable
+    {
+        return $this->acceptedPoliciesAt;
+    }
+
+    public function setAcceptedPoliciesAt(?\DateTimeImmutable $acceptedPoliciesAt): self
+    {
+        $this->acceptedPoliciesAt = $acceptedPoliciesAt;
         return $this;
     }
 }

@@ -1,0 +1,29 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}An Error Occurred - CenterTime{% endblock %}
+
+{% block body %}
+<div class="d-flex flex-column align-items-center justify-content-center text-center p-8" style="min-height: 100vh; background: var(--bg-main);">
+    <div class="glass-panel p-10 max-w-500 d-flex flex-column align-items-center gap-6" style="box-shadow: var(--shadow-xl); border: 1px solid rgba(239, 68, 68, 0.2); margin: auto;">
+        <div class="avatar bg-danger-glow rounded-full d-flex align-items-center justify-content-center" style="width: 80px; height: 80px; color: var(--danger); background: var(--danger-glow);">
+            <span class="material-icons" style="font-size: 3rem; display: flex; align-items: center; justify-content: center;">error_outline</span>
+        </div>
+        
+        <div>
+            <h1 class="fs-3xl fw-800 text-white mb-2">Something Went Wrong</h1>
+            <p class="fs-md text-secondary lh-relaxed">
+                An unexpected error occurred while processing your request. Please try again later or contact support if the issue persists.
+            </p>
+        </div>
+
+        <div class="d-flex gap-4">
+            <a href="{{ path('app_home') }}" class="btn btn-primary fs-sm" style="text-decoration: none;">
+                Return Home
+            </a>
+            <button onclick="window.history.back()" class="btn btn-secondary fs-sm">
+                Go Back
+            </button>
+        </div>
+    </div>
+</div>
+{% endblock %}

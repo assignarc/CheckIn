@@ -1,0 +1,144 @@
+{% extends 'base.html.twig' %}
+
+{% block body %}
+<header class="dashboard-header" style="z-index: 100;">
+    <a href="{{ path('app_home') }}" class="d-flex align-items-center gap-2" style="text-decoration: none; color: inherit;">
+        <img src="{{ asset('img/logo.png') }}?v=1.0.4" alt="CenterTime Logo" style="height: 44px; width: 44px; object-fit: contain;">
+        <h1 class="fs-2xl fw-800 m-0" style="letter-spacing: -0.02em; padding-left: 4px;">CenterTime</h1>
+    </a>
+    <div class="d-flex align-items-center gap-4">
+        <div class="theme-selector">
+            <button type="button" class="theme-option" data-value="light" onclick="setTheme('light')" title="Light Mode">
+                <span class="material-icons">light_mode</span>
+            </button>
+            <button type="button" class="theme-option" data-value="dark" onclick="setTheme('dark')" title="Dark Mode">
+                <span class="material-icons">dark_mode</span>
+            </button>
+            <button type="button" class="theme-option" data-value="system" onclick="setTheme('system')" title="System Theme">
+                <span class="material-icons">settings_brightness</span>
+            </button>
+        </div>
+        {% if app.user %}
+            <div class="header-actions-menu" id="headerActionsMenu">
+                <button type="button" class="header-actions-toggle" id="headerActionsToggle" onclick="toggleHeaderMenu()" aria-label="User menu">
+                    <div class="user-avatar fs-xs icon-28">
+                        {% if is_granted('ROLE_SYSTEM_ADMIN') %}
+                            AD
+                        {% else %}
+                            {{ app.user.firstName|slice(0, 1) }}{{ app.user.lastName|slice(0, 1) }}
+                        {% endif %}
+                    </div>
+                    <span class="material-icons fs-md">expand_more</span>
+                </button>
+
+                <div class="header-actions-dropdown" id="headerActionsDropdown">
+                    <!-- User Info -->
+                    <div class="header-dropdown-section">
+                        <div class="d-flex align-items-center gap-3 p-4">
+                            <div class="user-avatar fs-xs icon-36">
+                                {% if is_granted('ROLE_SYSTEM_ADMIN') %}
+                                    AD
+                                {% else %}
+                                    {{ app.user.firstName|slice(0, 1) }}{{ app.user.lastName|slice(0, 1) }}
+                                {% endif %}
+                            </div>
+                            <div class="lh-sm">
+                                <div class="fw-600 fs-sm" style="color: var(--text-primary);">{{ app.user.firstName }} {{ app.user.lastName }}</div>
+                                <div class="fs-xs text-muted">
+                                    {% if is_granted('ROLE_SYSTEM_ADMIN') %}
+                                        Platform Admin
+                                    {% else %}
+                                        {{ app.user.organization.name }}
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {% if is_granted('ROLE_SYSTEM_ADMIN') %}
+                        <!-- Admin Action Links -->
+                        <div class="header-dropdown-section">
+                            <a href="{{ path('app_admin_dashboard') }}" class="header-dropdown-item">
+                                <span class="material-icons fs-lg text-primary">analytics</span>
+                                <span>Dashboard</span>
+                            </a>
+                            <a href="{{ path('app_admin_profile') }}" class="header-dropdown-item">
+                                <span class="material-icons fs-lg text-muted">account_circle</span>
+                                <span>Profile</span>
+                            </a>
+                            <a href="{{ path('app_logout') }}" class="header-dropdown-item text-danger" data-turbo="false">
+                                <span class="material-icons fs-lg">logout</span>
+                                <span>Sign Out</span>
+                            </a>
+                        </div>
+                    {% else %}
+                        <!-- Manager Status Badges -->
+                        <div class="header-dropdown-section d-flex align-items-center gap-2 p-3">
+                            <span class="badge {% if app.user.organization.plan.name == 'gold' %}badge-success{% elseif app.user.organization.plan.name == 'silver' %}badge-info{% else %}badge-warning{% endif %}">
+                                {{ app.user.organization.plan.name|capitalize }} Plan
+                            </span>
+                            {% if not app.user.organization.isSubscriptionActive %}
+                                <span class="badge badge-danger">Payment Overdue</span>
+                            {% endif %}
+                        </div>
+
+                        <!-- Manager Action Links -->
+                        <div class="header-dropdown-section">
+                            <a href="{{ path('app_manager_dashboard') }}" class="header-dropdown-item">
+                                <span class="material-icons fs-lg text-primary">dashboard</span>
+                                <span>Dashboard</span>
+                            </a>
+                            <a href="/org/{{ app.user.organization.slug }}/kiosk/{{ app.user.organization.checkInLinkToken }}" target="_blank" class="header-dropdown-item">
+                                <span class="material-icons fs-lg text-primary">tablet_mac</span>
+                                <span>Launch Kiosk</span>
+                            </a>
+                            <a href="{{ path('app_manager_settings') }}" class="header-dropdown-item">
+                                <span class="material-icons fs-lg text-muted">settings</span>
+                                <span>Settings</span>
+                            </a>
+                            <a href="{{ path('app_logout') }}" class="header-dropdown-item text-danger" data-turbo="false">
+                                <span class="material-icons fs-lg">logout</span>
+                                <span>Sign Out</span>
+                            </a>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        {% else %}
+            <a href="{{ path('app_login') }}" class="btn btn-secondary fs-sm" >Login</a>
+            {% if new_signups_enabled is defined and new_signups_enabled %}
+                <a href="{{ path('app_signup') }}" class="btn btn-primary fs-sm" >Start Free Trial</a>
+            {% else %}
+                <button class="btn btn-primary fs-sm" disabled style="opacity: 0.6; cursor: not-allowed;">Signups Closed</button>
+            {% endif %}
+        {% endif %}
+    </div>
+</header>
+
+<main class="app-container d-flex flex-column home-main-container">
+    {% block content %}{% endblock %}
+</main>
+
+<footer class="fs-sm text-center text-muted mt-auto p-8 border-t">
+    <div class="app-container">
+        <p>&copy; 2026 CenterTime. Powered by PHP Symfony and MySQL. All rights reserved.</p>
+    </div>
+</footer>
+
+<script>
+    function toggleHeaderMenu() {
+        const dropdown = document.getElementById('headerActionsDropdown');
+        if (dropdown) {
+            dropdown.classList.toggle('open');
+        }
+    }
+
+    document.addEventListener('click', function(e) {
+        const menu = document.getElementById('headerActionsMenu');
+        const dropdown = document.getElementById('headerActionsDropdown');
+        if (dropdown && dropdown.classList.contains('open') && (!menu || !menu.contains(e.target))) {
+            dropdown.classList.remove('open');
+        }
+    });
+</script>
+{% endblock %}

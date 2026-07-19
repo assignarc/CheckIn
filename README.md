@@ -1,13 +1,13 @@
-# TimeFlow - Multi-Tenant Time Tracking Platform
+# CenterTime - Multi-Tenant Time Tracking Platform
 ## Comprehensive Technical System Architecture, Low-Level Design (LLD), & Developer Guide
 
-Welcome to the **TimeFlow** technical documentation. This document is designed to guide senior architects and junior developers alike through the entire platform's architecture, design decisions, database models, and critical workflows.
+Welcome to the **CenterTime** technical documentation. This document is designed to guide senior architects and junior developers alike through the entire platform's architecture, design decisions, database models, and critical workflows.
 
 ---
 
 ## 1. High-Level System Architecture
 
-TimeFlow is built on the **Symfony 8.1** framework using a multi-tenant architecture with logical data isolation. All tenants (organizations) share the same application instance and database schema, but their data scopes are strictly isolated at the query level using organization foreign keys.
+CenterTime is built on the **Symfony 8.1** framework using a multi-tenant architecture with logical data isolation. All tenants (organizations) share the same application instance and database schema, but their data scopes are strictly isolated at the query level using organization foreign keys.
 
 ### 1.1 Conceptual Architecture Diagram
 The diagram below illustrates how client devices interact with the frontend, controllers, core services, and the database layer.
@@ -250,6 +250,12 @@ The platform includes two automated setup workflows for first-time installation 
    ```
    *Runs database initialization, migrations, and seeds parameters in one command.*
 
+3. **Composer seed reset script**:
+   ```bash
+   composer seed-reset
+   ```
+   *Clears and recreates seed data (plans, platform admin, configurations, and default/demo organizations) while keeping other user-created database entries untouched.*
+
 ### 5.3 Manual Setup
 If you prefer running commands manually:
 ```bash
@@ -265,8 +271,25 @@ php bin/console doctrine:migrations:migrate --no-interaction
 # Seed data & configurations
 php bin/console app:seed-data
 
+# Clean and recreate seed data only
+php bin/console app:seed-reset
+
 # Start local server
 php -S localhost:8000 -t public_html
+```
+
+### 5.4 Running Tests
+The test suite utilizes PHPUnit. You can run all test cases with:
+
+```bash
+# 1. Prepare and seed the test environment database
+php bin/console --env=test app:seed-data
+
+# 2. Run all tests
+php bin/phpunit
+
+# Or run a specific test suite
+php bin/phpunit tests/Controller/SupportControllerTest.php
 ```
 
 ---
@@ -304,3 +327,16 @@ The following parameters are now stored dynamically in the `app_config` database
 - `session_sweep_throttle_seconds` (integer, default `60`): Configures the frequency lock of request-triggered database sweeps.
 - `demo_reset_history_days` (integer, default `150`): Controls how many days of historical employee sessions are seeded during a demo reset.
 - `audit_log_archive_dir` (string, default `/var/log/audit_archives`): Sets the directory where zipped database logs are archived.
+
+### 6.7 Automated Dunning & Organization Archiving Flow
+- **Dunning Transition**: When Stripe payments fail, the webhook disables the organization's subscription active status. Once the paid month transitions to the past, the background cron sweeper archives the organization.
+- **Kiosk & Manager Access Restrictions**: Archived organizations block employee check-in keypad operations and card scanner calls. Managers are barred from editing users or importing rosters and are redirected to the billing tab with an advisory warning alert.
+
+### 6.8 Administrative Data Backup & Cascade Purging
+- **Hard Deletes**: Administrators can completely wipe organizations. Before executing the destructive cascade delete on the database, the system compiles a complete schema-wide backup (containing managers, users, categories, payment histories, session logs, and audit logs) into a serialized JSON file packaged inside a compressed ZIP archive under `var/archives/`.
+
+### 6.9 Configurable Log Retention Schedules
+- **Retention Dropdown**: Administrators can customize the database retention cleanups via settings, selecting daily, weekly, or monthly boundaries. The background cron matching checks the active settings on every run before calling the archive service.
+
+### 6.10 Noisy Empty Cron Log Pruning
+- **Log Noise Pruning**: The background cron execution generates a success log on every run. To prevent database bloating, the cron scheduler automatically prunes all `SYSTEM_CRON_EXECUTION` audit logs older than **2 hours** that didn't sweep any forgotten sessions, rotate credentials, archive tables, or change organization dunning state.

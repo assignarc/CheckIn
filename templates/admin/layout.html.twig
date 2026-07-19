@@ -4,9 +4,9 @@
 <div class="dashboard-layout">
     <!-- Admin Sidebar -->
     <aside class="sidebar" id="sidebar" style="border-right: 1px solid var(--sidebar-border);">
-        <a href="{{ path('app_home') }}" class="sidebar-logo text-decoration-none text-inherit">
-            <span class="material-icons text-purple-500">admin_panel_settings</span>
-            <span>TimeFlow</span>
+        <a href="{{ path('app_home') }}" class="sidebar-logo text-decoration-none text-inherit" style="display: flex; align-items: center; gap: 8px;">
+            <img src="{{ asset('img/logo.png') }}?v=1.0.4" alt="CenterTime Logo" style="height: 40px; width: 40px; object-fit: contain;">
+            <span>CenterTime</span>
         </a>
         
         <nav class="sidebar-nav">
@@ -22,10 +22,12 @@
             <a href="{{ path('app_admin_plans') }}" class="sidebar-link {% if app.request.attributes.get('_route') == 'app_admin_plans' %}active{% endif %}" data-tooltip="Subscription Plans">
                 <span class="material-icons">card_membership</span> <span>Subscription Plans</span>
             </a>
-            <a href="{{ path('app_admin_audit_logs') }}" class="sidebar-link {% if app.request.attributes.get('_route') == 'app_admin_audit_logs' %}active{% endif %}" data-tooltip="Audit Logs">
-                <span class="material-icons">history</span> <span>Audit Logs</span>
+            <a href="{{ path('app_admin_billing') }}" class="sidebar-link {% if app.request.attributes.get('_route') == 'app_admin_billing' %}active{% endif %}" data-tooltip="Billing & Revenue">
+                <span class="material-icons">payments</span> <span>Billing & Revenue</span>
             </a>
-            
+            <a href="{{ path('app_admin_emails') }}" class="sidebar-link {% if app.request.attributes.get('_route') == 'app_admin_emails' or app.request.attributes.get('_route') == 'app_admin_email_edit' %}active{% endif %}" data-tooltip="Email Templates">
+                <span class="material-icons">email</span> <span>Email Templates</span>
+            </a>
             <a href="{{ path('app_admin_scheduled_jobs') }}" class="sidebar-link {% if app.request.attributes.get('_route') == 'app_admin_scheduled_jobs' %}active{% endif %}" data-tooltip="Scheduled Jobs">
                 <span class="material-icons">schedule</span> <span>Scheduled Jobs</span>
             </a>
@@ -99,11 +101,19 @@
 
                     <!-- Action Links -->
                     <div class="header-dropdown-section">
+                        <a href="{{ path('app_admin_dashboard') }}" class="header-dropdown-item">
+                            <span class="material-icons fs-lg text-primary">analytics</span>
+                            <span>Dashboard</span>
+                        </a>
+                        <a href="{{ path('app_support_index') }}" target="_blank" class="header-dropdown-item">
+                            <span class="material-icons fs-lg text-info">help</span>
+                            <span>Help Center</span>
+                        </a>
                         <a href="{{ path('app_admin_profile') }}" class="header-dropdown-item">
                             <span class="material-icons fs-lg text-muted">account_circle</span>
                             <span>Profile</span>
                         </a>
-                        <a href="{{ path('app_logout') }}" class="header-dropdown-item text-danger">
+                        <a href="{{ path('app_logout') }}" class="header-dropdown-item text-danger" data-turbo="false">
                             <span class="material-icons fs-lg">logout</span>
                             <span>Sign Out</span>
                         </a>

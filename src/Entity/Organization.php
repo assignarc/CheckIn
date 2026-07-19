@@ -58,6 +58,9 @@ class Organization
     #[ORM\Column(type: "boolean")]
     private bool $isSubscriptionActive = true;
 
+    #[ORM\Column(type: "boolean", options: ["default" => false])]
+    private bool $isArchived = false;
+
     #[ORM\Column(type: "boolean", options: ["default" => true])]
     private bool $maskLastName = true;
 
@@ -92,6 +95,15 @@ class Organization
     #[ORM\Column(type: "boolean", options: ["default" => true])]
     private bool $kioskTokenAutoRotate = true;
 
+    #[ORM\Column(type: "string", length: 255, nullable: true)]
+    private ?string $semiPermanentKioskToken = null;
+
+    #[ORM\Column(type: "string", length: 255, nullable: true)]
+    private ?string $stripeCustomerId = null;
+
+    #[ORM\Column(type: "string", length: 255, nullable: true)]
+    private ?string $stripeSubscriptionId = null;
+
     #[ORM\Column(type: "datetime_immutable")]
     private \DateTimeImmutable $createdAt;
 
@@ -103,7 +115,41 @@ class Organization
         $this->createdAt = new \DateTimeImmutable();
         $this->updatedAt = new \DateTimeImmutable();
         $this->checkInLinkToken = bin2hex(random_bytes(16));
+        $this->semiPermanentKioskToken = bin2hex(random_bytes(16));
         $this->kioskTokenAutoRotate = true;
+    }
+
+    public function getSemiPermanentKioskToken(): ?string
+    {
+        return $this->semiPermanentKioskToken;
+    }
+
+    public function setSemiPermanentKioskToken(?string $semiPermanentKioskToken): self
+    {
+        $this->semiPermanentKioskToken = $semiPermanentKioskToken;
+        return $this;
+    }
+
+    public function getStripeCustomerId(): ?string
+    {
+        return $this->stripeCustomerId;
+    }
+
+    public function setStripeCustomerId(?string $stripeCustomerId): self
+    {
+        $this->stripeCustomerId = $stripeCustomerId;
+        return $this;
+    }
+
+    public function getStripeSubscriptionId(): ?string
+    {
+        return $this->stripeSubscriptionId;
+    }
+
+    public function setStripeSubscriptionId(?string $stripeSubscriptionId): self
+    {
+        $this->stripeSubscriptionId = $stripeSubscriptionId;
+        return $this;
     }
 
     public function getId(): ?int
@@ -265,6 +311,17 @@ class Organization
         return $this;
     }
 
+    public function isArchived(): bool
+    {
+        return $this->isArchived;
+    }
+
+    public function setIsArchived(bool $isArchived): self
+    {
+        $this->isArchived = $isArchived;
+        return $this;
+    }
+
     // Resolvers (Fallback Logic)
     public function getMaxOrgUsers(): int
     {
@@ -299,6 +356,16 @@ class Organization
     public function isExportsEnabled(): bool
     {
         return $this->exportsEnabledOverride !== null ? $this->exportsEnabledOverride : $this->plan->isExportsEnabled();
+    }
+
+    public function isBarcodeEnabled(): bool
+    {
+        return $this->plan->hasBarcodeFeatures();
+    }
+
+    public function isClickListEnabled(): bool
+    {
+        return $this->plan->hasClickList();
     }
 
     // Getters / Setters for Overrides

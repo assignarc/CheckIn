@@ -46,6 +46,12 @@ class Plan
     #[ORM\Column(type: "boolean", options: ["default" => false])]
     private bool $hasOvertimeRules = false;
 
+    #[ORM\Column(type: "boolean", options: ["default" => false])]
+    private bool $hasBarcodeFeatures = false;
+
+    #[ORM\Column(type: "boolean", options: ["default" => true])]
+    private bool $hasClickList = true;
+
     #[ORM\Column(type: "decimal", precision: 10, scale: 2)]
     private string $priceMonthly;
 
@@ -197,6 +203,28 @@ class Plan
     public function setHasOvertimeRules(bool $hasOvertimeRules): self
     {
         $this->hasOvertimeRules = $hasOvertimeRules;
+        return $this;
+    }
+
+    public function hasBarcodeFeatures(): bool
+    {
+        return $this->hasBarcodeFeatures;
+    }
+
+    public function setHasBarcodeFeatures(bool $hasBarcodeFeatures): self
+    {
+        $this->hasBarcodeFeatures = $hasBarcodeFeatures;
+        return $this;
+    }
+
+    public function hasClickList(): bool
+    {
+        return $this->hasClickList;
+    }
+
+    public function setHasClickList(bool $hasClickList): self
+    {
+        $this->hasClickList = $hasClickList;
         return $this;
     }
 }

@@ -1,6 +1,6 @@
 {% extends 'manager/layout.html.twig' %}
 
-{% block title %}Billing & Subscription - TimeFlow{% endblock %}
+{% block title %}Billing & Subscription - CenterTime{% endblock %}
 {% block header_title %}Billing & Subscription Management{% endblock %}
 
 {% block manager_content %}
@@ -14,14 +14,27 @@
             <div class="d-flex justify-content-between mb-6" style="align-items:flex-start">
                 <div>
                     <h3 class="fs-xl m-0">Subscription Overview</h3>
-                    <p class="fs-sm text-secondary mt-1">Stripe reference ID: <code>cus_StripeMockTenant_{{ org.id }}</code></p>
+                    <p class="fs-sm text-secondary mt-1">
+                        {% if org.stripeCustomerId %}
+                            Stripe reference ID: <code>{{ org.stripeCustomerId }}</code>
+                        {% else %}
+                            Stripe reference ID: <code>cus_StripeMockTenant_{{ org.id }}</code>
+                        {% endif %}
+                    </p>
                 </div>
-                <span class="badge {% if org.plan.name == 'gold' %}badge-success{% elseif 'silver' %}badge-info{% else %}badge-warning{% endif %} fs-sm px-3 py-1 align-self-start mt-1">
-                    {{ org.plan.name|upper }} Plan
-                </span>
+                <div class="d-flex flex-column align-items-end gap-2">
+                    <span class="badge {% if org.plan.name == 'gold' %}badge-success{% elseif org.plan.name == 'silver' %}badge-info{% else %}badge-warning{% endif %} fs-sm px-3 py-1 mt-1">
+                        {{ org.plan.name|upper }} Plan
+                    </span>
+                    {% if org.stripeCustomerId %}
+                        <a href="{{ path('app_stripe_portal') }}" class="btn btn-xs btn-outline-primary d-flex align-items-center gap-1">
+                            <span class="material-icons" style="font-size:12px">open_in_new</span> Stripe Billing Portal
+                        </a>
+                    {% endif %}
+                </div>
             </div>
 
-            <div class="grid-cols-2 gap-6 mb-8 pt-6 border-t">
+            <div class="grid-cols-3 gap-6 mb-8 pt-6 border-t">
                 <div>
                     <div class="fs-sm text-uppercase text-muted">Subscription Status</div>
                     <div class="fs-lg fw-700 d-flex align-items-center gap-1 mt-1">
@@ -30,40 +43,50 @@
                             <span class="text-success">Active & Paid</span>
                         {% else %}
                             <span class="material-icons fs-xl text-danger">error</span>
-                            <span class="text-danger">Suspended (Payment Failed)</span>
+                            <span class="text-danger">Suspended</span>
                         {% endif %}
                     </div>
                 </div>
                 <div>
                     <div class="fs-sm text-uppercase text-muted">Next Invoice Date</div>
                     <div class="fs-lg fw-700 text-white mt-1">
-                        {{"now"|date_modify("+1 month")|date("M d, Y") }}
+                        {% if payments|length > 0 %}
+                            {{ payments[0].periodEnd|date("M d, Y") }}
+                        {% else %}
+                            --
+                        {% endif %}
+                    </div>
+                </div>
+                <div>
+                    <div class="fs-sm text-uppercase text-muted">Upcoming Bill</div>
+                    <div class="fs-lg fw-700 text-purple-300 mt-1">
+                        {% if org.plan.name != 'basic' %}
+                            ${{ org.plan.priceMonthly|round }}
+                        {% else %}
+                            $0 (Free Plan)
+                        {% endif %}
                     </div>
                 </div>
             </div>
 
-            <!-- Simulated Upgrade/Downgrade Actions -->
+            <!-- Subscription Actions -->
             <div class="d-grid gap-4" style="grid-template-columns: repeat(3, 1fr)">
                 {% for p in plans %}
-                    <form method="post" class="w-100">
-                        <input type="hidden" name="plan" value="{{ p.name }}">
-                        {% if p.name == 'basic' %}
+                    {% if p.name == 'basic' %}
+                        <form method="post" class="w-100">
+                            <input type="hidden" name="plan" value="basic">
                             <input type="hidden" name="billing_action" value="downgrade">
                             <button type="submit" class="btn btn-secondary btn-sm w-100" {% if org.plan.name == 'basic' %}disabled{% endif %}>
                                 Downgrade to Basic (Free)
                             </button>
-                        {% elseif p.name == 'silver' %}
-                            <input type="hidden" name="billing_action" value="upgrade">
-                            <button type="submit" class="btn btn-primary btn-sm w-100" style="background: #4f46e5; border-color: #4f46e5" {% if org.plan.name == 'silver' %}disabled{% endif %}>
-                                Upgrade to Silver (${{ p.priceMonthly|round }}/mo)
-                            </button>
-                        {% elseif p.name == 'gold' %}
-                            <input type="hidden" name="billing_action" value="upgrade">
-                            <button type="submit" class="btn btn-success btn-sm w-100" {% if org.plan.name == 'gold' %}disabled{% endif %}>
-                                Upgrade to Gold (${{ p.priceMonthly|round }}/mo)
-                            </button>
-                        {% endif %}
-                    </form>
+                        </form>
+                    {% else %}
+                        <a href="{{ path('app_stripe_checkout', {planName: p.name}) }}" 
+                           class="btn {% if p.name == 'silver' %}btn-primary{% else %}btn-success{% endif %} btn-sm w-100 d-flex align-items-center justify-content-center"
+                           {% if org.plan.name == p.name %}style="opacity: 0.6; pointer-events: none;"{% endif %}>
+                            Upgrade to {{ p.name|capitalize }} (${{ p.priceMonthly|round }}/mo)
+                        </a>
+                    {% endif %}
                 {% endfor %}
             </div>
         </div>
@@ -81,6 +104,7 @@
                             <th>Billing Period</th>
                             <th>Paid At</th>
                             <th>Status</th>
+                            <th>Action</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -92,6 +116,15 @@
                                 <td>{{ pay.paidAt|date('M d, Y, h:i A') }}</td>
                                 <td>
                                     <span class="badge badge-success">{{ pay.status }}</span>
+                                </td>
+                                <td>
+                                    {% if org.stripeCustomerId and not (pay.stripeInvoiceId starts with 'sub_') %}
+                                        <a href="{{ path('app_stripe_portal') }}" class="btn btn-xs btn-outline-secondary">
+                                            View Receipt
+                                        </a>
+                                    {% else %}
+                                        <span class="text-muted fs-xs">Mock Record</span>
+                                    {% endif %}
                                 </td>
                             </tr>
                         {% else %}

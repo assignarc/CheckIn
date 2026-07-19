@@ -16,6 +16,9 @@ use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Style\SymfonyStyle;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 use Symfony\Component\HttpKernel\KernelInterface;
+use Symfony\Component\Console\Input\InputOption;
+use App\MessageHandler\ResetDemoDataHandler;
+use App\Message\ResetDemoDataMessage;
 
 #[AsCommand(
     name: 'app:seed-data',
@@ -34,17 +37,27 @@ class SeedDataCommand extends Command
     private EntityManagerInterface $entityManager;
     private UserPasswordHasherInterface $passwordHasher;
     private string $projectDir;
+    private ResetDemoDataHandler $resetDemoDataHandler;
 
     public function __construct(
         EntityManagerInterface $entityManager, 
         UserPasswordHasherInterface $passwordHasher,
-        KernelInterface $kernel
+        KernelInterface $kernel,
+        ResetDemoDataHandler $resetDemoDataHandler
     ) {
         parent::__construct();
         $this->entityManager = $entityManager;
         $this->passwordHasher = $passwordHasher;
         // Project directory parameter allows absolute file mapping during setup/CLI executions
         $this->projectDir = $kernel->getProjectDir();
+        $this->resetDemoDataHandler = $resetDemoDataHandler;
+    }
+
+    protected function configure(): void
+    {
+        $this
+            ->addOption('clean', null, InputOption::VALUE_NONE, 'Clear existing seed data before seeding')
+        ;
     }
 
     protected function execute(InputInterface $input, OutputInterface $output): int
@@ -65,6 +78,69 @@ class SeedDataCommand extends Command
             return Command::FAILURE;
         }
 
+        if ($input->getOption('clean')) {
+            $io->section('Cleaning existing seed data...');
+            
+            // Delete configs
+            $defaultConfigs = [
+                'new_signups_enabled',
+                'allowed_phone_countries',
+                'max_import_records',
+                'demo_rotation_hours',
+                'captcha_login_enabled',
+                'captcha_demo_enabled',
+                'audit_log_archive_days',
+                'session_sweep_throttle_seconds',
+                'demo_reset_history_days',
+                'audit_log_archive_dir',
+            ];
+            $configKeysStr = implode(',', array_map(function($k) { return "'" . addslashes($k) . "'"; }, $defaultConfigs));
+            $this->entityManager->getConnection()->executeStatement("DELETE FROM app_config WHERE setting_key IN ({$configKeysStr})");
+
+            // Delete all system administrator users
+            $this->entityManager->getConnection()->executeStatement(
+                "DELETE FROM managers WHERE role = 'ROLE_SYSTEM_ADMIN'"
+            );
+
+            // Find all slugs
+            $slugs = [];
+            foreach ($config['static_organizations'] ?? [] as $orgData) {
+                if (!empty($orgData['slug'])) {
+                    $slugs[] = $orgData['slug'];
+                }
+            }
+            foreach ($config['demo_organizations'] ?? [] as $key => $demoData) {
+                if (!empty($demoData['slug'])) {
+                    $slugs[] = $demoData['slug'];
+                }
+            }
+
+            if (!empty($slugs)) {
+                $quotedSlugs = array_map(function($slug) {
+                    return "'" . addslashes($slug) . "'";
+                }, $slugs);
+                $slugsStr = implode(',', $quotedSlugs);
+                
+                // Get the IDs of these organizations
+                $orgIds = $this->entityManager->getConnection()->fetchAllAssociative(
+                    "SELECT id FROM organizations WHERE slug IN ({$slugsStr})"
+                );
+                $ids = array_column($orgIds, 'id');
+                
+                if (!empty($ids)) {
+                    $idsStr = implode(',', $ids);
+                    $this->entityManager->getConnection()->executeStatement("DELETE FROM work_sessions WHERE organization_id IN ({$idsStr})");
+                    $this->entityManager->getConnection()->executeStatement("DELETE FROM audit_logs WHERE organization_id IN ({$idsStr})");
+                    $this->entityManager->getConnection()->executeStatement("DELETE FROM org_users WHERE organization_id IN ({$idsStr})");
+                    $this->entityManager->getConnection()->executeStatement("DELETE FROM categories WHERE organization_id IN ({$idsStr})");
+                    $this->entityManager->getConnection()->executeStatement("DELETE FROM managers WHERE organization_id IN ({$idsStr})");
+                    $this->entityManager->getConnection()->executeStatement("DELETE FROM payment_history WHERE organization_id IN ({$idsStr})");
+                    $this->entityManager->getConnection()->executeStatement("DELETE FROM organizations WHERE id IN ({$idsStr})");
+                }
+            }
+            $io->success('Existing seed data cleared!');
+        }
+
         // 2. Seed Subscription Plans (Basic, Silver, Gold tiers)
         $plans = [];
         $plansData = $config['plans'] ?? [];
@@ -74,21 +150,23 @@ class SeedDataCommand extends Command
             if (!$plan) {
                 $plan = new Plan();
                 $plan->setName($name);
-                $plan->setMaxOrgUsers($data['max_emp']);
-                $plan->setMaxManagers($data['max_mgr']);
-                $plan->setMaxFields($data['max_fields']);
-                $plan->setMaxCategories($data['max_cat']);
-                $plan->setSessionLimitHours($data['session']);
-                $plan->setRetentionDays($data['retention']);
-                $plan->setExportsEnabled($data['exports']);
-                $plan->setPriceMonthly($data['price']);
-                $plan->setHasSecureKiosk($data['secure_kiosk']);
-                $plan->setHasCustomSessionDurations($data['custom_duration']);
-                $plan->setHasOvertimeRules($data['overtime']);
-                
-                $this->entityManager->persist($plan);
                 $io->text("Seeding plan: {$name}");
             }
+            $plan->setMaxOrgUsers($data['max_emp']);
+            $plan->setMaxManagers($data['max_mgr']);
+            $plan->setMaxFields($data['max_fields']);
+            $plan->setMaxCategories($data['max_cat']);
+            $plan->setSessionLimitHours($data['session']);
+            $plan->setRetentionDays($data['retention']);
+            $plan->setExportsEnabled($data['exports']);
+            $plan->setPriceMonthly($data['price']);
+            $plan->setHasSecureKiosk($data['secure_kiosk']);
+            $plan->setHasCustomSessionDurations($data['custom_duration']);
+            $plan->setHasOvertimeRules($data['overtime']);
+            $plan->setHasBarcodeFeatures($data['barcode_features'] ?? false);
+            $plan->setHasClickList($data['click_list'] ?? true);
+            
+            $this->entityManager->persist($plan);
             $plans[$name] = $plan;
         }
         $this->entityManager->flush();
@@ -226,6 +304,12 @@ class SeedDataCommand extends Command
 
         $this->entityManager->flush();
         $io->success('Seeding completed successfully!');
+
+        if ($input->getOption('clean')) {
+            $io->section('Seeding demo organizations...');
+            $this->resetDemoDataHandler->__invoke(new ResetDemoDataMessage());
+            $io->success('Demo organizations seeded successfully!');
+        }
 
         return Command::SUCCESS;
     }

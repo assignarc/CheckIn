@@ -1,6 +1,6 @@
 {% extends 'admin/layout.html.twig' %}
 
-{% block title %}Global Settings - TimeFlow Admin{% endblock %}
+{% block title %}Global Settings - CenterTime Admin{% endblock %}
 
 {% block admin_content %}
 <div class="mx-auto" style="max-width: 900px;">
@@ -21,6 +21,9 @@
             </button>
             <button type="button" class="settings-tab" data-tab="tab-retention">
                 <span class="material-icons">storage</span> Data Retention
+            </button>
+            <button type="button" class="settings-tab" data-tab="tab-policies">
+                <span class="material-icons">gavel</span> Terms &amp; Policies
             </button>
         </div>
 
@@ -103,11 +106,25 @@
                     </span>
                 </div>
 
-                <div class="form-group mb-0">
+                <div class="form-group mb-5">
                     <label class="form-label" for="demo_reset_history_days">Demo Reset History Length (Days)</label>
                     <input type="number" class="form-control" name="demo_reset_history_days" id="demo_reset_history_days" value="{{ demoResetHistoryDays|default(150) }}" min="1">
                     <span class="form-text d-block" style="margin-top: 0.35rem">
                         The number of days of historical work sessions generated when resetting the demo database. Default is 150 days.
+                    </span>
+                </div>
+
+                <div class="form-group mb-0">
+                    <label class="form-label" for="display_timezone">Default Display Timezone</label>
+                    <select name="display_timezone" id="display_timezone" class="form-control">
+                        <option value="America/Chicago" {% if displayTimezone == 'America/Chicago' %}selected{% endif %}>US Central Time (America/Chicago)</option>
+                        <option value="UTC" {% if displayTimezone == 'UTC' %}selected{% endif %}>UTC Time</option>
+                        <option value="America/New_York" {% if displayTimezone == 'America/New_York' %}selected{% endif %}>US Eastern Time (America/New_York)</option>
+                        <option value="America/Denver" {% if displayTimezone == 'America/Denver' %}selected{% endif %}>US Mountain Time (America/Denver)</option>
+                        <option value="America/Los_Angeles" {% if displayTimezone == 'America/Los_Angeles' %}selected{% endif %}>US Pacific Time (America/Los_Angeles)</option>
+                    </select>
+                    <span class="form-text d-block" style="margin-top: 0.35rem">
+                        The timezone used to display times and logs to managers and administrators on the web interface.
                     </span>
                 </div>
             </div>
@@ -168,11 +185,51 @@
                     </span>
                 </div>
 
+                <div class="form-group mb-5">
+                    <label class="form-label" for="audit_log_archive_schedule">Audit Log Archival Schedule</label>
+                    <select class="form-control" name="audit_log_archive_schedule" id="audit_log_archive_schedule">
+                        <option value="first_of_month" {% if auditLogArchiveSchedule == 'first_of_month' %}selected{% endif %}>First Day of the Month</option>
+                        <option value="last_of_month" {% if auditLogArchiveSchedule == 'last_of_month' %}selected{% endif %}>Last Day of the Month</option>
+                        <option value="weekly_sunday" {% if auditLogArchiveSchedule == 'weekly_sunday' %}selected{% endif %}>Weekly on Sunday</option>
+                        <option value="weekly_monday" {% if auditLogArchiveSchedule == 'weekly_monday' %}selected{% endif %}>Weekly on Monday</option>
+                        <option value="daily" {% if auditLogArchiveSchedule == 'daily' %}selected{% endif %}>Daily</option>
+                    </select>
+                    <span class="form-text d-block" style="margin-top: 0.35rem">
+                        Determines the frequency at which the background sweeper runs the database archival process.
+                    </span>
+                </div>
+
                 <div class="form-group mb-0">
                     <label class="form-label" for="audit_log_archive_dir">Archive Storage Subdirectory</label>
                     <input type="text" class="form-control" name="audit_log_archive_dir" id="audit_log_archive_dir" value="{{ auditLogArchiveDir|default('/var/log/audit_archives') }}">
                     <span class="form-text d-block" style="margin-top: 0.35rem">
                         Relative path from the project root where archived zip files will be stored. Default is /var/log/audit_archives.
+                    </span>
+                </div>
+            </div>
+
+            <!-- ── Tab: Terms & Policies ────────────────────────────────── -->
+            <div id="tab-policies" class="settings-tab-pane" style="padding: 2rem; display: none;">
+                <h4 class="fs-md mt-0 mb-4 d-flex align-items-center gap-2">
+                    <span class="material-icons text-primary fs-md">gavel</span> Terms of Service &amp; Privacy Policy
+                </h4>
+                <p class="fs-sm text-secondary mb-6">
+                    Manage the legal terms that new managers must accept when registering an organization on the platform.
+                </p>
+
+                <div class="form-group mb-5">
+                    <label class="form-label" for="terms_and_conditions">Terms and Conditions</label>
+                    <textarea class="form-control font-monospace" name="terms_and_conditions" id="terms_and_conditions" rows="8" style="font-size: 0.85rem; line-height: 1.5; background: rgba(0,0,0,0.25); color: #fff;">{{ termsAndConditions }}</textarea>
+                    <span class="form-text d-block mt-2">
+                        Plain text or HTML defining platform usage constraints, liabilities, and responsibilities.
+                    </span>
+                </div>
+
+                <div class="form-group mb-0">
+                    <label class="form-label" for="privacy_policy">Privacy Policy</label>
+                    <textarea class="form-control font-monospace" name="privacy_policy" id="privacy_policy" rows="8" style="font-size: 0.85rem; line-height: 1.5; background: rgba(0,0,0,0.25); color: #fff;">{{ privacyPolicy }}</textarea>
+                    <span class="form-text d-block mt-2">
+                        Details of how employee metadata, phone numbers, and check-in logs are secured, processed, and retained.
                     </span>
                 </div>
             </div>

@@ -1,47 +1,68 @@
 {
     "plans": {
         "basic": {
-            "max_emp": 10,
+            "max_emp": 50,
             "max_mgr": 1,
-            "max_fields": 3,
+            "max_fields": 1,
             "max_cat": 1,
-            "session": 2,
+            "session": 1,
             "retention": 45,
             "exports": false,
             "price": "0.00",
             "secure_kiosk": false,
             "custom_duration": false,
-            "overtime": false
+            "overtime": false,
+            "barcode_features": false,
+            "click_list": true
         },
         "silver": {
             "max_emp": 100,
-            "max_mgr": 1,
-            "max_fields": 10,
-            "max_cat": 5,
-            "session": 8,
+            "max_mgr": 2,
+            "max_fields": 2,
+            "max_cat": 2,
+            "session": 2,
             "retention": 90,
             "exports": true,
-            "price": "29.00",
+            "price": "9.99",
             "secure_kiosk": true,
             "custom_duration": true,
-            "overtime": true
+            "overtime": true,
+            "barcode_features": false,
+            "click_list": true
         },
         "gold": {
-            "max_emp": 1000,
-            "max_mgr": 9999,
-            "max_fields": 99,
-            "max_cat": 99,
-            "session": 24,
-            "retention": 365,
+            "max_emp": 200,
+            "max_mgr": 4,
+            "max_fields": 4,
+            "max_cat": 4,
+            "session": 4,
+            "retention": 180,
             "exports": true,
-            "price": "99.00",
+            "price": "14.99",
             "secure_kiosk": true,
             "custom_duration": true,
-            "overtime": true
+            "overtime": true,
+            "barcode_features": true,
+            "click_list": true
+        },
+        "platinum": {
+            "max_emp": 500,
+            "max_mgr": 10,
+            "max_fields": 10,
+            "max_cat": 10,
+            "session": 12,
+            "retention": 360,
+            "exports": true,
+            "price": "19.99",
+            "secure_kiosk": true,
+            "custom_duration": true,
+            "overtime": true,
+            "barcode_features": true,
+            "click_list": true
         }
     },
     "admin": {
-        "email": "admin@platform.com",
+        "email": "admin@centertime.us",
         "first_name": "System",
         "last_name": "Administrator",
         "password": "admin123"
@@ -133,7 +154,7 @@
             "access_mode": "open",
             "token": "temp_token_b",
             "manager": {
-                "email": "basic@platform.com",
+                "email": "basic@centertime.us",
                 "first_name": "Basic",
                 "last_name": "Manager",
                 "password": "temp_hash_b"
@@ -154,7 +175,7 @@
             "overtime_grace_minutes": 15,
             "overtime_multiplier": "1.50",
             "manager": {
-                "email": "golden@platform.com",
+                "email": "golden@centertime.us",
                 "first_name": "Golden",
                 "last_name": "Manager",
                 "password": "temp_hash_g"

@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <style>
+        @page {
+            margin: 0;
+        }
+        body {
+            font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+            color: #1e293b;
+            margin: 0;
+            padding: 2.5in 1.2in 1.5in 1.2in;
+            text-align: center;
+            background-color: #ffffff;
+        }
+        .header-logo {
+            margin-bottom: 25px;
+        }
+        .logo-text {
+            font-size: 26px;
+            font-weight: 800;
+            color: #1e293b;
+        }
+        .logo-text-accent {
+            color: #6366f1;
+        }
+        .title {
+            font-size: 26px;
+            font-weight: 700;
+            margin: 0 0 10px 0;
+            color: #0f172a;
+        }
+        .subtitle {
+            font-size: 15px;
+            color: #64748b;
+            margin: 0 0 35px 0;
+        }
+        .org-badge {
+            display: inline-block;
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            padding: 8px 20px;
+            border-radius: 50px;
+            margin-bottom: 45px;
+        }
+        .org-logo {
+            width: 22px;
+            height: 22px;
+            vertical-align: middle;
+            margin-right: 8px;
+            border-radius: 4px;
+        }
+        .org-name {
+            font-size: 15px;
+            font-weight: 600;
+            color: #334155;
+            vertical-align: middle;
+        }
+        .qr-container {
+            margin-bottom: 45px;
+        }
+        .qr-code {
+            width: 220px;
+            height: 220px;
+            padding: 12px;
+            border: 3px solid #6366f1;
+            border-radius: 20px;
+            background: #ffffff;
+        }
+        .url-footer {
+            font-family: Courier, monospace;
+            font-size: 11px;
+            color: #64748b;
+            word-wrap: break-word;
+            max-width: 100%;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- System Header -->
+    <div class="header-logo">
+        <span class="logo-text">Time<span class="logo-text-accent">Flow</span></span>
+    </div>
+
+    <!-- Title & Subtitle -->
+    <h1 class="title">Employee Check-In Kiosk</h1>
+    <p class="subtitle">Scan to check in or out of your shift</p>
+
+    <!-- Organization Badge -->
+    <div class="org-badge">
+        {% if logoBase64 %}
+            <img src="{{ logoBase64 }}" class="org-logo" alt="">
+        {% endif %}
+        <span class="org-name">{{ org.name }}</span>
+    </div>
+
+    <!-- QR Code -->
+    <div class="qr-container">
+        {% if qrBase64 %}
+            <img src="{{ qrBase64 }}" class="qr-code" alt="QR Code">
+        {% endif %}
+    </div>
+
+    <!-- Redirect URL -->
+    <div class="url-footer">
+        {{ kioskUrl }}
+    </div>
+
+</body>
+</html>

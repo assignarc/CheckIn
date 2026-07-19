@@ -112,4 +112,37 @@ class LicenseService
         }
         return $days <= $org->getRetentionDays();
     }
+
+    /**
+     * Checks if barcode scanning/printing features are enabled.
+     */
+    public function isBarcodeEnabled(Organization $org): bool
+    {
+        if (!$org->isSubscriptionActive()) {
+            return false;
+        }
+        return $org->isBarcodeEnabled();
+    }
+
+    /**
+     * Checks if click list (open roster list) mode is enabled.
+     */
+    public function isClickListEnabled(Organization $org): bool
+    {
+        if (!$org->isSubscriptionActive()) {
+            return false;
+        }
+        return $org->isClickListEnabled();
+    }
+
+    /**
+     * Checks if secure PIN block mode is enabled.
+     */
+    public function isSecurePinBlockEnabled(Organization $org): bool
+    {
+        if (!$org->isSubscriptionActive()) {
+            return false;
+        }
+        return $org->getPlan()->hasSecureKiosk();
+    }
 }

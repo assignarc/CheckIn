@@ -1,0 +1,32 @@
+{% extends 'admin/layout.html.twig' %}
+
+{% block title %}Edit Template: {{ templateName|title }} - CenterTime{% endblock %}
+
+{% block admin_content %}
+<div class="d-flex align-items-center justify-content-between mb-6">
+    <div>
+        <h2 class="mb-1">Customize Email: {{ templateName|replace({'_': ' '})|title }}</h2>
+        <p class="text-secondary m-0 fs-sm">Modify the responsive HTML markup and Twig parameters. Changes apply to future dispatches immediately.</p>
+    </div>
+    <a href="{{ path('app_admin_emails') }}" class="btn btn-secondary btn-sm d-flex align-items-center gap-1">
+        <span class="material-icons">arrow_back</span> Back to Templates
+    </a>
+</div>
+
+<div class="glass-panel p-6">
+    <form method="post" class="m-0">
+        <div class="mb-5">
+            <label for="content" class="form-label fw-600 mb-2 text-white">Twig Template Code</label>
+            <p class="fs-xs text-muted mb-3">Ensure to retain all dynamic tags (e.g., <code>{{"{{"}} manager.firstName {{"}}"}}</code>) to avoid parsing failures on dispatch.</p>
+            <textarea name="content" id="content" class="form-control code-editor-textarea">{{ content }}</textarea>
+        </div>
+
+        <div class="d-flex align-items-center gap-3">
+            <button type="submit" class="btn btn-primary d-inline-flex align-items-center gap-2">
+                <span class="material-icons">save</span> Save Layout Changes
+            </button>
+            <a href="{{ path('app_admin_emails') }}" class="btn btn-secondary">Discard Changes</a>
+        </div>
+    </form>
+</div>
+{% endblock %}

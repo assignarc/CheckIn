@@ -48,44 +48,61 @@ class CategoryDurationAndAutoEndTest extends WebTestCase
 
         $em->persist($categoryNoTerminate);
 
-        // 3. Create an active work session for the terminating category, started 4 hours ago (exceeded)
+        // 3. Create an active work session for the terminating category, started 3.5 hours ago (exceeded category's 3h limit)
         $sessionTerminating = new WorkSession();
         $sessionTerminating->setOrgUser($orgUser);
         $sessionTerminating->setOrganization($org);
         $sessionTerminating->setCategory($category);
-        $sessionTerminating->setStartedAt(new \DateTime('-4 hours'));
+        $sessionTerminating->setStartedAt(new \DateTime('-210 minutes'));
         $sessionTerminating->setStartMethod('secure');
 
         $em->persist($sessionTerminating);
 
-        // 4. Create an active work session for the non-terminating category, started 4 hours ago (exceeded but not terminating)
+        // 4. Create an active work session for the non-terminating category, started 3.5 hours ago (exceeded category's 3h but not org's 4h limit)
         $sessionOvertime = new WorkSession();
         $sessionOvertime->setOrgUser($orgUser);
         $sessionOvertime->setOrganization($org);
         $sessionOvertime->setCategory($categoryNoTerminate);
-        $sessionOvertime->setStartedAt(new \DateTime('-4 hours'));
+        $sessionOvertime->setStartedAt(new \DateTime('-210 minutes'));
         $sessionOvertime->setStartMethod('secure');
 
         $em->persist($sessionOvertime);
 
+        // 5. Create an active work session for the non-terminating category, started 5 hours ago (exceeded both category's 3h and org's 4h limit)
+        $sessionOvertimeExceededOrg = new WorkSession();
+        $sessionOvertimeExceededOrg->setOrgUser($orgUser);
+        $sessionOvertimeExceededOrg->setOrganization($org);
+        $sessionOvertimeExceededOrg->setCategory($categoryNoTerminate);
+        $sessionOvertimeExceededOrg->setStartedAt(new \DateTime('-5 hours'));
+        $sessionOvertimeExceededOrg->setStartMethod('secure');
+
+        $em->persist($sessionOvertimeExceededOrg);
+
         $em->flush();
 
-        // 5. Trigger Kiosk index page to run the sweepActiveSessions call
+        // 6. Trigger Kiosk index page to run the sweepActiveSessions call
         $client->request('GET', '/org/acme-corp/kiosk/acme-secret-token');
         $this->assertResponseIsSuccessful();
 
         // Clear EntityManager to get fresh entity states from DB
         $em->clear();
 
-        // 6. Assertions on Terminating session
+        // 7. Assertions on Terminating session (ended at category max 3 hours)
         $dbSessionTerminating = $em->getRepository(WorkSession::class)->find($sessionTerminating->getId());
         $this->assertNotNull($dbSessionTerminating->getEndedAt());
         $this->assertEquals('Auto End', $dbSessionTerminating->getEndMethod());
         $this->assertEquals(3 * 3600, $dbSessionTerminating->getDurationSeconds());
         $this->assertFalse($dbSessionTerminating->isOvertime());
 
-        // 7. Assertions on Non-terminating session
+        // 8. Assertions on Non-terminating session (started 3.5h ago, org limit is 4h, so remains active)
         $dbSessionOvertime = $em->getRepository(WorkSession::class)->find($sessionOvertime->getId());
         $this->assertNull($dbSessionOvertime->getEndedAt()); // remains active
+
+        // 9. Assertions on Non-terminating session that exceeds org limit (started 5h ago, org limit is 4h, so is terminated at 4h)
+        $dbSessionOvertimeExceededOrg = $em->getRepository(WorkSession::class)->find($sessionOvertimeExceededOrg->getId());
+        $this->assertNotNull($dbSessionOvertimeExceededOrg->getEndedAt());
+        $this->assertEquals('Auto End', $dbSessionOvertimeExceededOrg->getEndMethod());
+        $this->assertEquals(4 * 3600, $dbSessionOvertimeExceededOrg->getDurationSeconds());
+        $this->assertFalse($dbSessionOvertimeExceededOrg->isOvertime());
     }
 }

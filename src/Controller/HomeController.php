@@ -6,6 +6,7 @@ use App\Entity\Category;
 use App\Entity\Manager;
 use App\Entity\Organization;
 use App\Entity\PaymentHistory;
+use App\Entity\AuditLog;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
@@ -19,9 +20,6 @@ class HomeController extends AbstractController
     #[Route('/', name: 'app_home')]
     public function index(EntityManagerInterface $entityManager, \App\Service\AppConfigService $configService): Response
     {
-        if ($this->getUser()) {
-            return $this->redirectToRoute('app_redirect_by_role');
-        }
         $plans = $entityManager->getRepository(\App\Entity\Plan::class)->findAll();
         $basicPlan = $entityManager->getRepository(\App\Entity\Plan::class)->findOneBy(['name' => 'basic']);
         return $this->render('home/index.html.twig', [
@@ -32,7 +30,7 @@ class HomeController extends AbstractController
     }
 
     #[Route('/signup', name: 'app_signup', methods: ['GET', 'POST'])]
-    public function signup(Request $request, EntityManagerInterface $entityManager, UserPasswordHasherInterface $passwordHasher, \App\Service\TokenGeneratorService $tokenGenerator, CaptchaService $captchaService, \App\Service\AppConfigService $configService): Response
+    public function signup(Request $request, EntityManagerInterface $entityManager, UserPasswordHasherInterface $passwordHasher, \App\Service\TokenGeneratorService $tokenGenerator, CaptchaService $captchaService, \App\Service\AppConfigService $configService, \App\Service\EmailService $emailService): Response
     {
         if ($this->getUser()) {
             return $this->redirectToRoute('app_redirect_by_role');
@@ -73,6 +71,12 @@ class HomeController extends AbstractController
             $plan = $request->request->get('plan', 'basic');
             $captchaInput = $request->request->get('captcha_answer');
             
+            $acceptPolicies = $request->request->get('accept_policies');
+            if (!$acceptPolicies) {
+                $this->addFlash('danger', 'You must accept the Terms of Service and Privacy Policy to register.');
+                return $this->redirectToRoute('app_signup');
+            }
+
             if (!$captchaService->validate($request, 'signup', $captchaInput)) {
                 $this->addFlash('danger', 'Incorrect math captcha answer. Please try again.');
                 return $this->redirectToRoute('app_signup');
@@ -97,6 +101,7 @@ class HomeController extends AbstractController
                     'manager_phone' => $managerPhone,
                     'plan' => $plan,
                     'plans' => $plans,
+                    'new_signups_enabled' => true,
                 ]);
             }
 
@@ -119,10 +124,12 @@ class HomeController extends AbstractController
                     'manager_phone' => $managerPhone,
                     'plan' => $plan,
                     'plans' => $plans,
+                    'new_signups_enabled' => true,
                 ]);
             }
 
-            $entityManager->wrapInTransaction(function() use ($entityManager, $orgName, $orgSlug, $orgAddress, $orgPhone, $tokenGenerator, $plan, $plans, $email, $firstName, $lastName, $managerPhone, $passwordHasher, $password) {
+            $manager = null;
+            $entityManager->wrapInTransaction(function() use ($request, $entityManager, $orgName, $orgSlug, $orgAddress, $orgPhone, $tokenGenerator, $plan, $plans, $email, $firstName, $lastName, $managerPhone, $passwordHasher, $password, &$manager) {
                 // Create Organization
                 $org = new Organization();
                 $org->setName($orgName);
@@ -156,6 +163,7 @@ class HomeController extends AbstractController
                 $manager->setRole('ROLE_ORG_MANAGER');
                 $manager->setIsActive(true);
                 $manager->setPasswordHash($passwordHasher->hashPassword($manager, $password));
+                $manager->setAcceptedPoliciesAt(new \DateTimeImmutable());
 
                 $entityManager->persist($manager);
 
@@ -180,8 +188,32 @@ class HomeController extends AbstractController
                     $entityManager->persist($payment);
                 }
 
+                // Log Tenant Signup Event
+                $log = new AuditLog();
+                $log->setOrganization($org);
+                $log->setManager($manager);
+                $log->setAction('TENANT_SIGNUP');
+                $log->setDetailsJson([
+                    'organization' => $org->getName(),
+                    'slug' => $org->getSlug(),
+                    'plan' => $planEntity->getName(),
+                    'email' => $manager->getEmail()
+                ]);
+                $log->setIpAddress($request->getClientIp());
+                $log->setUserAgent($request->headers->get('User-Agent'));
+                $entityManager->persist($log);
+
                 $entityManager->flush();
             });
+
+            // Dispatch welcome email
+            if ($manager) {
+                try {
+                    $emailService->sendWelcomeEmail($manager);
+                } catch (\Exception $e) {
+                    // Ignore mailer failure during redirect to prevent blocking account creation
+                }
+            }
 
             $this->addFlash('success', 'Your organization account has been successfully created! You can now log in.');
             return $this->redirectToRoute('app_login');
@@ -192,6 +224,7 @@ class HomeController extends AbstractController
         return $this->render('home/signup.html.twig', [
             'plans' => $plans,
             'captcha_question' => $captchaQuestion,
+            'new_signups_enabled' => true,
         ]);
     }
 
@@ -253,6 +286,16 @@ class HomeController extends AbstractController
             'basic_token' => $configService->get('demo_basic_token'),
             'golden_password' => $configService->get('demo_golden_password'),
             'golden_token' => $configService->get('demo_golden_token'),
+        ]);
+    }
+
+    #[Route('/plans/compare', name: 'app_plans_compare')]
+    public function comparePlans(EntityManagerInterface $em, \App\Service\AppConfigService $configService): Response
+    {
+        $plans = $em->getRepository(\App\Entity\Plan::class)->findAll();
+        return $this->render('home/compare.html.twig', [
+            'plans' => $plans,
+            'new_signups_enabled' => $configService->get('new_signups_enabled', true),
         ]);
     }
 }

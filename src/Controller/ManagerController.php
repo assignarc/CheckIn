@@ -18,6 +18,7 @@ use Symfony\Component\HttpFoundation\HeaderUtils;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
+use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 
 #[Route('/manager')]
@@ -25,11 +26,16 @@ class ManagerController extends AbstractController
 {
     private PinService $pinService;
     private LicenseService $licenseService;
+    private \Symfony\Component\EventDispatcher\EventDispatcherInterface $eventDispatcher;
 
-    public function __construct(PinService $pinService, LicenseService $licenseService)
-    {
+    public function __construct(
+        PinService $pinService,
+        LicenseService $licenseService,
+        \Symfony\Component\EventDispatcher\EventDispatcherInterface $eventDispatcher
+    ) {
         $this->pinService = $pinService;
         $this->licenseService = $licenseService;
+        $this->eventDispatcher = $eventDispatcher;
     }
 
 
@@ -165,13 +171,24 @@ class ManagerController extends AbstractController
             // ── Org Profile ──────────────────────────────────────────────
             if ($section === 'org_profile') {
                 $orgName = trim($request->request->get('org_name', ''));
-                if ($orgName) {
+                $newPhone = $request->request->get('org_phone') ?: null;
+                $newAddress = $request->request->get('org_address') ?: null;
+                $logoFile = $request->files->get('org_logo');
+
+                $changedFields = [];
+                if ($orgName && $org->getName() !== $orgName) {
+                    $changedFields['name'] = ['old' => $org->getName(), 'new' => $orgName];
                     $org->setName($orgName);
                 }
-                $org->setPhone($request->request->get('org_phone') ?: null);
-                $org->setAddress($request->request->get('org_address') ?: null);
+                if ($org->getPhone() !== $newPhone) {
+                    $changedFields['phone'] = ['old' => $org->getPhone(), 'new' => $newPhone];
+                    $org->setPhone($newPhone);
+                }
+                if ($org->getAddress() !== $newAddress) {
+                    $changedFields['address'] = ['old' => $org->getAddress(), 'new' => $newAddress];
+                    $org->setAddress($newAddress);
+                }
 
-                $logoFile = $request->files->get('org_logo');
                 if ($logoFile) {
                     // Load image
                     $mime = $logoFile->getMimeType();
@@ -211,12 +228,23 @@ class ManagerController extends AbstractController
 
                         $org->setLogoBlob($logoBinary);
                         $org->setLogoPath('db_stored');
+                        $changedFields['logo'] = ['old' => 'existing_logo', 'new' => 'db_stored_new_crop'];
                     }
                 }
 
                 $org->setUpdatedAt(new \DateTimeImmutable());
                 $em->flush();
-                $this->logAudit($em, $org, 'ORG_PROFILE_UPDATE', ['name' => $orgName], $request);
+                $this->logAudit($em, $org, 'ORG_PROFILE_UPDATE', [
+                    'name' => $org->getName(),
+                    'changed_fields' => $changedFields
+                ], $request);
+
+                $this->eventDispatcher->dispatch(new \App\Event\OrganizationProfileUpdatedEvent(
+                    $org,
+                    $changedFields,
+                    new \DateTimeImmutable()
+                ), \App\Event\OrganizationProfileUpdatedEvent::NAME);
+
                 $this->addFlash('success', 'Organization profile updated successfully.');
                 return $this->redirectToRoute('app_manager_settings');
             }
@@ -241,13 +269,18 @@ class ManagerController extends AbstractController
                 }
                 $manager->setUpdatedAt(new \DateTimeImmutable());
                 $em->flush();
-                
                 $details = ['manager_id' => $manager->getId()];
                 if ($passwordChanged) {
                     $details['password_changed'] = true;
+                    $this->logAudit($em, $org, 'PASSWORD_CHANGE_SELF', ['email' => $manager->getEmail()], $request);
+                    $this->eventDispatcher->dispatch(new \App\Event\PasswordChangedEvent(
+                        $manager,
+                        $manager,
+                        new \DateTimeImmutable()
+                    ), \App\Event\PasswordChangedEvent::NAME);
+                } else {
+                    $this->logAudit($em, $org, 'MANAGER_SELF_EDIT', $details, $request);
                 }
-                
-                $this->logAudit($em, $org, 'MANAGER_SELF_EDIT', $details, $request);
                 $this->addFlash('success', 'Your account information has been updated.');
                 return $this->redirectToRoute('app_manager_settings');
             }
@@ -320,6 +353,62 @@ class ManagerController extends AbstractController
 
         $this->addFlash('success', 'Check-in kiosk link has been rotated. The old link is now invalid.');
         return $this->redirectToRoute('app_manager_settings');
+    }
+
+    #[Route('/settings/rotate-semi-permanent-token', name: 'app_manager_rotate_semi_permanent_token', methods: ['POST'])]
+    public function rotateSemiPermanentToken(Request $request, EntityManagerInterface $em): Response
+    {
+        /** @var Manager $manager */
+        $manager = $this->getUser();
+        $org = $manager->getOrganization();
+
+        $oldToken = $org->getSemiPermanentKioskToken();
+        $newToken = bin2hex(random_bytes(16));
+        $org->setSemiPermanentKioskToken($newToken);
+        $em->flush();
+
+        $this->logAudit($em, $org, 'SEMI_PERMANENT_TOKEN_ROTATION', [
+            'old_token' => $oldToken,
+            'new_token' => $newToken,
+        ], $request);
+
+        $this->addFlash('success', 'Permanent kiosk QR code link has been regenerated. Old printed QR codes are now invalid.');
+        return $this->redirectToRoute('app_manager_settings', ['_tab' => 'semi-perm']);
+    }
+
+    #[Route('/settings/kiosk-qr-data', name: 'app_manager_settings_kiosk_qr_data', methods: ['GET'])]
+    public function kioskQrData(): \Symfony\Component\HttpFoundation\Response
+    {
+        /** @var Manager $manager */
+        $manager = $this->getUser();
+        $org     = $manager->getOrganization();
+
+        $kioskUrl = $this->generateUrl(
+            'app_kiosk_redirect',
+            ['slug' => $org->getSlug(), 'semiPermanentToken' => $org->getSemiPermanentKioskToken()],
+            \Symfony\Component\Routing\Generator\UrlGeneratorInterface::ABSOLUTE_URL
+        );
+
+        $qrApiUrl = 'https://api.qrserver.com/v1/create-qr-code/?size=360x360&ecc=H&color=6366f1&data=' . urlencode($kioskUrl);
+
+        $imgData = null;
+        if ($this->getParameter('kernel.environment') === 'test') {
+            $imgData = base64_decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=');
+        } else {
+            $imgData = @file_get_contents($qrApiUrl);
+        }
+
+        if ($imgData === false || $imgData === null) {
+            return new \Symfony\Component\HttpFoundation\JsonResponse(['error' => 'Failed to fetch QR code'], 500);
+        }
+
+        $base64 = 'data:image/png;base64,' . base64_encode($imgData);
+        return new \Symfony\Component\HttpFoundation\JsonResponse([
+            'qrDataUrl'  => $base64,
+            'kioskUrl'   => $kioskUrl,
+            'orgName'    => $org->getName(),
+            'orgSlug'    => $org->getSlug(),
+        ]);
     }
 
     #[Route('/categories', name: 'app_manager_categories', methods: ['GET', 'POST'])]
@@ -534,7 +623,28 @@ class ManagerController extends AbstractController
             $qb->andWhere('u.isActive = :status')->setParameter('status', false);
         }
 
-        $qb->orderBy('u.lastName', 'ASC');
+        $sortBy = $request->query->get('sort', 'lastName');
+        $sortDir = $request->query->get('direction', 'ASC');
+
+        $allowedSorts = [
+            'lastName' => 'u.lastName',
+            'firstName' => 'u.firstName',
+            'email' => 'u.email',
+            'phone' => 'u.phone',
+            'pin' => 'u.pin',
+            'isActive' => 'u.isActive',
+            'createdAt' => 'u.createdAt'
+        ];
+        $sortField = $allowedSorts[$sortBy] ?? 'u.lastName';
+        $sortDir = strtoupper($sortDir) === 'DESC' ? 'DESC' : 'ASC';
+
+        if ($sortField === 'u.lastName') {
+            $qb->orderBy('u.lastName', $sortDir)
+               ->addOrderBy('u.firstName', $sortDir);
+        } else {
+            $qb->orderBy($sortField, $sortDir);
+        }
+
         $orgUsers = $qb->getQuery()->getResult();
 
         $managers = $em->getRepository(Manager::class)->findBy(['organization' => $org]);
@@ -545,6 +655,8 @@ class ManagerController extends AbstractController
             'limitsData' => $limitsData,
             'searchQuery' => $searchQuery,
             'statusFilter' => $statusFilter,
+            'sortBy' => $sortBy,
+            'sortDir' => $sortDir,
         ]);
     }
 
@@ -569,6 +681,13 @@ class ManagerController extends AbstractController
 
             $status = $orgUser->isActive() ? 'activated' : 'deactivated';
             $this->logAudit($em, $org, 'USER_TOGGLE', ['orgUser_id' => $orgUser->getId(), 'status' => $status], $request);
+
+            $this->eventDispatcher->dispatch(new \App\Event\UserUpdatedEvent(
+                $orgUser,
+                'toggle_active',
+                ['isActive' => ['old' => !$newStatus, 'new' => $newStatus]],
+                new \DateTimeImmutable()
+            ), \App\Event\UserUpdatedEvent::NAME);
 
             $this->addFlash('success', "OrgUser {$orgUser->getFirstName()} {$orgUser->getLastName()} has been {$status}.");
         }
@@ -653,6 +772,13 @@ class ManagerController extends AbstractController
 
         $this->logAudit($em, $org, 'USER_CREATE', ['name' => "{$first} {$last}"], $request);
         
+        $this->eventDispatcher->dispatch(new \App\Event\UserUpdatedEvent(
+            $orgUser,
+            'create',
+            [],
+            new \DateTimeImmutable()
+        ), \App\Event\UserUpdatedEvent::NAME);
+
         if ($isActive) {
             $this->addFlash('success', "User {$first} {$last} added successfully with PIN: <strong>{$pin}</strong>");
         } else {
@@ -681,10 +807,23 @@ class ManagerController extends AbstractController
         $phone = trim($request->request->get('phone', ''));
         $pin   = strtoupper(trim($request->request->get('pin', '')));
 
-        if ($first) $orgUser->setFirstName($first);
-        if ($last)  $orgUser->setLastName($last);
-        $orgUser->setEmail($email ?: null);
-        $orgUser->setPhone($phone ?: null);
+        $changedFields = [];
+        if ($first && $orgUser->getFirstName() !== $first) {
+            $changedFields['firstName'] = ['old' => $orgUser->getFirstName(), 'new' => $first];
+            $orgUser->setFirstName($first);
+        }
+        if ($last && $orgUser->getLastName() !== $last) {
+            $changedFields['lastName'] = ['old' => $orgUser->getLastName(), 'new' => $last];
+            $orgUser->setLastName($last);
+        }
+        if ($orgUser->getEmail() !== ($email ?: null)) {
+            $changedFields['email'] = ['old' => $orgUser->getEmail(), 'new' => ($email ?: null)];
+            $orgUser->setEmail($email ?: null);
+        }
+        if ($orgUser->getPhone() !== ($phone ?: null)) {
+            $changedFields['phone'] = ['old' => $orgUser->getPhone(), 'new' => ($phone ?: null)];
+            $orgUser->setPhone($phone ?: null);
+        }
 
         if ($pin) {
             if (!preg_match('/^[ABC][0-9]{3}$/', $pin)) {
@@ -695,6 +834,9 @@ class ManagerController extends AbstractController
                 $this->addFlash("danger", "PIN '" . $pin . "' is already assigned to another user.");
                 return $this->redirectToRoute('app_manager_users');
             }
+            if ($orgUser->getPin() !== $pin) {
+                $changedFields['pin'] = ['old' => $orgUser->getPin(), 'new' => $pin];
+            }
             $orgUser->setPin($pin);
             $orgUser->setPinHash($this->pinService->hashPin($pin));
         }
@@ -702,7 +844,18 @@ class ManagerController extends AbstractController
         $orgUser->setUpdatedAt(new \DateTimeImmutable());
         $em->flush();
 
-        $this->logAudit($em, $org, 'USER_EDIT', ['orgUser_id' => $orgUser->getId()], $request);
+        $this->logAudit($em, $org, 'USER_EDIT', [
+            'orgUser_id' => $orgUser->getId(),
+            'changed_fields' => $changedFields
+        ], $request);
+
+        $this->eventDispatcher->dispatch(new \App\Event\UserUpdatedEvent(
+            $orgUser,
+            'edit',
+            $changedFields,
+            new \DateTimeImmutable()
+        ), \App\Event\UserUpdatedEvent::NAME);
+
         $this->addFlash('success', "User {$orgUser->getFirstName()} {$orgUser->getLastName()} updated successfully.");
         return $this->redirectToRoute('app_manager_users');
     }
@@ -736,14 +889,30 @@ class ManagerController extends AbstractController
         $target->setEmail($email);
         $target->setPhone($phone);
 
+        $passwordChanged = false;
         if ($password && strlen($password) >= 8) {
             $target->setPasswordHash($passwordHasher->hashPassword($target, $password));
+            $passwordChanged = true;
         }
 
         $target->setUpdatedAt(new \DateTimeImmutable());
         $em->flush();
 
-        $this->logAudit($em, $org, 'MANAGER_EDIT', ['manager_id' => $target->getId()], $request);
+        if ($passwordChanged) {
+            $this->logAudit($em, $org, 'PASSWORD_CHANGE_OTHER', [
+                'manager_id' => $target->getId(),
+                'target_email' => $target->getEmail(),
+                'changed_by' => $currentManager->getEmail()
+            ], $request);
+            $this->eventDispatcher->dispatch(new \App\Event\PasswordChangedEvent(
+                $currentManager,
+                $target,
+                new \DateTimeImmutable()
+            ), \App\Event\PasswordChangedEvent::NAME);
+        } else {
+            $this->logAudit($em, $org, 'MANAGER_EDIT', ['manager_id' => $target->getId()], $request);
+        }
+
         $this->addFlash('success', "Manager {$target->getFirstName()} {$target->getLastName()} updated successfully.");
         return $this->redirectToRoute('app_manager_users');
     }
@@ -806,6 +975,11 @@ class ManagerController extends AbstractController
         /** @var Manager $manager */
         $manager = $this->getUser();
         $org = $manager->getOrganization();
+
+        if ($org->isArchived()) {
+            $this->addFlash('warning', 'Your organization has been archived. CSV imports are disabled.');
+            return $this->redirectToRoute('app_manager_billing');
+        }
 
         $limitsData = $this->getOrgLimits($org, $em);
         $session = $request->getSession();
@@ -1098,8 +1272,16 @@ class ManagerController extends AbstractController
                 $importedCount = 0;
                 $updatedCount = 0;
                 $pinSkippedCount = 0;
+                $newActiveCount = 0;
+                $newInactiveCount = 0;
+                $existingEnabledCount = 0;
 
-                $em->wrapInTransaction(function() use ($em, $org, $missingUsersAction, $missingUsers, &$disabledMissingCount, &$importedCount, &$updatedCount, &$pinSkippedCount, $results, $actions, $enableInactive, $maxLimit, $overQuotaAction) {
+                $em->wrapInTransaction(function() use (
+                    $em, $org, $missingUsersAction, $missingUsers,
+                    &$disabledMissingCount, &$importedCount, &$updatedCount, &$pinSkippedCount,
+                    &$newActiveCount, &$newInactiveCount, &$existingEnabledCount,
+                    $results, $actions, $enableInactive, $maxLimit, $overQuotaAction
+                ) {
                     if ($missingUsersAction === 'disable') {
                         foreach ($missingUsers as $mu) {
                             $orgUser = $em->getRepository(OrgUser::class)->find($mu['id']);
@@ -1147,6 +1329,9 @@ class ManagerController extends AbstractController
                             $isActive = $this->licenseService->isNextUserActiveAllowed($org, $importedActiveCountInThisBatch);
                             if ($isActive) {
                                 $importedActiveCountInThisBatch++;
+                                $newActiveCount++;
+                            } else {
+                                $newInactiveCount++;
                             }
                             
                             $orgUser->setIsActive($isActive);
@@ -1171,6 +1356,7 @@ class ManagerController extends AbstractController
                                     if ($this->licenseService->isNextUserActiveAllowed($org, $importedActiveCountInThisBatch)) {
                                         $orgUser->setIsActive(true);
                                         $importedActiveCountInThisBatch++;
+                                        $existingEnabledCount++;
                                     }
                                 }
 
@@ -1203,9 +1389,22 @@ class ManagerController extends AbstractController
                 $this->logAudit($em, $org, 'USER_IMPORT', [
                     'added' => $importedCount,
                     'updated' => $updatedCount,
-                    'disabled_missing' => $disabledMissingCount
+                    'new_active' => $newActiveCount,
+                    'new_inactive' => $newInactiveCount,
+                    'existing_enabled' => $existingEnabledCount,
+                    'disabled_missing' => $disabledMissingCount,
+                    'total_enabled' => $newActiveCount + $existingEnabledCount,
+                    'total_disabled' => $newInactiveCount + $disabledMissingCount,
                 ], $request);
 
+                $this->eventDispatcher->dispatch(new \App\Event\UserImportEvent(
+                    $org,
+                    $importedCount + $updatedCount,
+                    $updatedCount,
+                    $newActiveCount + $existingEnabledCount,
+                    $newInactiveCount + $disabledMissingCount,
+                    new \DateTimeImmutable()
+                ), \App\Event\UserImportEvent::NAME);
                 $msg = "Import completed: {$importedCount} added, {$updatedCount} updated.";
                 if ($disabledMissingCount > 0) $msg .= " {$disabledMissingCount} missing users disabled.";
                 if ($pinSkippedCount > 0) $msg .= " {$pinSkippedCount} skipped due to duplicate PIN.";
@@ -1399,6 +1598,10 @@ class ManagerController extends AbstractController
 
         $orgUserId = $request->query->get('org_user_id');
         $monthStr = $request->query->get('month', date('Y-m'));
+        $view = $request->query->get('view', 'calendar');
+        if (!in_array($view, ['calendar', 'list'])) {
+            $view = 'calendar';
+        }
 
         $orgUsers = $em->getRepository(OrgUser::class)->findBy(['organization' => $org], ['firstName' => 'ASC', 'lastName' => 'ASC']);
         
@@ -1468,6 +1671,7 @@ class ManagerController extends AbstractController
             'startDayOfWeek' => $startDayOfWeek,
             'totalMonthSeconds' => $totalMonthSeconds,
             'monthName' => $startOfMonth->format('F Y'),
+            'view' => $view,
         ]);
     }
 
@@ -1717,9 +1921,29 @@ class ManagerController extends AbstractController
             ['startedAt' => 'DESC']
         );
 
+        $sessionsData = [];
+        foreach ($activeSessions as $session) {
+            $user = $session->getOrgUser();
+            $phone = $user->getPhone() ?? '';
+            // Format phone to (xxx) xxx-xxxx if 10 digits
+            $digits = preg_replace('/\D/', '', $phone);
+            if (strlen($digits) === 10) {
+                $formattedPhone = sprintf('(%s) %s-%s', substr($digits, 0, 3), substr($digits, 3, 3), substr($digits, 6));
+            } else {
+                $formattedPhone = $phone ?: '—';
+            }
+
+            $sessionsData[] = [
+                'session'       => $session,
+                'encodedPin'    => urlencode($user->getPin() ?? ''),
+                'formattedPhone'=> $formattedPhone,
+            ];
+        }
+
         return $this->render('manager/checked_in_users.html.twig', [
             'activeSessions' => $activeSessions,
-            'org' => $org,
+            'sessionsData'   => $sessionsData,
+            'org'            => $org,
         ]);
     }
 }

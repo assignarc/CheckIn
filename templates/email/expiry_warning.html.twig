@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Action Required: Payment Failed</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f8fafc; color: #1e293b; margin: 0; padding: 0; }
+        .email-wrapper { max-width: 600px; margin: 40px auto; background-color: #ffffff; border: 1px solid #e2e8f0; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); }
+        .email-header { background: linear-gradient(135deg, #ef4444, #dc2626); padding: 40px 20px; text-align: center; color: #ffffff; }
+        .email-header h1 { margin: 0; font-size: 28px; font-weight: 800; }
+        .email-body { padding: 40px 30px; line-height: 1.6; }
+        .email-body h2 { font-size: 20px; font-weight: 700; margin-top: 0; color: #dc2626; }
+        .btn-cta { display: inline-block; padding: 12px 24px; background-color: #ef4444; color: #ffffff !important; text-decoration: none; border-radius: 8px; font-weight: 600; margin: 20px 0; }
+        .email-footer { background-color: #f1f5f9; padding: 20px; text-align: center; font-size: 12px; color: #64748b; border-top: 1px solid #e2e8f0; }
+    </style>
+</head>
+<body>
+    <div class="email-wrapper">
+        <div class="email-header">
+            <h1>Payment Failed</h1>
+        </div>
+        <div class="email-body">
+            <h2>Action Required, {{ manager.firstName }}</h2>
+            <p>Your subscription renewal payment for <strong>{{ org.name }}</strong> has failed. As a result, your premium features have been locked and shift logs are temporarily set to read-only.</p>
+            <p>To restore access and enable your check-in kiosk immediately, please update your payment method and process the pending invoice.</p>
+            
+            <div style="text-align: center;">
+                <a href="https://centertime.us/manager/billing" class="btn-cta">Update Payment Method</a>
+            </div>
+
+            <p>If you need assistance resolving this billing issue, please contact our support team immediately.</p>
+            <p>Best regards,<br>The CenterTime Billing Team</p>
+        </div>
+        <div class="email-footer">
+            <p>&copy; 2026 CenterTime. All rights reserved.</p>
+        </div>
+    </div>
+</body>
+</html>

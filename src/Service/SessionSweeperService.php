@@ -17,7 +17,7 @@ class SessionSweeperService
         $this->auditLogger = $auditLogger;
     }
 
-    public function sweepActiveSessions(Organization $org): void
+    public function sweepActiveSessions(Organization $org): int
     {
         $activeSessions = $this->em->getRepository(WorkSession::class)->findBy([
             'organization' => $org,
@@ -34,13 +34,11 @@ class SessionSweeperService
             $limitSeconds = $org->getSessionLimitHours() * 3600;
 
             if ($org->getPlan()->hasCustomSessionDurations() && $category && $category->getMaxSessionDurationMinutes() !== null) {
-                if (!$category->isTerminateAtMaxDuration()) {
-                    continue;
+                if ($category->isTerminateAtMaxDuration()) {
+                    $limitSeconds = $category->getMaxSessionDurationMinutes() * 60;
                 }
-                $limitSeconds = $category->getMaxSessionDurationMinutes() * 60;
             }
             $elapsedSeconds = $now->getTimestamp() - $startedAt->getTimestamp();
-
             if ($elapsedSeconds >= $limitSeconds) {
                 $endedAt = \DateTime::createFromInterface($startedAt)->modify("+{$limitSeconds} seconds");
                 $session->setEndedAt($endedAt);
@@ -62,5 +60,7 @@ class SessionSweeperService
                 'swept_sessions_count' => $sweptCount
             ]);
         }
+
+        return $sweptCount;
     }
 }

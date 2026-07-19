@@ -1,0 +1,63 @@
+{% extends 'support/layout.html.twig' %}
+
+{% block support_title %}Logs &amp; Settings Help Guide{% endblock %}
+
+{% block support_content %}
+<h2 class="fs-2xl fw-800 text-white mb-2">Logs &amp; Settings Help Guide</h2>
+<p class="fs-md text-secondary mb-6 lh-relaxed">
+    This page details how to review organization security audits, modify platform parameters, adjust overtime rules, and manage your billing subscription.
+</p>
+
+<div class="support-split-view mb-8">
+    <div>
+        <h3 class="fs-lg fw-700 text-white mb-3">1. System Audit Logs</h3>
+        <p class="fs-sm text-secondary mb-4 lh-relaxed">
+            The Audit Logs view records security-sensitive operations performed by administrative users:
+        </p>
+        <ul class="fs-sm text-secondary d-flex flex-column gap-2 pl-5 lh-relaxed">
+            <li><strong>Action Types:</strong> Track events like `MANAGER_ADDED`, `USER_PIN_RESET`, `SESSION_MANUAL_EDIT`, `SETTINGS_UPDATE`, and outbound communications such as `EMAIL_WELCOME_SENT` or `EMAIL_RENEWAL_SUCCESS_SENT`.</li>
+            <li><strong>Context Details:</strong> Expands to show the exact JSON data payload, including the "before" and "after" state of edits, or mail transaction headers.</li>
+            <li><strong>Accountability:</strong> Each entry stores the date/time, the manager's IP address, and browser metadata.</li>
+        </ul>
+    </div>
+    <div class="glass-panel p-2 d-flex flex-column align-items-center" style="border-radius: var(--radius-sm); border: 1px solid rgba(255,255,255,0.08); background: rgba(0,0,0,0.2);">
+        <img src="{{ asset('img/support/audit_logs.png') }}" alt="Audit Logs View" style="width: 100%; border-radius: var(--radius-xs); height: auto; box-shadow: var(--shadow-md);">
+        <span class="fs-xs text-muted mt-2 text-center">System Audit Log Trail</span>
+    </div>
+</div>
+
+<hr class="my-6" style="border: 0; border-top: 1px solid rgba(255,255,255,0.08)">
+
+<div class="support-split-view mb-8">
+    <div>
+        <h3 class="fs-lg fw-700 text-white mb-3">2. Organization Settings</h3>
+        <p class="fs-sm text-secondary mb-4 lh-relaxed">
+            The configuration section allows administrators to set the following parameters:
+        </p>
+        <ul class="fs-sm text-secondary d-flex flex-column gap-2 pl-5 lh-relaxed mb-4">
+            <li><strong>Organization Profile:</strong> Modify your public slug, street address, and upload your custom company logo (displayed on the check-in kiosk).</li>
+            <li><strong>Kiosk Access Settings:</strong> Select between Basic Search, Secure PIN, or Contactless Barcode check-in modes. You can also generate and copy the kiosk launcher URL or rotate its access token.</li>
+            <li><strong>Overtime Configuration:</strong> Set the maximum shift length (e.g. 12 hours) before auto-termination sweeps, define grace-period windows (in minutes), and set the overtime hourly billing multiplier.</li>
+            <li><strong>Barcode Scanning:</strong> Enable target barcode symbologies (e.g. Code 128, QR Code, Code 39) for badge-scanner kiosks.</li>
+        </ul>
+    </div>
+    <div class="glass-panel p-2 d-flex flex-column align-items-center" style="border-radius: var(--radius-sm); border: 1px solid rgba(255,255,255,0.08); background: rgba(0,0,0,0.2);">
+        <img src="{{ asset('img/support/settings.png') }}" alt="Settings Configuration Form" style="width: 100%; border-radius: var(--radius-xs); height: auto; box-shadow: var(--shadow-md);">
+        <span class="fs-xs text-muted mt-2 text-center">General Settings Panel</span>
+    </div>
+</div>
+
+<hr class="my-6" style="border: 0; border-top: 1px solid rgba(255,255,255,0.08)">
+
+<h3 class="fs-lg fw-700 text-white mb-3">3. Billing &amp; Subscriptions</h3>
+<p class="fs-sm text-secondary mb-4 lh-relaxed">
+    Subscriptions regulate active user counts, manager seat numbers, and data retention durations:
+</p>
+<ul class="fs-sm text-secondary d-flex flex-column gap-2 pl-5 lh-relaxed">
+    <li><strong>Basic Plan:</strong> Up to 15 employees, 1 manager seat, and 30 days of data log retention history.</li>
+    <li><strong>Silver Plan:</strong> Up to 50 employees, 3 manager seats, and 90 days of data log retention history.</li>
+    <li><strong>Gold Plan:</strong> Up to 250 employees, unlimited manager seats, and 180 days of log retention history.</li>
+    <li><strong>Secure Stripe Portal:</strong> Click "Stripe Billing Portal" to update your credit card details, check pending balances, or download official PDF invoices.</li>
+    <li><strong>Invoice History:</strong> View past transaction dates, amounts, and download PDF receipts.</li>
+</ul>
+{% endblock %}

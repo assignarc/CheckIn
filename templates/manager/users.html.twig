@@ -1,6 +1,6 @@
 {% extends 'manager/layout.html.twig' %}
 
-{% block title %}Users & Managers - TimeFlow{% endblock %}
+{% block title %}Users & Managers - CenterTime{% endblock %}
 {% block header_title %}Directory Management{% endblock %}
 {% block stylesheets %}
 
@@ -9,8 +9,14 @@
 
 {% block manager_content %}
 <div class="tabs-container">
-    <div class="tab active" onclick="switchTab('orgUsers-tab')" id="tab-orgUsers-tab">Users ({{ limitsData.usage.orgUsers }} / {{ limitsData.limits.max_orgUsers }})</div>
-    <div class="tab" onclick="switchTab('managers-tab')" id="tab-managers-tab">Managers ({{ limitsData.usage.managers }} / {{ limitsData.limits.max_managers }})</div>
+    <div class="tab active" onclick="switchTab('orgUsers-tab')" id="tab-orgUsers-tab" style="display: flex; align-items: center; gap: 6px;">
+        <span class="material-icons" style="font-size: 1.1rem; vertical-align: middle;">people</span>
+        <span class="tab-text">Users ({{ limitsData.usage.orgUsers }} / {{ limitsData.limits.max_orgUsers }})</span>
+    </div>
+    <div class="tab" onclick="switchTab('managers-tab')" id="tab-managers-tab" style="display: flex; align-items: center; gap: 6px;">
+        <span class="material-icons" style="font-size: 1.1rem; vertical-align: middle;">shield</span>
+        <span class="tab-text">Managers ({{ limitsData.usage.managers }} / {{ limitsData.limits.max_managers }})</span>
+    </div>
 </div>
 
 <!-- EMPLOYEES DIRECTORY TAB -->
@@ -40,16 +46,61 @@
                 </div>
             </div>
 
+            <div class="mb-4 p-3 glass-panel d-flex align-items-center justify-content-between flex-wrap gap-3" style="padding: 0.75rem 1rem !important;">
+                <div class="d-flex align-items-center gap-2">
+                    <input type="checkbox" id="toggle-contact-info" style="width: 1.1rem; height: 1.1rem; margin-top: 0; cursor: pointer; accent-color: var(--primary);">
+                    <label for="toggle-contact-info" class="fs-sm fw-600 text-secondary cursor-pointer m-0" style="user-select: none;">Show Contact Information (Email &amp; Phone)</label>
+                </div>
+                <div class="fs-xs text-muted">
+                    Email and Phone columns are shown in the Metadata column.
+                </div>
+            </div>
+
             <div class="table-responsive">
                 <table class="table">
                     <thead>
                         <tr>
-                            <th>Name</th>
-                            <th>Email</th>
-                            <th>Phone</th>
-                            <th>PIN</th>
+                            <th>
+                                <a href="{{ path('app_manager_users', app.request.query.all|merge({sort: 'lastName', direction: sortBy == 'lastName' and sortDir == 'ASC' ? 'DESC' : 'ASC'})) }}" class="text-decoration-none text-dark d-inline-flex align-items-center gap-1">
+                                    Name
+                                    {% if sortBy == 'lastName' %}
+                                        <span class="material-icons fs-sm">{{ sortDir == 'ASC' ? 'arrow_upward' : 'arrow_downward' }}</span>
+                                    {% else %}
+                                        <span class="material-icons fs-sm text-muted" style="opacity: 0.3;">unfold_more</span>
+                                    {% endif %}
+                                </a>
+                            </th>
+                            <th>
+                                <a href="{{ path('app_manager_users', app.request.query.all|merge({sort: 'pin', direction: sortBy == 'pin' and sortDir == 'ASC' ? 'DESC' : 'ASC'})) }}" class="text-decoration-none text-dark d-inline-flex align-items-center gap-1">
+                                    PIN
+                                    {% if sortBy == 'pin' %}
+                                        <span class="material-icons fs-sm">{{ sortDir == 'ASC' ? 'arrow_upward' : 'arrow_downward' }}</span>
+                                    {% else %}
+                                        <span class="material-icons fs-sm text-muted" style="opacity: 0.3;">unfold_more</span>
+                                    {% endif %}
+                                </a>
+                            </th>
                             <th>Metadata</th>
-                            <th>Status</th>
+                            <th>
+                                <a href="{{ path('app_manager_users', app.request.query.all|merge({sort: 'createdAt', direction: sortBy == 'createdAt' and sortDir == 'ASC' ? 'DESC' : 'ASC'})) }}" class="text-decoration-none text-dark d-inline-flex align-items-center gap-1">
+                                    Added
+                                    {% if sortBy == 'createdAt' %}
+                                        <span class="material-icons fs-sm">{{ sortDir == 'ASC' ? 'arrow_upward' : 'arrow_downward' }}</span>
+                                    {% else %}
+                                        <span class="material-icons fs-sm text-muted" style="opacity: 0.3;">unfold_more</span>
+                                    {% endif %}
+                                </a>
+                            </th>
+                            <th>
+                                <a href="{{ path('app_manager_users', app.request.query.all|merge({sort: 'isActive', direction: sortBy == 'isActive' and sortDir == 'ASC' ? 'DESC' : 'ASC'})) }}" class="text-decoration-none text-dark d-inline-flex align-items-center gap-1">
+                                    Status
+                                    {% if sortBy == 'isActive' %}
+                                        <span class="material-icons fs-sm">{{ sortDir == 'ASC' ? 'arrow_upward' : 'arrow_downward' }}</span>
+                                    {% else %}
+                                        <span class="material-icons fs-sm text-muted" style="opacity: 0.3;">unfold_more</span>
+                                    {% endif %}
+                                </a>
+                            </th>
                             <th class="text-right w-140">Actions</th>
                         </tr>
                     </thead>
@@ -57,8 +108,6 @@
                         {% for emp in orgUsers %}
                             <tr class="{{ not emp.isActive ? 'opacity-50' }}">
                                 <td class="fw-600">{{ emp.firstName }} {{ emp.lastName }}</td>
-                                <td>{{ emp.email|default('—') }}</td>
-                                <td>{{ emp.phone|default('—') }}</td>
                                 <td>
                                     {% if emp.pin %}
                                         <span class="badge fs-sm text-primary badge-pin">
@@ -69,14 +118,28 @@
                                     {% endif %}
                                 </td>
                                 <td>
-                                    <div class="d-flex flex-column gap-1 fs-xs">
+                                    <div class="d-flex flex-column gap-1 fs-xs metadata-container"
+                                         data-has-custom="{% if emp.customFieldsJson|length > 0 %}true{% else %}false{% endif %}"
+                                         data-has-email="{% if emp.email %}true{% else %}false{% endif %}"
+                                         data-has-phone="{% if emp.phone %}true{% else %}false{% endif %}">
+                                        
+                                        {% if emp.email %}
+                                            <span class="text-secondary contact-info-field" style="display: none;"><strong>Email:</strong> {{ emp.email }}</span>
+                                        {% endif %}
+                                        {% if emp.phone %}
+                                            <span class="text-secondary contact-info-field" style="display: none;"><strong>Phone:</strong> {{ emp.phone }}</span>
+                                        {% endif %}
+
                                         {% for key, val in emp.customFieldsJson %}
                                             <span class="text-secondary"><strong>{{ key }}:</strong> {{ val }}</span>
-                                        {% else %}
-                                            <span class="text-muted">None</span>
                                         {% endfor %}
+                                        
+                                        {% if emp.customFieldsJson|length == 0 %}
+                                            <span class="text-muted metadata-none-placeholder">None</span>
+                                        {% endif %}
                                     </div>
                                 </td>
+                                <td>{{ emp.createdAt|date('M d, Y') }}</td>
                                 <td>
                                     {% if emp.isActive %}
                                         <span class="badge badge-success">Active</span>
@@ -520,6 +583,47 @@
         const warning = document.getElementById('manager-quota-warning');
         if (warning) warning.classList.remove('d-none');
     }
+
+    // Toggle Contact Info visibility
+    (function() {
+        var toggleCheckbox = document.getElementById('toggle-contact-info');
+        if (!toggleCheckbox) return;
+
+        function applyContactInfoVisibility(show) {
+            // Show/hide email & phone spans
+            var fields = document.querySelectorAll('.contact-info-field');
+            for (var i = 0; i < fields.length; i++) {
+                fields[i].style.display = show ? '' : 'none';
+            }
+            // Manage the "None" placeholder per row
+            var containers = document.querySelectorAll('.metadata-container');
+            for (var j = 0; j < containers.length; j++) {
+                var container = containers[j];
+                var hasEmail   = container.getAttribute('data-has-email')  === 'true';
+                var hasPhone   = container.getAttribute('data-has-phone')  === 'true';
+                var hasCustom  = container.getAttribute('data-has-custom') === 'true';
+                var placeholder = container.querySelector('.metadata-none-placeholder');
+                if (placeholder) {
+                    var hideNone = hasCustom || (show && (hasEmail || hasPhone));
+                    placeholder.style.display = hideNone ? 'none' : '';
+                }
+            }
+            // Persist preference
+            try { localStorage.setItem('showContactInfo', show ? '1' : '0'); } catch(e) {}
+        }
+
+        // Restore preference from localStorage
+        try {
+            if (localStorage.getItem('showContactInfo') === '1') {
+                toggleCheckbox.checked = true;
+                applyContactInfoVisibility(true);
+            }
+        } catch(e) {}
+
+        toggleCheckbox.addEventListener('change', function() {
+            applyContactInfoVisibility(this.checked);
+        });
+    })();
 
     // Close modals on backdrop click
     document.querySelectorAll('dialog').forEach(dlg => {

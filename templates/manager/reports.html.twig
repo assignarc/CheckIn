@@ -1,6 +1,6 @@
 {% extends 'manager/layout.html.twig' %}
 
-{% block title %}Reporting & Logs - TimeFlow{% endblock %}
+{% block title %}Reporting & Logs - CenterTime{% endblock %}
 {% block header_title %}Timesheets & Reporting Logs{% endblock %}
 
 {% block manager_content %}
@@ -159,10 +159,11 @@
                                     {% set shouldTerminate = true %}
                                 {% endif %}
 
-                                <span class="badge badge-success ticking-timer" 
+                                <span class="badge badge-success ticking-timer fs-sm d-inline-flex align-items-center gap-2 tracking-wide" 
                                       data-started="{{ session.startedAt|date('c') }}" 
                                       data-max-duration="{{ maxDurationSeconds }}"
-                                      data-terminate="{{ shouldTerminate ? 'true' : 'false' }}" class="fs-sm d-inline-flex align-items-center gap-1 p-0 tracking-wide" style="font-family: monospace; ; .35rem 0.6rem; ; text-transform: none" 
+                                      data-terminate="{{ shouldTerminate ? 'true' : 'false' }}"
+                                      style="font-family: monospace; padding: 0.35rem 0.6rem; text-transform: none;" 
                                       title="Active Session">
                                     <span class="ticking-dot"></span>
                                     <span class="timer-text">00:00:00</span>
@@ -228,6 +229,32 @@
 {{ parent() }}
 <script>
     document.addEventListener('DOMContentLoaded', function() {
+        // Ticking timer logic
+        function updateTickingTimers() {
+            document.querySelectorAll('.ticking-timer').forEach(timer => {
+                const startedStr = timer.getAttribute('data-started');
+                const started = new Date(startedStr).getTime();
+                const now = Date.now();
+                const diffMs = now - started;
+                if (diffMs < 0) {
+                    timer.querySelector('.timer-text').textContent = '00:00:00';
+                    return;
+                }
+                const diffSecs = Math.floor(diffMs / 1000);
+                const hrs = Math.floor(diffSecs / 3600);
+                const mins = Math.floor((diffSecs % 3600) / 60);
+                const secs = diffSecs % 60;
+                
+                const hrsStr = hrs.toString().padStart(2, '0');
+                const minsStr = mins.toString().padStart(2, '0');
+                const secsStr = secs.toString().padStart(2, '0');
+                
+                timer.querySelector('.timer-text').textContent = `${hrsStr}:${minsStr}:${secsStr}`;
+            });
+        }
+        updateTickingTimers();
+        setInterval(updateTickingTimers, 1000);
+
         document.querySelectorAll('.force-end-btn').forEach(btn => {
             btn.addEventListener('click', function() {
                 const form = this.closest('form');

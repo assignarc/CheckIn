@@ -9,6 +9,7 @@ use App\Entity\Manager;
 use App\Entity\Organization;
 use App\Entity\Plan;
 use App\Entity\WorkSession;
+use App\Entity\PaymentHistory;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
@@ -69,6 +70,84 @@ class AdminController extends AbstractController
             'basicCount' => $basicCount,
             'silverCount' => $silverCount,
             'goldCount' => $goldCount,
+        ]);
+    }
+
+    #[Route('/billing', name: 'app_admin_billing')]
+    public function billing(Request $request, EntityManagerInterface $em): Response
+    {
+        $q = $request->query->get('q', '');
+
+        // 1. Calculate general revenue metrics
+        $allPayments = $em->getRepository(PaymentHistory::class)->findBy([], ['paidAt' => 'DESC']);
+        $totalRevenue = 0.00;
+        foreach ($allPayments as $pay) {
+            if ($pay->getStatus() === 'paid') {
+                $totalRevenue += (float)$pay->getAmount();
+            }
+        }
+
+        // Active Paid Subscriptions (silver/gold/platinum) count
+        $organizations = $em->getRepository(Organization::class)->findAll();
+        
+        $activeSubCount = 0;
+        $activePaidUsersCount = 0;
+        foreach ($organizations as $o) {
+            if ($o->isSubscriptionActive() && $o->getPlan()->getName() !== 'basic') {
+                $activeSubCount++;
+                // Add active employees in this tenant to total paid users
+                $activePaidUsersCount += $em->getRepository(OrgUser::class)->count(['organization' => $o, 'isActive' => true]);
+            }
+        }
+
+        // 2. Filter organizations based on query if present
+        $filteredOrgs = [];
+        if ($q !== '') {
+            $qb = $em->createQueryBuilder();
+            $qb->select('o')
+                ->from(Organization::class, 'o')
+                ->where('o.name LIKE :q OR o.slug LIKE :q')
+                ->setParameter('q', '%' . $q . '%')
+                ->orderBy('o.createdAt', 'DESC');
+            $filteredOrgs = $qb->getQuery()->getResult();
+        } else {
+            $filteredOrgs = $organizations;
+        }
+
+        // 3. For each organization, fetch their latest payment to calculate next payment / renewal date
+        $tenantOverview = [];
+        foreach ($filteredOrgs as $o) {
+            $latestPayment = $em->getRepository(PaymentHistory::class)->findOneBy(
+                ['organization' => $o],
+                ['paidAt' => 'DESC']
+            );
+
+            $tenantOverview[] = [
+                'org' => $o,
+                'latestPayment' => $latestPayment,
+                'nextRenewalDate' => $latestPayment ? $latestPayment->getPeriodEnd() : null,
+                'status' => $o->isSubscriptionActive() ? 'Active' : 'Suspended'
+            ];
+        }
+
+        // 4. Retrieve subscription event logs from AuditLog
+        $logQb = $em->createQueryBuilder();
+        $logQb->select('l')
+            ->from(AuditLog::class, 'l')
+            ->where('l.action IN (:actions)')
+            ->setParameter('actions', ['TENANT_SIGNUP', 'STRIPE_CHECKOUT_COMPLETED', 'STRIPE_PAYMENT_SUCCESS', 'STRIPE_PAYMENT_FAILED', 'PLAN_UPGRADE'])
+            ->orderBy('l.createdAt', 'DESC')
+            ->setMaxResults(50);
+        $eventLogs = $logQb->getQuery()->getResult();
+
+        return $this->render('admin/billing.html.twig', [
+            'totalRevenue' => number_format($totalRevenue, 2),
+            'activeSubCount' => $activeSubCount,
+            'activePaidUsersCount' => $activePaidUsersCount,
+            'tenantOverview' => $tenantOverview,
+            'globalPayments' => array_slice($allPayments, 0, 50),
+            'eventLogs' => $eventLogs,
+            'q' => $q
         ]);
     }
 
@@ -189,7 +268,7 @@ class AdminController extends AbstractController
                     'price_monthly' => $plan->getPriceMonthly()
                 ], $request);
 
-                $this->addFlash('success', "Plan '" . ucfirst($plan->getName()) . "' base settings updated successfully.");
+                $this->addFlash('success', "Plan '" . ucfirst($plan->getName()) . "' settings updated successfully.");
             }
             return $this->redirectToRoute('app_admin_plans');
         }
@@ -463,6 +542,20 @@ class AdminController extends AbstractController
             $auditLogArchiveDir = $request->request->get('audit_log_archive_dir', '/var/log/audit_archives');
             $configService->set('audit_log_archive_dir', $auditLogArchiveDir);
 
+            // Audit log archive schedule
+            $auditLogArchiveSchedule = $request->request->get('audit_log_archive_schedule', 'first_of_month');
+            $configService->set('audit_log_archive_schedule', $auditLogArchiveSchedule);
+
+            // Timezone settings configuration
+            $displayTimezone = $request->request->get('display_timezone', 'America/Chicago');
+            $configService->set('display_timezone', $displayTimezone);
+
+            // Terms and Conditions & Privacy Policy
+            $termsAndConditions = $request->request->get('terms_and_conditions', '');
+            $privacyPolicy = $request->request->get('privacy_policy', '');
+            $configService->set('terms_and_conditions', $termsAndConditions);
+            $configService->set('privacy_policy', $privacyPolicy);
+
             $this->logAdminAudit($em, 'SETTINGS_UPDATE', [
                 'allowed_phone_countries' => array_values($allowedCountries),
                 'max_import_records' => $maxImportRecords,
@@ -471,9 +564,13 @@ class AdminController extends AbstractController
                 'captcha_demo_enabled' => $captchaDemoEnabled,
                 'new_signups_enabled' => $newSignupsEnabled,
                 'audit_log_archive_days' => $auditLogArchiveDays,
+                'audit_log_archive_schedule' => $auditLogArchiveSchedule,
                 'session_sweep_throttle_seconds' => $sessionSweepThrottleSeconds,
                 'demo_reset_history_days' => $demoResetHistoryDays,
                 'audit_log_archive_dir' => $auditLogArchiveDir,
+                'display_timezone' => $displayTimezone,
+                'terms_and_conditions' => $termsAndConditions,
+                'privacy_policy' => $privacyPolicy,
             ], $request);
 
             $this->addFlash('success', 'Global settings updated successfully.');
@@ -490,6 +587,15 @@ class AdminController extends AbstractController
         $sessionSweepThrottleSeconds = $configService->get('session_sweep_throttle_seconds', 60);
         $demoResetHistoryDays = $configService->get('demo_reset_history_days', 150);
         $auditLogArchiveDir = $configService->get('audit_log_archive_dir', '/var/log/audit_archives');
+        $displayTimezone = $configService->get('display_timezone', 'America/Chicago');
+
+        $defaultTerms = "TERMS OF SERVICE\n\n1. Acceptance of Terms\nBy creating an account, registering an organization, or utilizing any portion of the CenterTime multi-tenant check-in and time-tracking service (the \"Service\"), you agree to be bound by these Terms of Service. If you do not agree, you must not access or use the Service.\n\n2. Description of Service\nCenterTime is a web-based multi-tenant employee time-tracking, attendance monitoring, and check-in kiosk platform. The Service is provided \"as is\" and \"as available\". We reserve the right to modify, suspend, or terminate the Service at any time without liability.\n\n3. Account Security and Responsibilities\n- You are responsible for maintaining the confidentiality of your manager credentials and all employee PINs/tokens.\n- You agree to ensure that all employee records, hours logged, and configurations represent accurate business operations.\n- You must comply with all local labor, employment, and wage laws. You represent that you have obtained all necessary employee consents for tracking their work hours and collecting their contact information.\n\n4. Limitation of Liability\nTO THE MAXIMUM EXTENT PERMITTED BY LAW, CENTERTIME AND ITS OPERATORS SHALL NOT BE LIABLE FOR ANY INDIRECT, INCIDENTAL, SPECIAL, CONSEQUENTIAL, OR PUNITIVE DAMAGES, OR ANY LOSS OF PROFITS, REVENUE, DATA, OR USE, INCURRED BY YOU OR ANY THIRD PARTY. \nWe assume no responsibility or liability for:\n- Discrepancies in payroll calculation, timesheet exports, or labor compliance.\n- System downtime, data corruption, or loss of access to logged histories.\n- Fines, penalties, or damages resulting from your failure to comply with local labor regulations.\n\n5. Subscription Plans, Billing, and Quotas\n- Subscription fees for paid plans are billed in advance on a monthly recurring basis and are non-refundable.\n- Plan limits (active employee counts, manager seats, data retention thresholds, and features) are strictly enforced based on your selected subscription tier.\n- We reserve the right to suspend or terminate accounts for past-due balances or violations of these terms.";
+        $defaultPrivacy = "PRIVACY POLICY\n\n1. Information We Collect\nWe collect metadata essential for providing secure time-tracking services, including:\n- Manager names, email addresses, and phone numbers.\n- Organization details (name, street address, slug, billing info).\n- Employee information (first/last names, phone numbers, unique check-in PIN hashes, and barcode data).\n- Time log history (check-in/out timestamps, selected categories, computed session durations).\n\n2. How We Use Information\nWe use your data solely to operate and improve the Service, including:\\n- Generating timesheets and organization reports.\n- Activating kiosk authorization and validating employee check-ins.\n- Sending transactional SMS notifications or emails.\n- Processing secure subscription payments via our integration partners.\n\n3. Data Protection and Hashing\n- Manager passwords and employee PINs are cryptographically hashed using secure, one-way hashing algorithms. We never store plain-text credentials.\n- Kiosk login states are secured using ephemeral, cryptographically random link tokens.\n\n4. Data Sharing and Third-Party Disclosures\nWe do not sell, rent, or lease customer data. We share information only with trusted service providers to the extent necessary to perform billing processes (e.g., Stripe) and run system hosting.\n\n5. Data Access and Portability\nManagers can export timesheets and user records in Excel or CSV formats at any time. We store log history in accordance with your plan's retention settings (up to 180 days by default), after which records are archived and deleted from our active database.";
+
+        $termsAndConditions = $configService->get('terms_and_conditions', $defaultTerms);
+        $privacyPolicy = $configService->get('privacy_policy', $defaultPrivacy);
+
+        $auditLogArchiveSchedule = $configService->get('audit_log_archive_schedule', 'first_of_month');
 
         return $this->render('admin/settings.html.twig', [
             'allowedPhoneCountries' => $allowedPhoneCountries,
@@ -499,9 +605,13 @@ class AdminController extends AbstractController
             'captchaDemoEnabled' => $captchaDemoEnabled,
             'newSignupsEnabled' => $newSignupsEnabled,
             'auditLogArchiveDays' => $auditLogArchiveDays,
+            'auditLogArchiveSchedule' => $auditLogArchiveSchedule,
             'sessionSweepThrottleSeconds' => $sessionSweepThrottleSeconds,
             'demoResetHistoryDays' => $demoResetHistoryDays,
             'auditLogArchiveDir' => $auditLogArchiveDir,
+            'displayTimezone' => $displayTimezone,
+            'termsAndConditions' => $termsAndConditions,
+            'privacyPolicy' => $privacyPolicy,
         ]);
     }
 
@@ -595,5 +705,222 @@ class AdminController extends AbstractController
 
         $referer = $request->headers->get('referer');
         return $referer ? $this->redirect($referer) : $this->redirectToRoute('app_admin_active_sessions');
+    }
+
+    #[Route('/emails', name: 'app_admin_emails', methods: ['GET'])]
+    public function emailsList(): Response
+    {
+        $templates = [
+            [
+                'name' => 'welcome',
+                'filename' => 'welcome.html.twig',
+                'description' => 'Onboarding / Welcome email sent to organization managers immediately after signing up.',
+                'variables' => ['{{ manager.firstName }}', '{{ org.name }}'],
+            ],
+            [
+                'name' => 'renewal_success',
+                'filename' => 'renewal_success.html.twig',
+                'description' => 'Billing renewal receipt notice sent when a subscription payment is processed successfully.',
+                'variables' => ['{{ manager.firstName }}', '{{ amount }}', '{{ renewalDate }}'],
+            ],
+            [
+                'name' => 'expiry_warning',
+                'filename' => 'expiry_warning.html.twig',
+                'description' => 'Dunning notice sent to managers when a card charge fails, warning of suspension.',
+                'variables' => ['{{ manager.firstName }}', '{{ org.name }}'],
+            ],
+            [
+                'name' => 'upcoming_invoice',
+                'filename' => 'upcoming_invoice.html.twig',
+                'description' => 'Upcoming billing reminder sent to managers before a renewal charge is attempted.',
+                'variables' => ['{{ manager.firstName }}', '{{ amount }}', '{{ dueDate }}'],
+            ]
+        ];
+
+        return $this->render('admin/emails/index.html.twig', [
+            'templates' => $templates,
+        ]);
+    }
+
+    #[Route('/emails/edit/{templateName}', name: 'app_admin_email_edit', methods: ['GET', 'POST'])]
+    public function editEmailTemplate(string $templateName, Request $request, EntityManagerInterface $em): Response
+    {
+        $allowed = ['welcome', 'renewal_success', 'expiry_warning', 'upcoming_invoice'];
+        if (!in_array($templateName, $allowed)) {
+            throw $this->createNotFoundException('Template not found.');
+        }
+
+        $projectDir = $this->getParameter('kernel.project_dir');
+        $filePath = $projectDir . '/templates/email/' . $templateName . '.html.twig';
+
+        if (!file_exists($filePath)) {
+            throw $this->createNotFoundException('Template file not found.');
+        }
+
+        if ($request->isMethod('POST')) {
+            $content = $request->request->get('content');
+            file_put_contents($filePath, $content);
+            $this->addFlash('success', 'Email template updated successfully.');
+            
+            $this->logAdminAudit($em, 'EMAIL_TEMPLATE_EDIT', ['template' => $templateName], $request);
+
+            return $this->redirectToRoute('app_admin_emails');
+        }
+
+        $content = file_get_contents($filePath);
+
+        return $this->render('admin/emails/edit.html.twig', [
+            'templateName' => $templateName,
+            'content' => $content,
+        ]);
+    }
+
+    #[Route('/organizations/archive-toggle/{id}', name: 'app_admin_organization_archive_toggle', methods: ['POST'])]
+    public function toggleArchive(int $id, EntityManagerInterface $em, Request $request): Response
+    {
+        $org = $em->getRepository(Organization::class)->find($id);
+        if (!$org) {
+            throw $this->createNotFoundException('Organization not found.');
+        }
+
+        $org->setIsArchived(!$org->isArchived());
+        $em->flush();
+
+        $this->logAdminAudit($em, 'ORGANIZATION_ARCHIVE_TOGGLE', [
+            'org' => $org->getName(),
+            'new_status' => $org->isArchived() ? 'Archived' : 'Active'
+        ], $request, $org);
+
+        $this->addFlash('success', "Organization {$org->getName()} status updated.");
+        return $this->redirectToRoute('app_admin_organizations');
+    }
+
+    #[Route('/organizations/delete/{id}', name: 'app_admin_organization_delete', methods: ['POST'])]
+    public function deleteOrganization(int $id, EntityManagerInterface $em, Request $request): Response
+    {
+        $org = $em->getRepository(Organization::class)->find($id);
+        if (!$org) {
+            throw $this->createNotFoundException('Organization not found.');
+        }
+
+        $managers = $em->getRepository(Manager::class)->findBy(['organization' => $org]);
+        $users = $em->getRepository(OrgUser::class)->findBy(['organization' => $org]);
+        $categories = $em->getRepository(Category::class)->findBy(['organization' => $org]);
+        $sessions = $em->getRepository(\App\Entity\WorkSession::class)->findBy(['organization' => $org]);
+
+        $auditLogs = $em->getRepository(AuditLog::class)->findBy(['organization' => $org]);
+        $payments = $em->getRepository(\App\Entity\PaymentHistory::class)->findBy(['organization' => $org]);
+
+        $data = [
+            'organization' => [
+                'id' => $org->getId(),
+                'name' => $org->getName(),
+                'slug' => $org->getSlug(),
+                'plan' => $org->getPlan()->getName(),
+                'isSubscriptionActive' => $org->isSubscriptionActive(),
+                'isArchived' => $org->isArchived(),
+            ],
+            'managers' => array_map(fn($m) => [
+                'email' => $m->getEmail(),
+                'firstName' => $m->getFirstName(),
+                'lastName' => $m->getLastName(),
+                'roles' => $m->getRoles(),
+            ], $managers),
+            'users' => array_map(fn($u) => [
+                'firstName' => $u->getFirstName(),
+                'lastName' => $u->getLastName(),
+                'pinHash' => $u->getPinHash(),
+                'uniqueIdHash' => $u->getUniqueIdHash(),
+                'isActive' => $u->isActive(),
+            ], $users),
+            'categories' => array_map(fn($c) => [
+                'name' => $c->getName(),
+                'icon' => $c->getIcon(),
+                'isActive' => $c->isActive(),
+            ], $categories),
+            'sessions' => array_map(fn($s) => [
+                'user' => $s->getOrgUser() ? ($s->getOrgUser()->getFirstName() . ' ' . $s->getOrgUser()->getLastName()) : 'Unknown',
+                'startedAt' => $s->getStartedAt() ? $s->getStartedAt()->format(\DateTimeInterface::ATOM) : null,
+                'endedAt' => $s->getEndedAt() ? $s->getEndedAt()->format(\DateTimeInterface::ATOM) : null,
+                'durationSeconds' => $s->getDurationSeconds(),
+            ], $sessions),
+            'audit_logs' => array_map(fn($l) => [
+                'action' => $l->getAction(),
+                'details' => $l->getDetailsJson(),
+                'createdAt' => $l->getCreatedAt()->format(\DateTimeInterface::ATOM),
+            ], $auditLogs),
+            'payments' => array_map(fn($p) => [
+                'stripeInvoiceId' => $p->getStripeInvoiceId(),
+                'amount' => $p->getAmount(),
+                'paidAt' => $p->getPaidAt() ? $p->getPaidAt()->format(\DateTimeInterface::ATOM) : null,
+            ], $payments),
+        ];
+
+        $projectDir = $this->getParameter('kernel.project_dir');
+        $archiveDir = $projectDir . '/var/archives';
+        if (!file_exists($archiveDir)) {
+            mkdir($archiveDir, 0777, true);
+        }
+
+        $zipPath = $archiveDir . '/' . $org->getSlug() . '_' . time() . '.zip';
+        $zip = new \ZipArchive();
+        if ($zip->open($zipPath, \ZipArchive::CREATE) === true) {
+            $zip->addFromString('backup.json', json_encode($data, JSON_PRETTY_PRINT));
+            $zip->close();
+        }
+
+        // 1. Delete dependent child records first and flush
+        foreach ($sessions as $s) {
+            $em->remove($s);
+        }
+        foreach ($auditLogs as $l) {
+            $em->remove($l);
+        }
+        foreach ($payments as $p) {
+            $em->remove($p);
+        }
+        $em->flush();
+
+        // 2. Delete main entity associations and flush
+        foreach ($users as $u) {
+            $em->remove($u);
+        }
+        foreach ($categories as $c) {
+            $em->remove($c);
+        }
+        foreach ($managers as $m) {
+            $em->remove($m);
+        }
+        $em->flush();
+
+        // 3. Delete the parent organization and flush
+        $em->remove($org);
+        $em->flush();
+
+        $this->logAdminAudit($em, 'ORGANIZATION_DELETED', [
+            'org' => $org->getName(),
+            'slug' => $org->getSlug(),
+            'backup_file' => basename($zipPath)
+        ], $request);
+
+        $this->addFlash('success', "Organization {$org->getName()} has been permanently deleted. Backup archive saved.");
+        return $this->redirectToRoute('app_admin_organizations');
+    }
+
+    #[Route('/demo-leads/delete/{id}', name: 'app_admin_demo_lead_delete', methods: ['POST'])]
+    public function deleteDemoLead(int $id, EntityManagerInterface $em, Request $request): Response
+    {
+        $lead = $em->getRepository(\App\Entity\DemoLead::class)->find($id);
+        if ($lead) {
+            $name = $lead->getName();
+            $em->remove($lead);
+            $em->flush();
+
+            $this->logAdminAudit($em, 'DEMO_LEAD_DELETED', ['name' => $name, 'email' => $lead->getEmail()], $request);
+
+            $this->addFlash('success', "Demo lead for {$name} deleted successfully.");
+        }
+
+        return $this->redirectToRoute('app_admin_demo_leads');
     }
 }

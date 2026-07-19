@@ -13,6 +13,7 @@
         <div class="d-flex align-items-center gap-3">
             <form method="get" class="d-flex align-items-center m-0 gap-2">
                 <input type="hidden" name="month" value="{{ currentMonth }}">
+                <input type="hidden" name="view" value="{{ view }}">
                 <select name="org_user_id" id="org_user_id" class="form-control form-control-sm m-0" onchange="this.form.submit()" style="min-width: 200px">
                     <option value="">-- Select a User --</option>
                     {% for u in orgUsers %}
@@ -40,11 +41,11 @@
         <div class="glass-panel p-3 mb-6 d-flex flex-wrap align-items-center justify-content-between gap-4 border">
             <!-- Left: Month Navigation -->
             <div class="d-flex align-items-center gap-3">
-                <a href="?org_user_id={{ selectedUser.id }}&month={{ prevMonth }}" class="btn btn-sm btn-secondary p-1" >
+                <a href="?org_user_id={{ selectedUser.id }}&month={{ prevMonth }}&view={{ view }}" class="btn btn-sm btn-secondary p-1" >
                     <span class="material-icons fs-md">chevron_left</span>
                 </a>
                 <h3 class="m-0 fs-md fw-600" style="min-width: 140px; text-align: center;">{{ monthName }}</h3>
-                <a href="?org_user_id={{ selectedUser.id }}&month={{ nextMonth }}" class="btn btn-sm btn-secondary p-1" >
+                <a href="?org_user_id={{ selectedUser.id }}&month={{ nextMonth }}&view={{ view }}" class="btn btn-sm btn-secondary p-1" >
                     <span class="material-icons fs-md">chevron_right</span>
                 </a>
             </div>
@@ -58,10 +59,10 @@
             <!-- Right: View & Export -->
             <div class="d-flex align-items-center gap-3">
                 <div class="btn-group bg-card rounded-md p-1 d-inline-flex" style="border: 1px solid var(--border-color);">
-                    <button type="button" class="btn btn-sm btn-light active fw-600 px-3" id="btn-view-calendar" onclick="toggleView('calendar')" style="background: var(--bg-color); color: var(--text-color); box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+                    <button type="button" class="btn btn-sm {% if view == 'calendar' %}btn-light active fw-600{% else %}text-secondary hover-text-primary{% endif %} px-3" id="btn-view-calendar" onclick="toggleView('calendar')" style="{% if view == 'calendar' %}background: var(--bg-color); color: var(--text-color); box-shadow: 0 1px 3px rgba(0,0,0,0.1);{% else %}background: transparent;{% endif %}">
                         <span class="material-icons fs-sm align-middle mr-1">calendar_month</span> Calendar
                     </button>
-                    <button type="button" class="btn btn-sm text-secondary hover-text-primary px-3" id="btn-view-list" onclick="toggleView('list')" style="background: transparent;">
+                    <button type="button" class="btn btn-sm {% if view == 'list' %}btn-light active fw-600{% else %}text-secondary hover-text-primary{% endif %} px-3" id="btn-view-list" onclick="toggleView('list')" style="{% if view == 'list' %}background: var(--bg-color); color: var(--text-color); box-shadow: 0 1px 3px rgba(0,0,0,0.1);{% else %}background: transparent;{% endif %}">
                         <span class="material-icons fs-sm align-middle mr-1">list</span> List
                     </button>
                 </div>
@@ -94,7 +95,7 @@
             </div>
         </div>
 
-        <div id="calendar-view-container" class="bg-card rounded-lg border">
+        <div id="calendar-view-container" class="bg-card rounded-lg border {% if view != 'calendar' %}d-none{% endif %}">
             <!-- Calendar Header -->
             <div class="fs-sm fw-600 text-center text-secondary bg-input d-grid border-b calendar-header">
                 <div>Sun</div>
@@ -180,7 +181,7 @@
         </div>
 
         <!-- LIST VIEW -->
-        <div id="list-view-container" class="d-none mt-6">
+        <div id="list-view-container" class="{% if view == 'list' %}d-block{% else %}d-none{% endif %} mt-6">
             <div class="glass-panel p-0 overflow-hidden">
                 <div class="table-responsive">
                     <table class="table mb-0">
@@ -335,10 +336,29 @@
             // Reset styles
             const activeStyle = "background: var(--bg-color); color: var(--text-color); box-shadow: 0 1px 3px rgba(0,0,0,0.1);";
             const inactiveStyle = "background: transparent; color: var(--text-secondary);";
+
+            // Update URL query parameter dynamically without reloading
+            const url = new URL(window.location);
+            url.searchParams.set('view', viewType);
+            window.history.replaceState({}, '', url);
+
+            // Update all month pagination links dynamically
+            document.querySelectorAll('a[href*="month="]').forEach(link => {
+                const linkUrl = new URL(link.href, window.location.origin);
+                linkUrl.searchParams.set('view', viewType);
+                link.href = linkUrl.pathname + linkUrl.search;
+            });
+
+            // Update user form input dynamically
+            const viewInput = document.querySelector('input[name="view"]');
+            if (viewInput) viewInput.value = viewType;
             
             if (viewType === 'list') {
                 if(calContainer) calContainer.classList.add('d-none');
-                if(listContainer) listContainer.classList.remove('d-none');
+                if(listContainer) {
+                    listContainer.classList.remove('d-none');
+                    listContainer.classList.add('d-block');
+                }
                 
                 if(btnList) {
                     btnList.classList.add('active', 'fw-600');
@@ -350,7 +370,10 @@
                 }
             } else {
                 if(calContainer) calContainer.classList.remove('d-none');
-                if(listContainer) listContainer.classList.add('d-none');
+                if(listContainer) {
+                    listContainer.classList.add('d-none');
+                    listContainer.classList.remove('d-block');
+                }
                 
                 if(btnCal) {
                     btnCal.classList.add('active', 'fw-600');

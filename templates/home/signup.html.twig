@@ -1,28 +1,70 @@
-{% extends 'base.html.twig' %}
+{% extends 'home/layout.html.twig' %}
 
 {% block title %}Sign Up - Create Organization{% endblock %}
 
 {% block stylesheets %}
-
-    
+    <style>
+        .plan-card {
+            background: var(--bg-card, rgba(255,255,255,0.03)) !important;
+            border: 2px solid var(--border-color) !important;
+            border-radius: var(--radius-md) !important;
+            padding: 2rem !important;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+            display: flex !important;
+            flex-direction: column !important;
+            align-items: center !important;
+            text-align: center !important;
+            position: relative;
+            overflow: hidden;
+            min-height: 400px;
+            font-size: 0.95rem !important;
+        }
+        .plan-card:hover {
+            transform: translateY(-4px) !important;
+            border-color: var(--primary) !important;
+            box-shadow: var(--shadow-glow) !important;
+            background: var(--bg-card-hover, rgba(255,255,255,0.06)) !important;
+        }
+        .plan-card.selected {
+            border-color: var(--primary) !important;
+            background: var(--primary-glow, rgba(99, 102, 241, 0.08)) !important;
+            box-shadow: 0 0 20px rgba(99, 102, 241, 0.25) !important;
+        }
+        /* Popular badge for Silver plan */
+        .plan-card.recommended {
+            border-color: #f59e0b !important;
+        }
+        .plan-card.recommended::before {
+            content: "POPULAR";
+            position: absolute;
+            top: 15px;
+            right: -30px;
+            background: #f59e0b;
+            color: #000;
+            font-size: 0.65rem;
+            font-weight: 700;
+            padding: 4px 30px;
+            transform: rotate(45deg);
+            letter-spacing: 0.05em;
+        }
+        .plan-selected-badge {
+            position: absolute;
+            top: 15px;
+            left: 15px;
+            color: var(--primary);
+            font-size: 1.5rem;
+            opacity: 0;
+            transition: opacity 0.2s ease;
+        }
+        .plan-card.selected .plan-selected-badge {
+            opacity: 1;
+        }
+    </style>
 {% endblock %}
 
-{% block body %}
-<div class="position-absolute" style="top: 1.5rem; right: 1.5rem; z-index: 1000;">
-    <div class="theme-selector">
-        <button type="button" class="theme-option" data-value="light" onclick="setTheme('light')" title="Light Mode">
-            <span class="material-icons">light_mode</span>
-        </button>
-        <button type="button" class="theme-option" data-value="dark" onclick="setTheme('dark')" title="Dark Mode">
-            <span class="material-icons">dark_mode</span>
-        </button>
-        <button type="button" class="theme-option" data-value="system" onclick="setTheme('system')" title="System Theme">
-            <span class="material-icons">settings_brightness</span>
-        </button>
-    </div>
-</div>
-
-<div class="p-0 w-100 max-w-800" style="margin: 3rem auto;  1.5rem">
+{% block content %}
+<div class="p-0 w-100 max-w-800" style="margin: 2rem auto; padding: 0 1.5rem;">
     <div class="text-center mb-8">
         <h2 class="fs-3xl fw-800">Set Up Your <span class="text-gradient">Organization</span></h2>
         <p class="text-secondary mt-1">Onboard in minutes with our quick-start wizard</p>
@@ -155,28 +197,50 @@
 
             <input type="hidden" name="plan" id="selected-plan" value="{{ plan|default('basic') }}">
 
-            <div class="grid-cols-3 gap-4 mb-8">
+            <div class="grid-cols-3 gap-6 mb-6">
                 {% for p in plans %}
-                    <div class="category-option-card plan-card {% if plan|default('basic') == p.name %}selected{% endif %}" onclick="selectPlan('{{ p.name }}')" id="plan-{{ p.name }}-card">
-                        <span class="material-icons fs-3xl" style="{% if p.name == 'gold' %}color: #f59e0b;{% elseif p.name == 'silver' %}color: #cbd5e1;{% endif %}">
+                    <div class="plan-card {% if plan|default('basic') == p.name %}selected{% endif %} {% if p.name == 'silver' %}recommended{% endif %}" onclick="selectPlan('{{ p.name }}')" id="plan-{{ p.name }}-card">
+                        <span class="plan-selected-badge material-icons">check_circle</span>
+                        
+                        <span class="material-icons fs-4xl mb-2" style="{% if p.name == 'gold' %}color: #f59e0b;{% elseif p.name == 'silver' %}color: #3b82f6;{% else %}color: #cbd5e1;{% endif %}; font-size: 2.5rem;">
                             {% if p.name == 'basic' %}stars{% elseif p.name == 'silver' %}workspace_premium{% else %}military_tech{% endif %}
                         </span>
-                        <span class="fs-lg fw-700 mt-0" style="padding: .5rem; text-transform: capitalize">{{ p.name }}</span>
-                        <span class="fs-2xl fw-800 m-0" >
-                            {% if p.priceMonthly == 0 %}Free{% else %}${{ p.priceMonthly|round }}<span class="fs-sm fw-400">/mo</span>{% endif %}
+                        
+                        <span class="fs-lg fw-800 text-uppercase tracking-wider text-primary mb-1">{{ p.name }}</span>
+                        
+                        <span class="fs-3xl fw-800 mb-4" style="font-size: 2rem;">
+                            {% if p.priceMonthly == 0 %}Free{% else %}${{ p.priceMonthly|round }}<span class="fs-xs fw-400 text-secondary">/mo</span>{% endif %}
                         </span>
-                        <ul class="fs-sm text-center text-secondary d-flex flex-column gap-1 w-100" >
-                            <li>Up to {{ p.maxOrgUsers|number_format }} users</li>
-                            <li>{% if p.maxManagers >= 9999 %}Unlimited{% else %}{{ p.maxManagers }}{% endif %} Manager limit</li>
-                            <li>{{ p.sessionLimitHours }}-hour max sessions</li>
-                            <li>{{ p.retentionDays }} days retention</li>
-                            <li>{% if p.name == 'basic' %}Open kiosk mode{% else %}Secure PIN kiosk{% endif %}</li>
-                            <li class="text-muted" >
-                                {% if p.exportsEnabled %}Excel/CSV exports{% else %}No data exports{% endif %}
+                        
+                        <ul class="fs-xs text-center text-secondary d-flex flex-column gap-2.5 w-100 border-t pt-4" style="list-style: none; padding-left: 0; line-height: 1.4;">
+                            <li class="d-flex align-items-center justify-content-center gap-1.5"><span class="material-icons text-success" style="font-size: 1rem;">check</span> Up to {{ p.maxOrgUsers|number_format }} active employees</li>
+                            <li class="d-flex align-items-center justify-content-center gap-1.5"><span class="material-icons text-success" style="font-size: 1rem;">check</span> {% if p.maxManagers >= 9999 %}Unlimited{% else %}{{ p.maxManagers }}{% endif %} Manager seats</li>
+                            <li class="d-flex align-items-center justify-content-center gap-1.5"><span class="material-icons text-success" style="font-size: 1rem;">check</span> {{ p.sessionLimitHours }}h max shift duration</li>
+                            <li class="d-flex align-items-center justify-content-center gap-1.5"><span class="material-icons text-success" style="font-size: 1rem;">check</span> {{ p.retentionDays }} days log history retention</li>
+                            <li class="d-flex align-items-center justify-content-center gap-1.5">
+                                {% if p.name == 'basic' %}
+                                    <span class="material-icons text-warning" style="font-size: 1rem;">info</span> Open Select Kiosk mode
+                                {% else %}
+                                    <span class="material-icons text-success" style="font-size: 1rem;">check</span> Secure PIN Keypad Kiosk
+                                {% endif %}
+                            </li>
+                            <li class="d-flex align-items-center justify-content-center gap-1.5 text-muted">
+                                {% if p.exportsEnabled %}
+                                    <span class="material-icons text-success" style="font-size: 1rem;">check</span> Excel / CSV Exports enabled
+                                {% else %}
+                                    <span class="material-icons text-secondary" style="font-size: 1rem; opacity: 0.4;">cancel</span> No spreadsheet data exports
+                                {% endif %}
                             </li>
                         </ul>
                     </div>
                 {% endfor %}
+            </div>
+
+            <!-- Detailed comparison link -->
+            <div class="text-center mb-8">
+                <a href="{{ path('app_plans_compare') }}" target="_blank" class="d-inline-flex align-items-center gap-1.5 fs-sm fw-600 text-primary hover-underline" style="text-decoration: none;">
+                    <span class="material-icons fs-md">compare_arrows</span> Compare all plans &amp; core features in detail
+                </a>
             </div>
 
             <div class="d-flex justify-content-between mt-8">
@@ -232,6 +296,27 @@
                         <input type="text" id="card_cvv" class="form-control" placeholder="123" maxlength="4">
                     </div>
                 </div>
+            </div>
+
+            <!-- Terms & Privacy Agreement Display Widget -->
+            <div class="form-group mt-6 p-4 rounded-md border" style="background: var(--bg-card); max-height: 200px; overflow-y: auto; font-size: 0.8rem; border-color: var(--border-color); line-height: 1.5; color: var(--text-secondary);">
+                <h5 class="fw-700 text-primary mb-2" style="font-size: 0.9rem;">Terms of Service &amp; Privacy Policy</h5>
+                <div class="mb-3">
+                    <strong class="text-primary">Terms of Service:</strong>
+                    <div class="mt-1" style="white-space: pre-wrap;">{{ app_config('terms_and_conditions', "TERMS OF SERVICE\n\n1. Acceptance of Terms\nBy creating an account, registering an organization, or utilizing any portion of the CenterTime multi-tenant check-in and time-tracking service (the \"Service\"), you agree to be bound by these Terms of Service. If you do not agree, you must not access or use the Service.\n\n2. Description of Service\nCenterTime is a web-based multi-tenant employee time-tracking, attendance monitoring, and check-in kiosk platform. The Service is provided \"as is\" and \"as available\". We reserve the right to modify, suspend, or terminate the Service at any time without liability.\n\n3. Account Security and Responsibilities\n- You are responsible for maintaining the confidentiality of your manager credentials and all employee PINs/tokens.\n- You agree to ensure that all employee records, hours logged, and configurations represent accurate business operations.\n- You must comply with all local labor, employment, and wage laws. You represent that you have obtained all necessary employee consents for tracking their work hours and collecting their contact information.\n\n4. Limitation of Liability\nTO THE MAXIMUM EXTENT PERMITTED BY LAW, CENTERTIME AND ITS OPERATORS SHALL NOT BE LIABLE FOR ANY INDIRECT, INCIDENTAL, SPECIAL, CONSEQUENTIAL, OR PUNITIVE DAMAGES, OR ANY LOSS OF PROFITS, REVENUE, DATA, OR USE, INCURRED BY YOU OR ANY THIRD PARTY. \nWe assume no responsibility or liability for:\n- Discrepancies in payroll calculation, timesheet exports, or labor compliance.\n- System downtime, data corruption, or loss of access to logged histories.\n- Fines, penalties, or damages resulting from your failure to comply with local labor regulations.\n\n5. Subscription Plans, Billing, and Quotas\n- Subscription fees for paid plans are billed in advance on a monthly recurring basis and are non-refundable.\n- Plan limits (active employee counts, manager seats, data retention thresholds, and features) are strictly enforced based on your selected subscription tier.\n- We reserve the right to suspend or terminate accounts for past-due balances or violations of these terms.") }}</div>
+
+                    <hr class="my-3" style="border: 0; border-top: 1px solid var(--border-color);">
+
+                    <strong class="text-primary">Privacy Policy:</strong>
+                    <div class="mt-1" style="white-space: pre-wrap;">{{ app_config('privacy_policy', "PRIVACY POLICY\n\n1. Information We Collect\nWe collect metadata essential for providing secure time-tracking services, including:\n- Manager names, email addresses, and phone numbers.\n- Organization details (name, street address, slug, billing info).\n- Employee information (first/last names, phone numbers, unique check-in PIN hashes, and barcode data).\n- Time log history (check-in/out timestamps, selected categories, computed session durations).\n\n2. How We Use Information\nWe use your data solely to operate and improve the Service, including:\n- Generating timesheets and organization reports.\n- Activating kiosk authorization and validating employee check-ins.\n- Sending transactional SMS notifications or emails.\n- Processing secure subscription payments via our integration partners.\n\n3. Data Protection and Hashing\n- Manager passwords and employee PINs are cryptographically hashed using secure, one-way hashing algorithms. We never store plain-text credentials.\n- Kiosk login states are secured using ephemeral, cryptographically random link tokens.\n\n4. Data Sharing and Third-Party Disclosures\nWe do not sell, rent, or lease customer data. We share information only with trusted service providers to the extent necessary to perform billing processes (e.g., Stripe) and run system hosting.\n\n5. Data Access and Portability\nManagers can export timesheets and user records in Excel or CSV formats at any time. We store log history in accordance with your plan's retention settings (up to 180 days by default), after which records are archived and deleted from our active database.") }}</div>
+                </div>
+            </div>
+
+            <div class="form-group mt-4 mb-6">
+                <label class="fs-md d-flex align-items-center gap-3 cursor-pointer">
+                    <input type="checkbox" name="accept_policies" value="1" required style="width: 18px; height: 18px; cursor: pointer;">
+                    <span class="fw-600">I agree to the Terms of Service &amp; Privacy Policy</span>
+                </label>
             </div>
 
             <div class="form-group mt-6 p-4 rounded-md border" style="background: var(--bg-body)">

@@ -1,0 +1,43 @@
+{% extends 'support/layout.html.twig' %}
+
+{% block support_title %}Kiosk Deployment Guide{% endblock %}
+
+{% block support_content %}
+<h2 class="fs-2xl fw-800 text-white mb-2">Kiosk Deployment Guide</h2>
+<p class="fs-md text-secondary mb-6 lh-relaxed">
+    Learn how to launch, configure, and secure physical check-in interfaces for your workplace.
+</p>
+
+<div class="support-split-view mb-8">
+    <div>
+        <h3 class="fs-lg fw-700 text-white mb-3">Kiosk Interfaces &amp; PIN Pad</h3>
+        <p class="fs-sm text-secondary mb-4 lh-relaxed">
+            The Kiosk screen is designed as a standalone web application suited for tablets or wall-mounted touch monitors. 
+        </p>
+        <p class="fs-sm text-secondary mb-4 lh-relaxed">
+            When configured in <strong>Secure PIN Mode</strong>, employees first search or select their profile, and then enter their 4-digit PIN on the screen's numeric keypad.
+        </p>
+        <ul class="fs-sm text-secondary d-flex flex-column gap-2 pl-5 lh-relaxed">
+            <li><strong>Auto-focus Search:</strong> Simply start typing to filter name list instantly.</li>
+            <li><strong>Keypad feedback:</strong> Clean circular buttons with instant press response state.</li>
+            <li><strong>Session check:</strong> Validates user credentials securely against server API.</li>
+        </ul>
+    </div>
+    <div class="glass-panel p-2 d-flex flex-column align-items-center" style="border-radius: var(--radius-sm); border: 1px solid rgba(255,255,255,0.08); background: rgba(0,0,0,0.2);">
+        <img src="{{ asset('img/support/kiosk.png') }}" alt="Kiosk PIN Screen" style="width: 100%; border-radius: var(--radius-xs); height: auto; box-shadow: var(--shadow-md);">
+        <span class="fs-xs text-muted mt-2 text-center">Actual Kiosk PIN Pad View</span>
+    </div>
+</div>
+
+<hr class="my-6" style="border: 0; border-top: 1px solid rgba(255,255,255,0.08)">
+
+<h3 class="fs-lg fw-700 text-white mb-3">Locking Down Your Device</h3>
+<p class="fs-sm text-secondary mb-4 lh-relaxed">
+    To prevent staff from closing the browser or navigating away from the Kiosk view:
+</p>
+<ul class="fs-sm text-secondary d-flex flex-column gap-2 pl-5 lh-relaxed">
+    <li><strong>iOS (iPads):</strong> Turn on <strong>Guided Access</strong> in Accessibility Settings. Triple-click the lock button to lock the screen to Safari or Chrome.</li>
+    <li><strong>Android (Tablets):</strong> Turn on <strong>Screen Pinning</strong> in Security Settings. Open the browser task menu and select the pin icon on the browser app preview.</li>
+    <li><strong>Desktop/Chrome OS:</strong> Launch the browser in kiosk/fullscreen mode (`chrome.exe --kiosk http://your-kiosk-url`).</li>
+</ul>
+{% endblock %}

@@ -1,0 +1,28 @@
+<div class="avery-label" style="position: relative;">
+    <div class="label-info">
+        <!-- Org logo + name row -->
+        <div style="display: flex; align-items: center; gap: 3px; margin-bottom: 1px;">
+            <img src="{{ path('app_org_logo', {slug: org.slug}) }}"
+                 alt=""
+                 style="width: 9px; height: 9px; border-radius: 2px; object-fit: cover; flex-shrink: 0;">
+            <div class="label-org" style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{ org.name }}</div>
+        </div>
+        <div class="label-name-wrap">
+            <div class="label-first-name">{{ user.firstName }}</div>
+            <div class="label-last-name">{{ user.lastName }}</div>
+        </div>
+        <!-- PIN + system logo on same line, same font size -->
+        <div class="label-pin-small" style="display: flex; align-items: center; gap: 3px; white-space: nowrap;">
+            <span>PIN: {{ user.pin }}</span>
+            <span style="color: #a0aec0; font-size: inherit; letter-spacing: 0;">·</span>
+            <span style="font-size: inherit; line-height: 1;">⏰</span>
+            <span style="font-size: inherit; font-family: Arial, sans-serif; color: #718096; letter-spacing: 0.02em;">CenterTime</span>
+        </div>
+    </div>
+    {% if org.isBarcodeEnabled() %}
+    <div class="label-code">
+        <!-- Renders QR code encoding the unique PIN -->
+        <img src="https://api.qrserver.com/v1/create-qr-code/?size=100x100&data={{ user.pin }}" alt="QR Code">
+    </div>
+    {% endif %}
+</div>

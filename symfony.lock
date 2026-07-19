@@ -53,6 +53,9 @@
     "stof/doctrine-extensions-bundle": {
         "version": "v1.15.3"
     },
+    "stripe/stripe-php": {
+        "version": "v20.3.1"
+    },
     "symfony/asset-mapper": {
         "version": "8.1",
         "recipe": {
