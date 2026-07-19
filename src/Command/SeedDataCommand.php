@@ -183,12 +183,13 @@ class SeedDataCommand extends Command
                 $admin->setRole('ROLE_SYSTEM_ADMIN');
                 $admin->setIsActive(true);
                 
-                // Hash credentials using standard Symfony password encoder
-                $hashedPassword = $this->passwordHasher->hashPassword($admin, $adminData['password']);
+                // Hash credentials using environment variable or default fallback
+                $adminPassword = $_ENV['SEED_ADMIN_PASSWORD'] ?? $_SERVER['SEED_ADMIN_PASSWORD'] ?? 'admin123';
+                $hashedPassword = $this->passwordHasher->hashPassword($admin, $adminPassword);
                 $admin->setPasswordHash($hashedPassword);
 
                 $this->entityManager->persist($admin);
-                $io->success("Created platform administrator: {$adminData['email']} (Password: {$adminData['password']})");
+                $io->success("Created platform administrator: {$adminData['email']} (Password: " . ($adminPassword === 'admin123' ? 'admin123 (default)' : '********') . ")");
             } else {
                 $io->text("Platform administrator {$adminData['email']} already exists.");
             }
@@ -221,10 +222,11 @@ class SeedDataCommand extends Command
                     $manager->setOrganization($org);
                     $manager->setIsActive(true);
 
-                    $hashedPassword = $this->passwordHasher->hashPassword($manager, $mgrData['password']);
+                    $managerPassword = $_ENV['SEED_MANAGER_PASSWORD'] ?? $_SERVER['SEED_MANAGER_PASSWORD'] ?? 'manager123';
+                    $hashedPassword = $this->passwordHasher->hashPassword($manager, $managerPassword);
                     $manager->setPasswordHash($hashedPassword);
                     $this->entityManager->persist($manager);
-                    $io->text("  Manager: {$mgrData['email']} (Password: {$mgrData['password']})");
+                    $io->text("  Manager: {$mgrData['email']} (Password: " . ($managerPassword === 'manager123' ? 'manager123 (default)' : '********') . ")");
                 }
 
                 // Seed shift categories

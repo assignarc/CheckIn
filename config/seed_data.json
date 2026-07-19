@@ -65,7 +65,7 @@
         "email": "admin@centertime.us",
         "first_name": "System",
         "last_name": "Administrator",
-        "password": "admin123"
+        "password": "ENV_SEED_ADMIN_PASSWORD"
     },
     "static_organizations": [
         {
@@ -81,7 +81,7 @@
                     "email": "manager@acme.com",
                     "first_name": "Alice",
                     "last_name": "Manager",
-                    "password": "manager123"
+                    "password": "ENV_SEED_MANAGER_PASSWORD"
                 }
             ],
             "categories": [
