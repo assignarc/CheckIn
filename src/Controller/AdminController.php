@@ -46,7 +46,7 @@ class AdminController extends AbstractController
     }
 
     #[Route('/dashboard', name: 'app_admin_dashboard')]
-    public function dashboard(EntityManagerInterface $em): Response
+    public function dashboard(EntityManagerInterface $em, AppConfigService $configService): Response
     {
         $orgCount = $em->getRepository(Organization::class)->count([]);
         $mgrCount = $em->getRepository(Manager::class)->count(['role' => 'ROLE_ORG_MANAGER']);
@@ -62,6 +62,38 @@ class AdminController extends AbstractController
         $silverCount = $silverPlan ? $em->getRepository(Organization::class)->count(['plan' => $silverPlan]) : 0;
         $goldCount = $goldPlan ? $em->getRepository(Organization::class)->count(['plan' => $goldPlan]) : 0;
 
+        // Fetch demo organizations details and credentials
+        $basicOrg = $em->getRepository(Organization::class)->findOneBy(['slug' => 'basic-demo']);
+        $goldenOrg = $em->getRepository(Organization::class)->findOneBy(['slug' => 'golden-demo']);
+
+        $demoData = [];
+        if ($basicOrg) {
+            $demoData['basic'] = [
+                'name' => $basicOrg->getName(),
+                'slug' => $basicOrg->getSlug(),
+                'token' => $basicOrg->getCheckInLinkToken(),
+                'email' => 'basic@centertime.us',
+                'password' => $configService->get('demo_basic_password', 'temp_hash_b'),
+            ];
+            $bManager = $em->getRepository(Manager::class)->findOneBy(['organization' => $basicOrg]);
+            if ($bManager) {
+                $demoData['basic']['email'] = $bManager->getEmail();
+            }
+        }
+        if ($goldenOrg) {
+            $demoData['golden'] = [
+                'name' => $goldenOrg->getName(),
+                'slug' => $goldenOrg->getSlug(),
+                'token' => $goldenOrg->getCheckInLinkToken(),
+                'email' => 'golden@centertime.us',
+                'password' => $configService->get('demo_golden_password', 'temp_hash_g'),
+            ];
+            $gManager = $em->getRepository(Manager::class)->findOneBy(['organization' => $goldenOrg]);
+            if ($gManager) {
+                $demoData['golden']['email'] = $gManager->getEmail();
+            }
+        }
+
         return $this->render('admin/dashboard.html.twig', [
             'orgCount' => $orgCount,
             'mgrCount' => $mgrCount,
@@ -70,6 +102,7 @@ class AdminController extends AbstractController
             'basicCount' => $basicCount,
             'silverCount' => $silverCount,
             'goldCount' => $goldCount,
+            'demoData' => $demoData,
         ]);
     }
 

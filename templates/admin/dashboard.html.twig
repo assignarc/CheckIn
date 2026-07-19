@@ -112,4 +112,50 @@
         </div>
     </div>
 </div>
+
+{% if demoData is not empty %}
+<div class="glass-panel p-6 mt-8">
+    <h3 class="fs-lg text-warning mb-4 d-flex align-items-center gap-2">
+        <span class="material-icons text-warning">analytics</span> Demo Environments Credentials & Kiosk URLs
+    </h3>
+    <p class="fs-sm text-secondary mb-6">
+        Below are the active auto-rotated manager login emails, passwords, and public check-in/out kiosk links for testing purposes.
+    </p>
+    <div class="grid-cols-2 gap-6">
+        {% if demoData.basic is defined %}
+            <div class="p-4 rounded border" style="background: rgba(255,255,255,0.02); border-color: rgba(255,255,255,0.08);">
+                <h4 class="fw-600 text-purple-300 mb-3 d-flex align-items-center gap-2">
+                    <span class="material-icons text-purple-400">store</span> {{ demoData.basic.name }}
+                </h4>
+                <div class="fs-sm d-flex flex-column gap-2 text-secondary">
+                    <div><strong>Manager Email:</strong> <code style="color: var(--primary); font-weight: 600;">{{ demoData.basic.email }}</code></div>
+                    <div><strong>Password:</strong> <code style="color: var(--primary); font-weight: 600;">{{ demoData.basic.password }}</code></div>
+                    <div class="mt-2">
+                        <a href="{{ path('app_kiosk', {slug: demoData.basic.slug, token: demoData.basic.token}) }}" target="_blank" class="btn btn-xs btn-outline-primary d-inline-flex align-items-center gap-1">
+                            <span class="material-icons fs-sm">open_in_new</span> Open Kiosk Link
+                        </a>
+                    </div>
+                </div>
+            </div>
+        {% endif %}
+        
+        {% if demoData.golden is defined %}
+            <div class="p-4 rounded border" style="background: rgba(255,255,255,0.02); border-color: rgba(255,255,255,0.08);">
+                <h4 class="fw-600 text-purple-300 mb-3 d-flex align-items-center gap-2">
+                    <span class="material-icons text-purple-400">workspace_premium</span> {{ demoData.golden.name }}
+                </h4>
+                <div class="fs-sm d-flex flex-column gap-2 text-secondary">
+                    <div><strong>Manager Email:</strong> <code style="color: var(--primary); font-weight: 600;">{{ demoData.golden.email }}</code></div>
+                    <div><strong>Password:</strong> <code style="color: var(--primary); font-weight: 600;">{{ demoData.golden.password }}</code></div>
+                    <div class="mt-2">
+                        <a href="{{ path('app_kiosk', {slug: demoData.golden.slug, token: demoData.golden.token}) }}" target="_blank" class="btn btn-xs btn-outline-primary d-inline-flex align-items-center gap-1">
+                            <span class="material-icons fs-sm">open_in_new</span> Open Kiosk Link
+                        </a>
+                    </div>
+                </div>
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endif %}
 {% endblock %}

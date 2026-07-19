@@ -2095,6 +2095,9 @@ input[type="datetime-local"]::-webkit-calendar-picker-indicator:hover {
     display: inline-flex;
 }
 .tab-btn-custom {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
     font-family: inherit;
     font-size: 0.875rem;
     font-weight: 600;
@@ -2103,6 +2106,10 @@ input[type="datetime-local"]::-webkit-calendar-picker-indicator:hover {
     border: none;
     cursor: pointer;
     transition: all var(--transition-fast);
+    white-space: nowrap;
+}
+.tab-btn-custom .material-icons {
+    font-family: 'Material Icons' !important;
 }
 .tab-btn-custom.active {
     background: var(--bg-main);
