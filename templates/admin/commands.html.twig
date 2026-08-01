@@ -1,0 +1,49 @@
+{% extends 'admin/layout.html.twig' %}
+
+{% block title %}CLI Commands Reference - Platform Admin{% endblock %}
+{% block header_title %}Console & CLI Commands{% endblock %}
+
+{% block admin_content %}
+<div class="glass-panel p-6 max-w-1000">
+    <div class="d-flex justify-content-between align-items-center mb-6">
+        <div>
+            <h3 class="fs-xl text-purple-300 m-0">Project Console Commands Reference</h3>
+            <p class="fs-sm text-secondary mt-1">Available CLI commands for system maintenance, seeding, session sweeping, and audit log management.</p>
+        </div>
+        <span class="badge badge-primary fs-sm">Symfony Console</span>
+    </div>
+
+    <div class="table-responsive">
+        <table class="table fs-md">
+            <thead>
+                <tr>
+                    <th style="width: 220px;">Command Name</th>
+                    <th style="width: 160px;">Category</th>
+                    <th>Description</th>
+                    <th style="width: 280px;">CLI Usage Example</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for cmd in commands %}
+                    <tr>
+                        <td class="fw-700 text-white align-top">
+                            <code>{{ cmd.command }}</code>
+                        </td>
+                        <td class="align-top">
+                            <span class="badge badge-secondary">{{ cmd.category }}</span>
+                        </td>
+                        <td class="text-secondary align-top fs-sm">
+                            {{ cmd.description }}
+                        </td>
+                        <td class="align-top">
+                            <div class="p-2 rounded-sm border bg-input" style="font-size: 0.75rem; font-family: monospace; color: #a78bfa; word-break: break-all;">
+                                {{ cmd.usage }}
+                            </div>
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

@@ -37,14 +37,14 @@ class StripeController extends AbstractController
 
         // Fallback for offline/test environments or placeholder credentials
         if ($this->getParameter('kernel.environment') === 'test' || str_contains($stripeSecret, 'placeholder')) {
-            // Simulate Stripe Customer ID creation
             if (!$org->getStripeCustomerId()) {
                 $org->setStripeCustomerId('cus_' . bin2hex(random_bytes(8)));
                 $org->setStripeSubscriptionId('sub_' . bin2hex(random_bytes(8)));
-                $org->setPlan($plan);
-                $org->setIsSubscriptionActive(true);
-                $em->flush();
             }
+            $org->setPlan($plan);
+            $org->clearOverrides();
+            $org->setIsSubscriptionActive(true);
+            $em->flush();
             return $this->redirect($successUrl);
         }
 
@@ -53,9 +53,9 @@ class StripeController extends AbstractController
 
         // Map plans to your product/price IDs in Stripe Dashboard
         $stripePriceId = match($plan->getName()) {
-            'silver' => 'price_silver_id_here',
-            'gold' => 'price_gold_id_here',
-            'platinum' => 'price_platinum_id_here',
+            'silver' => 'price_1TzStnKWSSJsmba9uzpNsE5q',
+            'gold' => 'price_1TzSuhKWSSJsmba9crFfDmdv',
+            'platinum' => 'price_1TzSw8KWSSJsmba94vGupllw',
             default => null
         };
 

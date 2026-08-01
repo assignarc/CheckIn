@@ -67,6 +67,9 @@ class Organization
     #[ORM\Column(type: "string", length: 255, nullable: true)]
     private ?string $address = null;
 
+    #[ORM\Column(type: "string", length: 100, nullable: true)]
+    private ?string $timezone = null;
+
     #[ORM\Column(type: "string", length: 50, nullable: true)]
     private ?string $phone = null;
 
@@ -300,6 +303,17 @@ class Organization
         return $this;
     }
 
+    public function getTimezone(): ?string
+    {
+        return $this->timezone;
+    }
+
+    public function setTimezone(?string $timezone): self
+    {
+        $this->timezone = $timezone ? trim($timezone) : null;
+        return $this;
+    }
+
     public function isSubscriptionActive(): bool
     {
         return $this->isSubscriptionActive;
@@ -444,6 +458,18 @@ class Organization
     public function setExportsEnabledOverride(?bool $exportsEnabledOverride): self
     {
         $this->exportsEnabledOverride = $exportsEnabledOverride;
+        return $this;
+    }
+
+    public function clearOverrides(): self
+    {
+        $this->maxOrgUsersOverride = null;
+        $this->maxManagersOverride = null;
+        $this->maxFieldsOverride = null;
+        $this->maxCategoriesOverride = null;
+        $this->sessionLimitHoursOverride = null;
+        $this->retentionDaysOverride = null;
+        $this->exportsEnabledOverride = null;
         return $this;
     }
 

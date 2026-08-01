@@ -192,14 +192,29 @@ def main():
             
             print(f"[{idx}/{len(files_to_upload)}] Uploading: {remote_path}...", end="", flush=True)
             
-            try:
-                with open(local_path, "rb") as fp:
-                    ftp.storbinary(f"STOR {remote_path}", fp)
-                print(" OK")
-                success_count += 1
-            except Exception as e:
-                print(f" FAILED ({e})")
-                fail_count += 1
+            uploaded = False
+            for attempt in range(1, 4):
+                try:
+                    with open(local_path, "rb") as fp:
+                        ftp.storbinary(f"STOR {remote_path}", fp)
+                    print(" OK" if attempt == 1 else f" OK (attempt {attempt})")
+                    success_count += 1
+                    uploaded = True
+                    break
+                except Exception as e:
+                    if attempt < 3:
+                        try:
+                            ftp.close()
+                        except Exception:
+                            pass
+                        try:
+                            ftp = connect_ftp(config)
+                            remote_root = ftp.pwd()
+                        except Exception:
+                            pass
+                    else:
+                        print(f" FAILED ({e})")
+                        fail_count += 1
                 
         print("\n=== Deployment Completed ===")
         print(f"Successful uploads: {success_count}")

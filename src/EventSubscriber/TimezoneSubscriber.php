@@ -3,6 +3,7 @@
 namespace App\EventSubscriber;
 
 use App\Service\AppConfigService;
+use Symfony\Bundle\SecurityBundle\Security;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 use Symfony\Component\HttpKernel\Event\RequestEvent;
 use Symfony\Component\HttpKernel\KernelEvents;
@@ -10,14 +11,11 @@ use Twig\Environment;
 
 class TimezoneSubscriber implements EventSubscriberInterface
 {
-    private $configService;
-    private $twig;
-
-    public function __construct(AppConfigService $configService, Environment $twig)
-    {
-        $this->configService = $configService;
-        $this->twig = $twig;
-    }
+    public function __construct(
+        private AppConfigService $configService,
+        private Environment $twig,
+        private Security $security
+    ) {}
 
     public static function getSubscribedEvents(): array
     {
@@ -29,6 +27,15 @@ class TimezoneSubscriber implements EventSubscriberInterface
     public function onKernelRequest(RequestEvent $event): void
     {
         $timezone = $this->configService->get('display_timezone', 'America/Chicago');
+
+        $user = $this->security->getUser();
+        if ($user && method_exists($user, 'getOrganization')) {
+            $org = $user->getOrganization();
+            if ($org && $org->getTimezone()) {
+                $timezone = $org->getTimezone();
+            }
+        }
+
         try {
             $this->twig->getExtension(\Twig\Extension\CoreExtension::class)->setTimezone($timezone);
         } catch (\Exception $e) {

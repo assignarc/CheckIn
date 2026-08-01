@@ -16,26 +16,25 @@
         <table class="table fs-md">
             <thead>
                 <tr>
-                    <th>Timestamp</th>
-                    <th>Actor</th>
-                    <th>Action</th>
+                    <th style="width: 160px;">Timestamp</th>
+                    <th style="width: 260px;">Actor / Action</th>
                     <th>Details</th>
-                    <th>IP Address</th>
+                    <th style="width: 120px;">IP Address</th>
                 </tr>
             </thead>
             <tbody>
                 {% for log in logs %}
                     <tr>
-                        <td class="white-space-nowrap">{{ log.createdAt|date('Y-m-d H:i:s') }}</td>
-                        <td>
-                            {% if log.manager %}
-                                {{ log.manager.firstName }} {{ log.manager.lastName }}
-                                <div class="fs-sm text-muted">{{ log.manager.email }}</div>
-                            {% else %}
-                                <span class="badge badge-secondary">System</span>
-                            {% endif %}
-                        </td>
-                        <td>
+                        <td class="white-space-nowrap align-top">{{ log.createdAt|date('Y-m-d H:i:s') }}</td>
+                        <td class="align-top" style="min-width: 220px;">
+                            <div class="fw-600">
+                                {% if log.manager %}
+                                    {{ log.manager.firstName }} {{ log.manager.lastName }}
+                                    <div class="fs-xs text-muted mb-1">{{ log.manager.email }}</div>
+                                {% else %}
+                                    <div class="fs-xs text-muted mb-1">System</div>
+                                {% endif %}
+                            </div>
                             <span class="badge" style="background: rgba(167, 139, 250, 0.15); color: #c4b5fd;">
                                 {{ log.action }}
                             </span>

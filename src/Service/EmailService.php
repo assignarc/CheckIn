@@ -33,6 +33,8 @@ class EmailService
 
         $this->mailer->send($email);
         $this->logEmailEvent($manager->getOrganization(), 'EMAIL_WELCOME_SENT', [
+            'email_type' => 'Welcome Account Verification',
+            'email_kind' => 'Welcome',
             'to' => $manager->getEmail()
         ]);
     }
@@ -53,6 +55,8 @@ class EmailService
 
         $this->mailer->send($email);
         $this->logEmailEvent($manager->getOrganization(), 'EMAIL_RENEWAL_SUCCESS_SENT', [
+            'email_type' => 'Subscription Renewal Success',
+            'email_kind' => 'Renewal Notice',
             'to' => $manager->getEmail(),
             'amount' => $amount
         ]);
@@ -73,6 +77,8 @@ class EmailService
 
         $this->mailer->send($email);
         $this->logEmailEvent($manager->getOrganization(), 'EMAIL_EXPIRY_WARNING_SENT', [
+            'email_type' => 'Subscription Payment Failed Warning',
+            'email_kind' => 'Payment Warning',
             'to' => $manager->getEmail()
         ]);
     }
@@ -93,6 +99,8 @@ class EmailService
 
         $this->mailer->send($email);
         $this->logEmailEvent($manager->getOrganization(), 'EMAIL_UPCOMING_INVOICE_SENT', [
+            'email_type' => 'Subscription Upcoming Renewal Notice',
+            'email_kind' => 'Upcoming Invoice',
             'to' => $manager->getEmail(),
             'amount' => $amount
         ]);

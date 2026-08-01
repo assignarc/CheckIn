@@ -6,6 +6,7 @@ use App\Entity\Category;
 use App\Entity\OrgUser;
 use App\Entity\Organization;
 use App\Entity\WorkSession;
+use App\Service\AppConfigService;
 use App\Service\LicenseService;
 use App\Service\PinService;
 use App\Service\SessionSweeperService;
@@ -188,7 +189,7 @@ class KioskController extends AbstractController
     }
 
     #[Route('/org/{slug}/kiosk/{token}/action', name: 'app_kiosk_action', methods: ['POST'])]
-    public function kioskAction(string $slug, string $token, Request $request, EntityManagerInterface $entityManager, SessionSweeperService $sessionSweeper): JsonResponse
+    public function kioskAction(string $slug, string $token, Request $request, EntityManagerInterface $entityManager, SessionSweeperService $sessionSweeper, AppConfigService $configService): JsonResponse
     {
         $org = $entityManager->getRepository(Organization::class)->findOneBy(['slug' => $slug]);
         if (!$org || $org->getCheckInLinkToken() !== $token) {
@@ -246,12 +247,13 @@ class KioskController extends AbstractController
             $session->setStartMethod($org->getAccessMode());
             $session->setDeviceInfo($request->headers->get('User-Agent'));
 
-            // Check check-in window policies
-            $now = new \DateTime();
-            $session->setStartedAt($now);
+            // Check check-in window against UTC (window boundaries stored in UTC)
+            $utc = new \DateTimeZone('UTC');
+            $nowUtc = new \DateTime('now', $utc);
+            $session->setStartedAt(new \DateTime());
 
             $isOutOfWindow = false;
-            $nowTime = new \DateTime($now->format('H:i:s'));
+            $nowTime = new \DateTime($nowUtc->format('H:i:s'));
             
             if ($org->getCheckInWindowStart() && $org->getCheckInWindowEnd()) {
                 $winStart = new \DateTime($org->getCheckInWindowStart()->format('H:i:s'));
@@ -293,23 +295,25 @@ class KioskController extends AbstractController
             $durationSeconds = $now->getTimestamp() - $activeSession->getStartedAt()->getTimestamp();
             $activeSession->setDurationSeconds($durationSeconds);
 
-            // Enforce limit hours
-            $limitSeconds = $org->getSessionLimitHours() * 3600;
-            if ($durationSeconds > $limitSeconds) {
-                // If it exceeded max limit, cap or trigger violation warning
-                // (The requirement says: "Basic: 2hr max/session/org, fixed, no override")
-                // We'll mark it as out of window or log the violation
-            }
+            // Check if checkout time is out of window — compare in UTC (window boundaries stored in UTC)
+            $utcTz = new \DateTimeZone('UTC');
+            $nowUtcTime = new \DateTime('now', $utcTz);
+            $nowLocalTime = new \DateTime($nowUtcTime->format('H:i:s'));
 
-            // Overtime rules calculations
-            $overtimeSeconds = 8 * 3600; // Standard 8 hours
-            $graceSeconds = $org->getOvertimeGraceMinutes() * 60;
-            
-            $isOvertime = false;
-            if ($durationSeconds > ($overtimeSeconds + $graceSeconds)) {
-                $isOvertime = true;
+            if ($org->getCheckInWindowStart() && $org->getCheckInWindowEnd()) {
+                $winStart = new \DateTime($org->getCheckInWindowStart()->format('H:i:s'));
+                $winEnd = new \DateTime($org->getCheckInWindowEnd()->format('H:i:s'));
+                
+                if ($winStart <= $winEnd) {
+                    if ($nowLocalTime < $winStart || $nowLocalTime > $winEnd) {
+                        $activeSession->setIsOutOfWindow(true);
+                    }
+                } else { // Overnight window support (e.g. 22:00 to 06:00)
+                    if ($nowLocalTime > $winEnd && $nowLocalTime < $winStart) {
+                        $activeSession->setIsOutOfWindow(true);
+                    }
+                }
             }
-            $activeSession->setIsOvertime($isOvertime);
 
             $entityManager->flush();
 
@@ -323,7 +327,6 @@ class KioskController extends AbstractController
                     'startedAt' => $activeSession->getStartedAt()->format('H:i:s'),
                     'endedAt' => $activeSession->getEndedAt()->format('H:i:s'),
                     'duration' => "{$hours}h {$mins}m",
-                    'isOvertime' => $isOvertime,
                     'isOutOfWindow' => $activeSession->isOutOfWindow()
                 ]
             ]);

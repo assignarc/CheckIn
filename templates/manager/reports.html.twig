@@ -20,7 +20,7 @@
         <div class="form-group m-0">
             <label class="form-label" for="orgUser_filter">User</label>
             <select name="org_user_id" id="orgUser_filter" class="form-control">
-                <option value="">All Users</option>
+                <option value="">All Students</option>
                 {% for emp in orgUsers %}
                     <option value="{{ emp.id }}" {% if app.request.query.get('org_user_id') == emp.id %}selected{% endif %}>{{ emp.firstName }} {{ emp.lastName }}</option>
                 {% endfor %}
@@ -58,14 +58,6 @@
         <div class="metric-info">
             <h3 class="fs-xl">{{ totalHours }}</h3>
             <p class="fs-xs">Total Hours Worked</p>
-        </div>
-    </div>
-    
-    <div class="metric-card p-4" >
-        <div class="metric-icon rose"><span class="material-icons fs-xl">more_time</span></div>
-        <div class="metric-info">
-            <h3 class="fs-xl">{{ overtimeCount }}</h3>
-            <p class="fs-xs">Overtime Instances</p>
         </div>
     </div>
 
@@ -186,13 +178,9 @@
                             {% if session.endMethod == 'Auto End' or session.endMethod == 'Force End' %}
                                 <span class="badge badge-danger">{{ session.endMethod }}</span>
                             {% else %}
-                                {% if session.isOvertime %}
-                                    <span class="badge badge-danger mr-1">Overtime</span>
-                                {% endif %}
                                 {% if session.isOutOfWindow %}
                                     <span class="badge badge-warning">Out of Window</span>
-                                {% endif %}
-                                {% if not session.isOvertime and not session.isOutOfWindow %}
+                                {% else %}
                                     <span class="fs-sm text-muted">Normal</span>
                                 {% endif %}
                             {% endif %}

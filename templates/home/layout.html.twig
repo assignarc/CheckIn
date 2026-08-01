@@ -107,7 +107,7 @@
         {% else %}
             <a href="{{ path('app_login') }}" class="btn btn-secondary fs-sm" >Login</a>
             {% if new_signups_enabled is defined and new_signups_enabled %}
-                <a href="{{ path('app_signup') }}" class="btn btn-primary fs-sm" >Start Free Trial</a>
+                <a href="{{ path('app_signup') }}" class="btn btn-primary fs-sm" >Create your organization</a>
             {% else %}
                 <button class="btn btn-primary fs-sm" disabled style="opacity: 0.6; cursor: not-allowed;">Signups Closed</button>
             {% endif %}

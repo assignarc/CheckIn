@@ -226,27 +226,32 @@ class AdminController extends AbstractController
         $planId = $request->request->get('plan_id');
 
         // Update main plan relationship
+        $planChanged = false;
         if ($planId) {
             $newPlan = $em->getRepository(Plan::class)->find($planId);
-            if ($newPlan) {
+            if ($newPlan && ($org->getPlan() === null || $org->getPlan()->getId() !== $newPlan->getId())) {
                 $org->setPlan($newPlan);
+                $org->clearOverrides();
+                $planChanged = true;
             }
         }
 
-        // Apply overrides: empty fields represent NULL (falling back to plan defaults)
-        $org->setMaxOrgUsersOverride($maxEmp !== '' && $maxEmp !== null ? (int)$maxEmp : null);
-        $org->setMaxManagersOverride($maxMgr !== '' && $maxMgr !== null ? (int)$maxMgr : null);
-        $org->setMaxFieldsOverride($maxFields !== '' && $maxFields !== null ? (int)$maxFields : null);
-        $org->setMaxCategoriesOverride($maxCats !== '' && $maxCats !== null ? (int)$maxCats : null);
-        $org->setSessionLimitHoursOverride($sessionLimit !== '' && $sessionLimit !== null ? (int)$sessionLimit : null);
-        $org->setRetentionDaysOverride($retention !== '' && $retention !== null ? (int)$retention : null);
-        
-        if ($exports === 'yes') {
-            $org->setExportsEnabledOverride(true);
-        } elseif ($exports === 'no') {
-            $org->setExportsEnabledOverride(false);
-        } else {
-            $org->setExportsEnabledOverride(null);
+        // Apply overrides only if plan was NOT changed, or if explicitly updating overrides on existing plan
+        if (!$planChanged) {
+            $org->setMaxOrgUsersOverride($maxEmp !== '' && $maxEmp !== null ? (int)$maxEmp : null);
+            $org->setMaxManagersOverride($maxMgr !== '' && $maxMgr !== null ? (int)$maxMgr : null);
+            $org->setMaxFieldsOverride($maxFields !== '' && $maxFields !== null ? (int)$maxFields : null);
+            $org->setMaxCategoriesOverride($maxCats !== '' && $maxCats !== null ? (int)$maxCats : null);
+            $org->setSessionLimitHoursOverride($sessionLimit !== '' && $sessionLimit !== null ? (int)$sessionLimit : null);
+            $org->setRetentionDaysOverride($retention !== '' && $retention !== null ? (int)$retention : null);
+            
+            if ($exports === 'yes') {
+                $org->setExportsEnabledOverride(true);
+            } elseif ($exports === 'no') {
+                $org->setExportsEnabledOverride(false);
+            } else {
+                $org->setExportsEnabledOverride(null);
+            }
         }
 
         $org->setUpdatedAt(new \DateTimeImmutable());
@@ -657,6 +662,59 @@ class AdminController extends AbstractController
 
         $this->addFlash('success', 'Demo Data Reset has been queued and is running in the background. It will be ready shortly.');
         return $this->redirectToRoute('app_admin_settings');
+    }
+
+    #[Route('/commands', name: 'app_admin_commands')]
+    public function commands(): Response
+    {
+        $availableCommands = [
+            [
+                'command' => 'php bin/console app:sweep-sessions',
+                'category' => 'Session Management',
+                'description' => 'Sweeps open work sessions across all organizations and automatically ends any session exceeding its plan session limit.',
+                'usage' => 'php bin/console app:sweep-sessions'
+            ],
+            [
+                'command' => 'php bin/console app:archive-audit-logs',
+                'category' => 'Data Maintenance',
+                'description' => 'Archives security audit logs older than the global retention limit into a compressed JSON file and purges them from active DB storage.',
+                'usage' => 'php bin/console app:archive-audit-logs'
+            ],
+            [
+                'command' => 'php bin/console app:rotate-demo-credentials',
+                'category' => 'Demo & Security',
+                'description' => 'Rotates demo user passwords and kiosk authorization link tokens for public demo organization accounts.',
+                'usage' => 'php bin/console app:rotate-demo-credentials'
+            ],
+            [
+                'command' => 'php bin/console app:seed-data',
+                'category' => 'Database Seeding',
+                'description' => 'Populates default plans (Basic, Silver, Gold, Platinum), platform admin user, and sample demo dataset.',
+                'usage' => 'php bin/console app:seed-data'
+            ],
+            [
+                'command' => 'php bin/console app:seed-reset',
+                'category' => 'Database Seeding',
+                'description' => 'Purges non-system data and re-executes seed-data script to restore clean system baseline.',
+                'usage' => 'php bin/console app:seed-reset'
+            ],
+            [
+                'command' => 'php bin/console cache:clear',
+                'category' => 'Framework & Utilities',
+                'description' => 'Clears Symfony environment cache (Twig templates, annotations, container configuration).',
+                'usage' => 'php bin/console cache:clear'
+            ],
+            [
+                'command' => 'php bin/console doctrine:migrations:migrate',
+                'category' => 'Database Operations',
+                'description' => 'Executes all pending Doctrine SQL schema migration scripts.',
+                'usage' => 'php bin/console doctrine:migrations:migrate --no-interaction'
+            ],
+        ];
+
+        return $this->render('admin/commands.html.twig', [
+            'commands' => $availableCommands,
+        ]);
     }
 
     #[Route('/scheduled-jobs', name: 'app_admin_scheduled_jobs')]

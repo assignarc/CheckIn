@@ -162,7 +162,6 @@ class SeedDataCommand extends Command
             $plan->setPriceMonthly($data['price']);
             $plan->setHasSecureKiosk($data['secure_kiosk']);
             $plan->setHasCustomSessionDurations($data['custom_duration']);
-            $plan->setHasOvertimeRules($data['overtime']);
             $plan->setHasBarcodeFeatures($data['barcode_features'] ?? false);
             $plan->setHasClickList($data['click_list'] ?? true);
             
@@ -173,29 +172,26 @@ class SeedDataCommand extends Command
 
         // 3. Seed Platform Super Administrator Account
         $adminData = $config['admin'] ?? [];
-        if ($adminData) {
-            $existingAdmin = $this->entityManager->getRepository(Manager::class)->findOneBy(['email' => $adminData['email']]);
-            if (!$existingAdmin) {
-                $admin = new Manager();
-                $admin->setEmail($adminData['email']);
-                $admin->setFirstName($adminData['first_name']);
-                $admin->setLastName($adminData['last_name']);
-                $admin->setRole('ROLE_SYSTEM_ADMIN');
-                $admin->setIsActive(true);
-                
-                // Hash credentials using environment variable or default fallback
-                $adminPassword = $_ENV['SEED_ADMIN_PASSWORD'] ?? $_SERVER['SEED_ADMIN_PASSWORD'] ?? 'admin123';
-                $hashedPassword = $this->passwordHasher->hashPassword($admin, $adminPassword);
-                $admin->setPasswordHash($hashedPassword);
+        $adminEmail = $adminData['email'] ?? 'admin@centertime.us';
 
-                $this->entityManager->persist($admin);
-                $io->success("Created platform administrator: {$adminData['email']} (Password: " . ($adminPassword === 'admin123' ? 'admin123 (default)' : '********') . ")");
-            } else {
-                $io->text("Platform administrator {$adminData['email']} already exists.");
-            }
+        $adminUser = $this->entityManager->getRepository(Manager::class)->findOneBy(['email' => $adminEmail]);
+        if (!$adminUser) {
+            $adminUser = new Manager();
+            $adminUser->setEmail($adminEmail);
+            $adminUser->setFirstName($adminData['first_name'] ?? 'System');
+            $adminUser->setLastName($adminData['last_name'] ?? 'Administrator');
+            $adminUser->setRole('ROLE_PLATFORM_ADMIN');
+            $adminUser->setIsActive(true);
+
+            $rawPass = $_ENV['SEED_ADMIN_PASSWORD'] ?? ($_SERVER['SEED_ADMIN_PASSWORD'] ?? 'AdminPass123!');
+            $hashed = $this->passwordHasher->hashPassword($adminUser, $rawPass);
+            $adminUser->setPasswordHash($hashed);
+
+            $this->entityManager->persist($adminUser);
+            $io->success("Created Super Admin user: {$adminEmail}");
         }
 
-        // 4. Seed Static Organizations & Dependent Entities
+        // 4. Seed Static Organizations and initial records
         $orgsData = $config['static_organizations'] ?? [];
         foreach ($orgsData as $orgData) {
             $existingOrg = $this->entityManager->getRepository(Organization::class)->findOneBy(['slug' => $orgData['slug']]);
@@ -206,8 +202,8 @@ class SeedDataCommand extends Command
                 $org->setPlan($plans[$orgData['plan']]);
                 $org->setAccessMode($orgData['access_mode']);
                 $org->setCheckInLinkToken($orgData['token']);
-                $org->setOvertimeGraceMinutes($orgData['overtime_grace_minutes'] ?? 0);
-                $org->setOvertimeMultiplier($orgData['overtime_multiplier'] ?? '1.00');
+                $org->clearOverrides();
+                $org->setTimezone(null);
                 
                 $this->entityManager->persist($org);
                 $io->success("Created organization: {$orgData['name']} (Slug: {$orgData['slug']})");
@@ -222,46 +218,42 @@ class SeedDataCommand extends Command
                     $manager->setOrganization($org);
                     $manager->setIsActive(true);
 
-                    $managerPassword = $_ENV['SEED_MANAGER_PASSWORD'] ?? $_SERVER['SEED_MANAGER_PASSWORD'] ?? 'manager123';
-                    $hashedPassword = $this->passwordHasher->hashPassword($manager, $managerPassword);
-                    $manager->setPasswordHash($hashedPassword);
+                    $mgrRawPass = $_ENV['SEED_MANAGER_PASSWORD'] ?? ($_SERVER['SEED_MANAGER_PASSWORD'] ?? 'ManagerPass123!');
+                    $mgrHashed = $this->passwordHasher->hashPassword($manager, $mgrRawPass);
+                    $manager->setPasswordHash($mgrHashed);
+
                     $this->entityManager->persist($manager);
-                    $io->text("  Manager: {$mgrData['email']} (Password: " . ($managerPassword === 'manager123' ? 'manager123 (default)' : '********') . ")");
                 }
 
-                // Seed shift categories
+                // Seed categories
                 $categories = [];
                 foreach ($orgData['categories'] ?? [] as $catData) {
                     $category = new Category();
-                    $category->setOrganization($org);
                     $category->setName($catData['name']);
                     $category->setIcon($catData['icon']);
+                    $category->setOrganization($org);
                     $category->setIsActive(true);
                     $this->entityManager->persist($category);
                     $categories[] = $category;
                 }
 
-                // Seed employee records
-                foreach ($orgData['org_users'] ?? [] as $empData) {
+                // Seed org users and sessions
+                foreach ($orgData['org_users'] ?? [] as $userData) {
                     $orgUser = new OrgUser();
+                    $orgUser->setFirstName($userData['first']);
+                    $orgUser->setLastName($userData['last']);
+                    $orgUser->setEmail($userData['email']);
+                    $orgUser->setPin($userData['pin']);
+                    $orgUser->setPinHash(password_hash($userData['pin'], PASSWORD_BCRYPT));
                     $orgUser->setOrganization($org);
-                    $orgUser->setFirstName($empData['first']);
-                    $orgUser->setLastName($empData['last']);
-                    $orgUser->setEmail($empData['email'] ?? null);
+                    $orgUser->setCustomFieldsJson($userData['custom'] ?? []);
                     $orgUser->setIsActive(true);
-                    $orgUser->setPhone($empData['phone'] ?? null);
-                    $orgUser->setPin($empData['pin']);
-                    $orgUser->setPinHash(password_hash($empData['pin'], PASSWORD_BCRYPT));
-                    if (isset($empData['custom'])) {
-                        $orgUser->setCustomFieldsJson($empData['custom']);
-                    }
                     $this->entityManager->persist($orgUser);
 
-                    // Seed historical work sessions for the employee
-                    foreach ($empData['sessions'] ?? [] as $sessData) {
+                    foreach ($userData['sessions'] ?? [] as $sessData) {
                         $session = new WorkSession();
-                        $session->setOrgUser($orgUser);
                         $session->setOrganization($org);
+                        $session->setOrgUser($orgUser);
                         if (isset($categories[$sessData['category_index']])) {
                             $session->setCategory($categories[$sessData['category_index']]);
                         }
@@ -270,7 +262,6 @@ class SeedDataCommand extends Command
                         $session->setDurationSeconds($sessData['duration_seconds']);
                         $session->setStartMethod($sessData['start_method']);
                         $session->setEndMethod($sessData['end_method']);
-                        $session->setIsOvertime($sessData['is_overtime'] ?? false);
                         $session->setIsOutOfWindow($sessData['is_out_of_window'] ?? false);
                         $this->entityManager->persist($session);
                     }

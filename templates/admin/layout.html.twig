@@ -31,6 +31,9 @@
             <a href="{{ path('app_admin_scheduled_jobs') }}" class="sidebar-link {% if app.request.attributes.get('_route') == 'app_admin_scheduled_jobs' %}active{% endif %}" data-tooltip="Scheduled Jobs">
                 <span class="material-icons">schedule</span> <span>Scheduled Jobs</span>
             </a>
+            <a href="{{ path('app_admin_commands') }}" class="sidebar-link {% if app.request.attributes.get('_route') == 'app_admin_commands' %}active{% endif %}" data-tooltip="CLI Commands">
+                <span class="material-icons">terminal</span> <span>CLI Commands</span>
+            </a>
             <a href="{{ path('app_admin_settings') }}" class="sidebar-link {% if app.request.attributes.get('_route') == 'app_admin_settings' %}active{% endif %}" data-tooltip="Global Settings">
                 <span class="material-icons">settings</span> <span>Global Settings</span>
             </a>

@@ -173,6 +173,7 @@ class ManagerController extends AbstractController
                 $orgName = trim($request->request->get('org_name', ''));
                 $newPhone = $request->request->get('org_phone') ?: null;
                 $newAddress = $request->request->get('org_address') ?: null;
+                $newTimezone = $request->request->get('org_timezone') ?: null;
                 $logoFile = $request->files->get('org_logo');
 
                 $changedFields = [];
@@ -187,6 +188,10 @@ class ManagerController extends AbstractController
                 if ($org->getAddress() !== $newAddress) {
                     $changedFields['address'] = ['old' => $org->getAddress(), 'new' => $newAddress];
                     $org->setAddress($newAddress);
+                }
+                if ($org->getTimezone() !== $newTimezone) {
+                    $changedFields['timezone'] = ['old' => $org->getTimezone(), 'new' => $newTimezone];
+                    $org->setTimezone($newTimezone);
                 }
 
                 if ($logoFile) {
@@ -299,12 +304,24 @@ class ManagerController extends AbstractController
 
             $org->setAccessMode($accessMode);
             $org->setSessionLimitHoursOverride($sessionLimit);
-            $org->setCheckInWindowStart($windowStart ? new \DateTime($windowStart) : null);
-            $org->setCheckInWindowEnd($windowEnd     ? new \DateTime($windowEnd)   : null);
+            $orgTzStr = $org->getTimezone() ?: 'America/Chicago';
+            $orgTz    = new \DateTimeZone($orgTzStr);
+            $utc      = new \DateTimeZone('UTC');
 
-            if ($org->getPlan()->hasOvertimeRules()) {
-                $org->setOvertimeGraceMinutes((int)$request->request->get('overtime_grace', 0));
-                $org->setOvertimeMultiplier($request->request->get('overtime_multiplier', '1.50'));
+            if ($windowStart) {
+                $winStartDt = \DateTime::createFromFormat('H:i', $windowStart, $orgTz);
+                $winStartDt->setTimezone($utc);
+                $org->setCheckInWindowStart($winStartDt);
+            } else {
+                $org->setCheckInWindowStart(null);
+            }
+
+            if ($windowEnd) {
+                $winEndDt = \DateTime::createFromFormat('H:i', $windowEnd, $orgTz);
+                $winEndDt->setTimezone($utc);
+                $org->setCheckInWindowEnd($winEndDt);
+            } else {
+                $org->setCheckInWindowEnd(null);
             }
 
             $maskLastName = $request->request->get('mask_last_name') === '1';
@@ -392,13 +409,21 @@ class ManagerController extends AbstractController
         $qrApiUrl = 'https://api.qrserver.com/v1/create-qr-code/?size=360x360&ecc=H&color=6366f1&data=' . urlencode($kioskUrl);
 
         $imgData = null;
-        if ($this->getParameter('kernel.environment') === 'test') {
-            $imgData = base64_decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=');
-        } else {
+        try {
+            $client = \Symfony\Component\HttpClient\HttpClient::create(['timeout' => 5, 'verify_peer' => false]);
+            $response = $client->request('GET', $qrApiUrl);
+            if ($response->getStatusCode() === 200) {
+                $imgData = $response->getContent();
+            }
+        } catch (\Throwable $e) {
             $imgData = @file_get_contents($qrApiUrl);
         }
 
-        if ($imgData === false || $imgData === null) {
+        if (!$imgData && $this->getParameter('kernel.environment') === 'test') {
+            $imgData = base64_decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=');
+        }
+
+        if ($imgData === false || $imgData === null || strlen($imgData) < 10) {
             return new \Symfony\Component\HttpFoundation\JsonResponse(['error' => 'Failed to fetch QR code'], 500);
         }
 
@@ -1014,7 +1039,7 @@ class ManagerController extends AbstractController
                 $filePath = $file->getRealPath();
                 $rows = [];
                 if (($handle = fopen($filePath, "r")) !== FALSE) {
-                    while (($data = fgetcsv($handle, 1000, ",")) !== FALSE) {
+                    while (($data = fgetcsv($handle, 1000, ",", '"', '\\')) !== FALSE) {
                         $rows[] = $data;
                     }
                     fclose($handle);
@@ -1472,12 +1497,10 @@ class ManagerController extends AbstractController
 
         // Rollups
         $totalSeconds = 0;
-        $overtimeCount = 0;
         $outOfWindowCount = 0;
         
         foreach ($sessions as $s) {
             $totalSeconds += $s->getDurationSeconds() ?? 0;
-            if ($s->isOvertime()) $overtimeCount++;
             if ($s->isOutOfWindow()) $outOfWindowCount++;
         }
 
@@ -1493,7 +1516,6 @@ class ManagerController extends AbstractController
             'orgUsers' => $orgUsers,
             'categories' => $categories,
             'totalHours' => "{$hours}h {$mins}m",
-            'overtimeCount' => $overtimeCount,
             'outOfWindowCount' => $outOfWindowCount,
             'limitsData' => $limitsData,
             'org' => $org,
@@ -1547,7 +1569,7 @@ class ManagerController extends AbstractController
 
         // Format CSV response
         $rows = [];
-        $rows[] = ['Session ID', 'OrgUser Name', 'Email', 'Category', 'Started At', 'Ended At', 'Duration (Hours)', 'Start Method', 'Is Overtime', 'Is Out Of Window', 'Device Info'];
+        $rows[] = ['Session ID', 'OrgUser Name', 'Email', 'Category', 'Started At', 'Ended At', 'Duration (Hours)', 'Start Method', 'Is Out Of Window', 'Device Info'];
 
         foreach ($sessions as $s) {
             $durationHours = $s->getDurationSeconds() ? round($s->getDurationSeconds() / 3600, 2) : 0;
@@ -1560,7 +1582,6 @@ class ManagerController extends AbstractController
                 $s->getEndedAt() ? $s->getEndedAt()->format('Y-m-d H:i:s') : 'Active',
                 $durationHours,
                 $s->getStartMethod(),
-                $s->isOvertime() ? 'Yes' : 'No',
                 $s->isOutOfWindow() ? 'Yes' : 'No',
                 $s->getDeviceInfo() ?? 'N/A'
             ];
@@ -1738,7 +1759,6 @@ class ManagerController extends AbstractController
             'End Time',
             'Duration (HH:MM)',
             'End Method',
-            'Overtime Flagged',
             'Device Info'
         ];
 
@@ -1760,7 +1780,6 @@ class ManagerController extends AbstractController
                 $s->getEndedAt() ? $s->getEndedAt()->format('H:i:s') : 'Active',
                 $durationStr,
                 $s->getEndMethod() ?? 'Normal',
-                $s->isOvertime() ? 'Yes' : 'No',
                 $s->getDeviceInfo() ?? 'N/A'
             ];
         }
@@ -1816,6 +1835,7 @@ class ManagerController extends AbstractController
                 $planEntity = $em->getRepository(\App\Entity\Plan::class)->findOneBy(['name' => $newPlan]);
                 if ($planEntity) {
                     $org->setPlan($planEntity);
+                    $org->clearOverrides();
                 }
                 $org->setIsSubscriptionActive(true);
 
@@ -1830,8 +1850,6 @@ class ManagerController extends AbstractController
                 $payment->setPeriodEnd(new \DateTime('+1 month'));
                 $em->persist($payment);
 
-                // Reset overrides to null when switching plans to inherit new defaults
-                $org->setSessionLimitHoursOverride(null);
                 if ($newPlan === 'basic') {
                     $org->setAccessMode('open');
                 }

@@ -57,6 +57,51 @@ class CaptchaService
     }
 
     /**
+     * Generates a clean math captcha image as a base64 Data URL.
+     */
+    public function generateImage(Request $request, string $context): string
+    {
+        $question = $this->generateQuestion($request, $context);
+        $text = $question . " = ?";
+
+        $width = 160;
+        $height = 45;
+        $img = imagecreatetruecolor($width, $height);
+
+        // White background, dark color letters/numbers, dark border
+        $bgColor = imagecolorallocate($img, 255, 255, 255); // Pure white #ffffff
+        $textColor = imagecolorallocate($img, 15, 23, 42); // Dark slate #0f172a
+        $noiseColor = imagecolorallocate($img, 226, 232, 240); // Light noise #e2e8f0
+        $borderColor = imagecolorallocate($img, 15, 23, 42); // Dark border #0f172a
+
+        imagefill($img, 0, 0, $bgColor);
+
+        // Add subtle background grid noise lines for anti-scraping
+        for ($i = 0; $i < 4; $i++) {
+            imageline($img, rand(0, $width), rand(0, $height), rand(0, $width), rand(0, $height), $noiseColor);
+        }
+
+        // Draw crisp dark border around image
+        imagerectangle($img, 0, 0, $width - 1, $height - 1, $borderColor);
+        imagerectangle($img, 1, 1, $width - 2, $height - 2, $borderColor);
+
+        // Write text (using built-in font size 5)
+        $font = 5;
+        $textWidth = imagefontwidth($font) * strlen($text);
+        $textHeight = imagefontheight($font);
+        $x = (int)(($width - $textWidth) / 2);
+        $y = (int)(($height - $textHeight) / 2);
+
+        imagestring($img, $font, $x, $y, $text, $textColor);
+
+        ob_start();
+        imagepng($img);
+        $pngData = ob_get_clean();
+
+        return 'data:image/png;base64,' . base64_encode($pngData);
+    }
+
+    /**
      * Validates the user's captcha response.
      */
     public function validate(Request $request, string $context, ?string $inputAnswer): bool

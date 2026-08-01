@@ -135,6 +135,8 @@ class ResetDemoDataHandler
         $bOrg->setName($basicConf['name'] ?? 'Basic Demo Company');
         $bOrg->setSlug($basicConf['slug'] ?? 'basic-demo');
         $bOrg->setPlan($basicPlan);
+        $bOrg->clearOverrides();
+        $bOrg->setTimezone(null);
         $bOrg->setAccessMode($basicConf['access_mode'] ?? 'open');
         $bOrg->setCheckInLinkToken($basicConf['token'] ?? 'temp_token_b');
         $bOrg->setLogoPath(null); 
@@ -171,10 +173,10 @@ class ResetDemoDataHandler
         $gOrg->setName($goldenConf['name'] ?? 'Golden Demo Company');
         $gOrg->setSlug($goldenConf['slug'] ?? 'golden-demo');
         $gOrg->setPlan($goldPlan);
+        $gOrg->clearOverrides();
+        $gOrg->setTimezone(null);
         $gOrg->setAccessMode($goldenConf['access_mode'] ?? 'secure');
         $gOrg->setCheckInLinkToken($goldenConf['token'] ?? 'temp_token_g');
-        $gOrg->setOvertimeGraceMinutes($goldenConf['overtime_grace_minutes'] ?? 15);
-        $gOrg->setOvertimeMultiplier($goldenConf['overtime_multiplier'] ?? '1.50');
         $gOrg->setLogoPath(null);
         $gOrg->setLogoBlob(null); // Reset logo on refresh
         $gOrg->setUpdatedAt(new \DateTimeImmutable());

@@ -46,9 +46,12 @@
             </div>
 
             {% if captcha_enabled %}
-                <div class="form-group">
-                    <label for="captcha_answer" class="form-label">Security Verification: What is {{ captcha_question }}?</label>
-                    <input type="number" name="captcha_answer" id="captcha_answer" class="form-control" required placeholder="Enter the result">
+                <div class="form-group p-3 rounded-md border" style="background: rgba(255,255,255,0.02)">
+                    <label for="captcha_answer" class="form-label d-flex align-items-center justify-content-between mb-2">
+                        <span>Security Verification</span>
+                        <img src="{{ captcha_image }}" alt="Math Captcha" style="height: 38px; border-radius: 6px;">
+                    </label>
+                    <input type="number" name="captcha_answer" id="captcha_answer" class="form-control" required placeholder="Enter answer">
                 </div>
             {% endif %}
 

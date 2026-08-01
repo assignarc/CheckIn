@@ -69,11 +69,32 @@
                         </span>
                     </div>
                 </div>
-                <div class="form-group">
-                    <label class="form-label" for="org_address">Address</label>
-                    <input type="text" name="org_address" id="org_address" class="form-control"
-                           value="{{ app.user.organization.address|default('') }}"
-                           placeholder="123 Main Street, Suite 100, City, State ZIP">
+                <div class="grid-cols-2">
+                    <div class="form-group">
+                        <label class="form-label" for="org_address">Address</label>
+                        <input type="text" name="org_address" id="org_address" class="form-control"
+                               value="{{ app.user.organization.address|default('') }}"
+                               placeholder="123 Main Street, Suite 100, City, State ZIP">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="org_timezone">Organization Timezone</label>
+                        {% set adminTz = app_config('display_timezone', 'America/Chicago') %}
+                        {% set isCustomTz = app.user.organization.timezone is not null %}
+                        {% set effectiveTz = app.user.organization.timezone ?: adminTz %}
+                        <select name="org_timezone" id="org_timezone" class="form-control">
+                            <option value="" {% if not isCustomTz %}selected{% endif %}>Use Admin Default ({{ adminTz|replace({'_': ' '}) }})</option>
+                            {% for tz in ['America/New_York', 'America/Chicago', 'America/Denver', 'America/Phoenix', 'America/Los_Angeles', 'America/Anchorage', 'America/Adak', 'Pacific/Honolulu', 'UTC', 'Europe/London', 'Europe/Paris', 'Asia/Tokyo', 'Australia/Sydney'] %}
+                                <option value="{{ tz }}" {% if isCustomTz and effectiveTz == tz %}selected{% endif %}>{{ tz|replace({'_': ' '}) }}</option>
+                            {% endfor %}
+                        </select>
+                        <span class="form-text fs-xs text-muted mt-1 d-block">
+                            {% if not isCustomTz %}
+                                Currently inheriting admin default timezone (<strong>{{ adminTz|replace({'_': ' '}) }}</strong>). Select a specific timezone above if your organization operates in a different time region.
+                            {% else %}
+                                Custom organization timezone configured. Select "Use Admin Default" to revert back to inheriting the global admin timezone.
+                            {% endif %}
+                        </span>
+                    </div>
                 </div>
 
                 <div class="settings-tab-footer">
@@ -153,7 +174,7 @@
 
                     <div class="toggle-row">
                         <div>
-                            <div class="fs-sm fw-600">Mask OrgUser Last Name</div>
+                            <div class="fs-sm fw-600">Mask Last Name</div>
                             <div class="fs-xs text-secondary">Show "Giselle A****o" instead of full name on kiosk</div>
                         </div>
                         <label class="toggle-switch">
@@ -187,39 +208,15 @@
                     <div class="form-group">
                         <label class="form-label" for="window_start">Start Time</label>
                         <input type="time" name="window_start" id="window_start" class="form-control"
-                               value="{% if org.checkInWindowStart %}{{ org.checkInWindowStart|date('H:i') }}{% endif %}">
+                               value="{% if org.checkInWindowStart %}{{ org.checkInWindowStart|date('H:i', org.timezone ?: 'America/Chicago') }}{% endif %}">
                     </div>
                     <div class="form-group">
                         <label class="form-label" for="window_end">End Time</label>
                         <input type="time" name="window_end" id="window_end" class="form-control"
-                               value="{% if org.checkInWindowEnd %}{{ org.checkInWindowEnd|date('H:i') }}{% endif %}">
+                               value="{% if org.checkInWindowEnd %}{{ org.checkInWindowEnd|date('H:i', org.timezone ?: 'America/Chicago') }}{% endif %}">
                     </div>
                 </div>
                 <span class="form-text d-block mb-2 mt-n1">Leave blank for 24/7 access.</span>
-
-                {% if org.plan.name != 'basic' %}
-                    <div class="text-uppercase text-muted d-flex align-items-center gap-1 m-0 pt-3 pb-2 fs-xs border-t tracking-wide">
-                        <span class="material-icons fs-sm text-primary">more_time</span> Overtime Rules
-                    </div>
-                    <div class="grid-cols-2">
-                        <div class="form-group">
-                            <label class="form-label" for="overtime_grace">Grace Period (min)</label>
-                            <input type="number" name="overtime_grace" id="overtime_grace"
-                                   class="form-control" value="{{ org.overtimeGraceMinutes }}" min="0">
-                            <span class="form-text d-block fs-xs text-muted mt-1">
-                                Workers checking out within this grace window won't trigger overtime calculations.
-                            </span>
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label" for="overtime_multiplier">OT Multiplier</label>
-                            <input type="number" name="overtime_multiplier" id="overtime_multiplier"
-                                   class="form-control" value="{{ org.overtimeMultiplier }}" step="0.05" min="1.00" max="3.00">
-                            <span class="form-text d-block fs-xs text-muted mt-1">
-                                The hourly rate multiplier applied to overtime hours (e.g. 1.50 for time-and-a-half).
-                            </span>
-                        </div>
-                    </div>
-                {% endif %}
 
                 <div class="settings-tab-footer">
                     <button type="submit" class="btn btn-primary">

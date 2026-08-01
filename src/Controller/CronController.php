@@ -169,9 +169,12 @@ class CronController extends AbstractController
             $archived = $details['audit_archival'] ?? 'skipped';
             $autoArchived = $details['orgs_auto_archived'] ?? 0;
 
+            $rotatedStr = is_array($rotated) ? json_encode($rotated) : (string)$rotated;
+            $archivedStr = is_array($archived) ? json_encode($archived) : (string)$archived;
+
             $didNothing = ($swept === 0 || $swept === '0')
-                && str_contains($rotated, 'skipped')
-                && str_contains($archived, 'skipped')
+                && str_contains($rotatedStr, 'skipped')
+                && str_contains($archivedStr, 'skipped')
                 && ($autoArchived === 0 || $autoArchived === '0');
 
             if ($didNothing) {

@@ -16,8 +16,8 @@
             <a href="{{ path('app_manager_users_checked_in') }}" class="sidebar-link {% if app.request.attributes.get('_route') == 'app_manager_users_checked_in' %}active{% endif %}" data-tooltip="Checked In Now">
                 <span class="material-icons">directions_run</span> <span>Checked In Now</span>
             </a>
-            <a href="{{ path('app_manager_users') }}" class="sidebar-link {% if 'app_manager_user' in app.request.attributes.get('_route') and app.request.attributes.get('_route') != 'app_manager_users_checked_in' %}active{% endif %}" data-tooltip="Users & Managers">
-                <span class="material-icons">people</span> <span>Users & Managers</span>
+            <a href="{{ path('app_manager_users') }}" class="sidebar-link {% if 'app_manager_user' in app.request.attributes.get('_route') and app.request.attributes.get('_route') != 'app_manager_users_checked_in' %}active{% endif %}" data-tooltip="Students & Instructors">
+                <span class="material-icons">people</span> <span>Students & Instructors</span>
             </a>
             <a href="{{ path('app_manager_print_barcodes') }}" class="sidebar-link {% if app.request.attributes.get('_route') == 'app_manager_print_barcodes' %}active{% endif %}" data-tooltip="Sticker Badges">
                 <span class="material-icons">qr_code_2</span> <span>Sticker Badges</span>

@@ -56,12 +56,15 @@
         </div>
 
         {% if captcha_enabled %}
-            <div class="form-group mb-6">
-                <label class="form-label" for="captcha" class="d-flex align-items-center gap-2 mb-2">
-                    <span class="material-icons text-primary fs-md">verified_user</span>
-                    Verification: What is {{ captcha_question }}?
-                </label>
-                <input type="number" name="captcha" id="captcha" class="form-control" required placeholder="Enter the math result">
+            <div class="form-group mb-6 p-3 rounded-md border" style="background: rgba(255,255,255,0.02)">
+                <div class="d-flex align-items-center justify-content-between mb-2">
+                    <label class="form-label m-0 d-flex align-items-center gap-2" for="captcha">
+                        <span class="material-icons text-primary fs-md">verified_user</span>
+                        <span>Verification</span>
+                    </label>
+                    <img src="{{ captcha_image }}" alt="Math Captcha" style="height: 38px; border-radius: 6px;">
+                </div>
+                <input type="number" name="captcha" id="captcha" class="form-control" required placeholder="Enter answer">
             </div>
         {% endif %}
 

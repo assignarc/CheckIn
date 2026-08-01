@@ -1,6 +1,6 @@
 {% extends 'base.html.twig' %}
 
-{% block title %}Live Demo Credentials - CheckIn{% endblock %}
+{% block title %}Live Demo Access - CenterTime{% endblock %}
 
 {% block body %}
 <div class="position-absolute" style="top: 1.5rem; right: 1.5rem; z-index: 1000;">
@@ -17,96 +17,321 @@
     </div>
 </div>
 
-<div class="p-0 w-100 max-w-800" style="margin: 4rem auto;">
-    <div class="text-center mb-8">
-        <h2 class="fs-3xl fw-800"><span class="text-gradient">Demo Unlocked</span></h2>
-        <p class="text-secondary mt-1">Here are your live demo environments. Credentials rotate every 24 hours.</p>
+<div class="p-0 w-100 max-w-850" style="margin: 2.5rem auto;">
+    
+    <!-- Title & Subtitle -->
+    <div class="text-center mb-5">
+        <h2 class="fs-3xl fw-800"><span class="text-gradient">Demo Environments</span></h2>
+        <p class="text-secondary mt-1 fs-md">Explore CenterTime's live demo tiers below. Credentials auto-reset every 24 hours.</p>
     </div>
 
-    <div class="grid-cols-2 gap-6">
-        <!-- Basic Demo Card -->
-        <div class="glass-panel p-6">
-            <div class="d-flex align-items-center gap-3 mb-4">
-                <div class="avatar bg-success-light text-success">
-                    <span class="material-icons">stars</span>
+    <!-- Segmented Control Pill Navigation -->
+    <div class="demo-segmented-control" style="max-width: 640px;">
+        <button type="button" class="demo-segmented-btn active" id="tab-btn-instructions" onclick="switchDemoTab('instructions')">
+            <span class="material-icons text-primary fs-md">menu_book</span>
+            <span>Instructions</span>
+        </button>
+        <button type="button" class="demo-segmented-btn" id="tab-btn-basic" onclick="switchDemoTab('basic')">
+            <span class="material-icons text-success fs-md">stars</span>
+            <span>Basic Plan</span>
+        </button>
+        <button type="button" class="demo-segmented-btn" id="tab-btn-gold" onclick="switchDemoTab('gold')">
+            <span class="material-icons text-warning fs-md">military_tech</span>
+            <span>Gold Plan</span>
+        </button>
+    </div>
+
+    <!-- Tab 0: Instructions -->
+    <div id="demo-tab-instructions" class="demo-tab-content glass-panel p-6 demo-card" style="border-top: 4px solid var(--primary-color);">
+        <div class="d-flex align-items-center justify-content-between mb-4 pb-3 border-bottom">
+            <div>
+                <h3 class="fs-xl fw-700 m-0 text-primary d-flex align-items-center gap-2">
+                    <span class="material-icons text-primary">menu_book</span> How to Test CenterTime
+                </h3>
+                <div class="fs-sm text-secondary mt-1">Understanding the 2 core experiences in CenterTime in simple terms</div>
+            </div>
+            <span class="badge badge-primary px-3 py-2 fs-xs">Quick Guide</span>
+        </div>
+
+        <div class="d-flex flex-column gap-4">
+            
+            <!-- Core Concept Explanation -->
+            <div class="grid-cols-2 gap-4">
+                <div class="p-4 rounded-3" style="background: var(--bg-body-secondary); border: 1px solid var(--border-color);">
+                    <div class="d-flex align-items-center gap-2 mb-2">
+                        <span class="material-icons text-primary fs-lg">admin_panel_settings</span>
+                        <h4 class="fs-sm fw-700 m-0 text-primary">1. The Manager Portal (For Admins)</h4>
+                    </div>
+                    <p class="fs-xs text-secondary m-0 leading-relaxed">
+                        This is the web dashboard you run on your computer. Here, managers add students/staff, set check-in time windows, print barcode badges & posters, track live sessions, and generate attendance reports.
+                    </p>
                 </div>
-                <div>
-                    <h3 class="fs-xl fw-700 m-0">Basic Plan Demo</h3>
-                    <div class="fs-sm text-secondary">Open Check-in Mode</div>
+
+                <div class="p-4 rounded-3" style="background: var(--bg-body-secondary); border: 1px solid var(--border-color);">
+                    <div class="d-flex align-items-center gap-2 mb-2">
+                        <span class="material-icons text-success fs-lg">devices</span>
+                        <h4 class="fs-sm fw-700 m-0 text-success">2. The Checkin Terminal (For Users/Students)</h4>
+                    </div>
+                    <p class="fs-xs text-secondary m-0 leading-relaxed">
+                        This is the check-in screen placed on a tablet, iPad, or browser at your entrance. Students or employees tap their name or enter a PIN (e.g. A1234) / scan a barcode badge to log in and log out.
+                    </p>
                 </div>
             </div>
 
-            <div class="form-group mb-4">
-                <label class="form-label text-secondary">Admin Login</label>
-                <div class="d-flex gap-2">
-                    <input type="text" readonly class="form-control bg-body" value="basic@platform.com">
+            <!-- Step-by-Step Walkthrough Cards -->
+            <div class="d-flex flex-column gap-3">
+                <h4 class="fs-xs fw-700 uppercase tracking-wide text-secondary m-0 d-flex align-items-center gap-2">
+                    <span class="material-icons text-primary fs-md">sports_score</span> Recommended 3-Step Walkthrough
+                </h4>
+
+                <div class="d-flex flex-column gap-3">
+                    <!-- Step 1 Card -->
+                    <div class="p-3 rounded-3 d-flex align-items-start gap-3" style="background: var(--bg-body-secondary); border: 1px solid var(--border-color);">
+                        <div class="badge-number bg-primary text-white font-mono fw-700 rounded-circle flex-shrink-0 d-flex align-items-center justify-content-center" style="width: 28px; height: 28px; font-size: 0.85rem;">1</div>
+                        <div>
+                            <div class="fw-700 fs-sm text-main">Choose a Demo Tier Above</div>
+                            <div class="fs-xs text-secondary mt-0.5">Select either the <strong>Basic Plan</strong> (for open 1-touch check-ins) or <strong>Gold Plan</strong> (for PIN-protected check-ins).</div>
+                        </div>
+                    </div>
+
+                    <!-- Step 2 Card -->
+                    <div class="p-3 rounded-3 d-flex align-items-start gap-3" style="background: var(--bg-body-secondary); border: 1px solid var(--border-color);">
+                        <div class="badge-number bg-primary text-white font-mono fw-700 rounded-circle flex-shrink-0 d-flex align-items-center justify-content-center" style="width: 28px; height: 28px; font-size: 0.85rem;">2</div>
+                        <div>
+                            <div class="fw-700 fs-sm text-main">Open the Manager Portal Dashboard</div>
+                            <div class="fs-xs text-secondary mt-0.5">Click <strong>Open Manager Portal Dashboard</strong> to log into the admin dashboard in Browser Tab 1.</div>
+                        </div>
+                    </div>
+
+                    <!-- Step 3 Card -->
+                    <div class="p-3 rounded-3 d-flex align-items-start gap-3" style="background: var(--bg-body-secondary); border: 1px solid var(--border-color);">
+                        <div class="badge-number bg-success text-white font-mono fw-700 rounded-circle flex-shrink-0 d-flex align-items-center justify-content-center" style="width: 28px; height: 28px; font-size: 0.85rem;">3</div>
+                        <div>
+                            <div class="fw-700 fs-sm text-main">Launch Kiosk & Watch Real-Time Updates</div>
+                            <div class="fs-xs text-secondary mt-0.5">Open <strong>Launch Check-In Kiosk</strong> in Browser Tab 2 (or on your phone). Perform a check-in, then switch back to Tab 1 to watch your Manager Dashboard update live in real-time!</div>
+                        </div>
+                    </div>
                 </div>
             </div>
 
-            <div class="form-group mb-4">
-                <label class="form-label text-secondary">Admin Password</label>
-                <div class="d-flex gap-2">
-                    <input type="text" readonly class="form-control bg-body" value="{{ basic_password }}">
+            <!-- Quick Access Action Buttons -->
+            <div class="d-flex gap-3 mt-2">
+                <button type="button" onclick="switchDemoTab('basic')" class="btn btn-outline-success btn-sm flex-1 d-flex align-items-center justify-content-center gap-2">
+                    <span class="material-icons fs-sm">stars</span> Try Basic Plan Demo
+                </button>
+                <button type="button" onclick="switchDemoTab('gold')" class="btn btn-metal-gold btn-sm flex-1 d-flex align-items-center justify-content-center gap-2">
+                    <span class="material-icons fs-sm">military_tech</span> Try Gold Plan Demo
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tab 1: Basic Plan -->
+    <div id="demo-tab-basic" class="demo-tab-content glass-panel p-6 demo-card d-none">
+        <div class="d-flex align-items-center justify-content-between mb-5 pb-3 border-bottom">
+            <div>
+                <h3 class="fs-xl fw-700 m-0 text-primary d-flex align-items-center gap-2">
+                    <span class="material-icons text-success">stars</span> Basic Plan Demo
+                </h3>
+                <div class="fs-sm text-secondary mt-1">Open Check-In Mode (Fast single-touch check-ins)</div>
+            </div>
+            <span class="badge badge-success px-3 py-2 fs-xs">Open Mode</span>
+        </div>
+
+        <div class="d-flex flex-column gap-4">
+            <!-- Experience 1: Manager Portal -->
+            <div class="p-4 rounded-3" style="background: var(--bg-body-secondary); border: 1px solid var(--border-color);">
+                <div class="d-flex align-items-center justify-content-between mb-3">
+                    <div class="d-flex align-items-center gap-2">
+                        <span class="material-icons text-primary fs-md">admin_panel_settings</span>
+                        <h4 class="fs-sm fw-700 uppercase tracking-wide m-0 text-primary">1. Manager Portal (Admin Experience)</h4>
+                    </div>
+                    <span class="fs-xs text-muted">Web Dashboard</span>
                 </div>
+
+                <div class="d-flex flex-column gap-3 mb-3">
+                    <div>
+                        <label class="form-label fs-xs text-secondary mb-1">Manager Email</label>
+                        <div class="input-group" style="max-width: 360px;">
+                            <input type="text" readonly class="form-control font-mono fs-sm" id="basic-email" value="basic@platform.com">
+                            <button type="button" class="btn btn-outline-secondary btn-sm" onclick="copyToClipboard('basic-email')" title="Copy Email">
+                                <span class="material-icons fs-sm">content_copy</span>
+                            </button>
+                        </div>
+                    </div>
+                    <div>
+                        <label class="form-label fs-xs text-secondary mb-1">Manager Password</label>
+                        <div class="input-group" style="max-width: 360px;">
+                            <input type="text" readonly class="form-control font-mono fs-sm" id="basic-pass" value="{{ basic_password }}">
+                            <button type="button" class="btn btn-outline-secondary btn-sm" onclick="copyToClipboard('basic-pass')" title="Copy Password">
+                                <span class="material-icons fs-sm">content_copy</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <a href="{{ path('app_login') }}" target="_blank" class="btn btn-primary btn-sm w-100">
+                    <span class="material-icons fs-sm">login</span> Open Manager Portal Dashboard
+                </a>
             </div>
 
-            <hr class="my-4" style="border-color: var(--border-color)">
-
-            <div class="form-group mb-0">
-                <label class="form-label text-secondary">Public Kiosk Link</label>
-                <div class="d-flex gap-2">
-                    <input type="text" readonly class="form-control bg-body" value="{{ url('app_kiosk', {slug: 'basic-demo', token: basic_token}) }}">
-                    <a href="{{ path('app_kiosk', {slug: 'basic-demo', token: basic_token}) }}" target="_blank" class="btn btn-outline-primary px-3">
-                        <span class="material-icons">open_in_new</span>
-                    </a>
+            <!-- Experience 2: Kiosk Terminal -->
+            <div class="p-4 rounded-3" style="background: var(--bg-body-secondary); border: 1px solid var(--border-color);">
+                <div class="d-flex align-items-center justify-content-between mb-3">
+                    <div class="d-flex align-items-center gap-2">
+                        <span class="material-icons text-success fs-md">devices</span>
+                        <h4 class="fs-sm fw-700 uppercase tracking-wide m-0 text-success">2. Check-In Kiosk (Student/Employee)</h4>
+                    </div>
+                    <span class="fs-xs text-muted">Tablet / Mobile Screen</span>
                 </div>
+
+                <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-3">
+                    <div class="flex-1" style="min-width: 240px;">
+                        <label class="form-label fs-xs text-secondary mb-1">Public Check-In Kiosk Link</label>
+                        <div class="input-group" style="max-width: 360px;">
+                            <input type="text" readonly class="form-control font-mono fs-xs" id="basic-kiosk" value="{{ url('app_kiosk', {slug: 'basic-demo', token: basic_token}) }}" style="text-overflow: ellipsis; white-space: nowrap; overflow: hidden;">
+                            <button type="button" class="btn btn-outline-secondary btn-sm" onclick="copyToClipboard('basic-kiosk')" title="Copy Link">
+                                <span class="material-icons fs-sm">content_copy</span>
+                            </button>
+                        </div>
+                        <div class="fs-2xs text-muted mt-2">Scan QR code or click launch button to test check-in.</div>
+                    </div>
+
+                    <div class="p-2 rounded bg-white text-center shadow-sm flex-shrink-0" style="border: 1px solid var(--border-color);">
+                        <img src="https://api.qrserver.com/v1/create-qr-code/?size=100x100&data={{ url('app_kiosk', {slug: 'basic-demo', token: basic_token})|url_encode }}&ecc=M&color=16a34a" alt="Kiosk QR Code" style="width: 76px; height: 76px; display: block; border-radius: 4px;">
+                        <span class="fs-2xs fw-600 text-dark d-block mt-1">Scan with Phone</span>
+                    </div>
+                </div>
+
+                <a href="{{ path('app_kiosk', {slug: 'basic-demo', token: basic_token}) }}" target="_blank" class="btn btn-outline-success btn-sm w-100">
+                    <span class="material-icons fs-sm">open_in_new</span> Launch Check-In Kiosk
+                </a>
             </div>
         </div>
 
-        <!-- Golden Demo Card -->
-        <div class="glass-panel p-6" style="border-top: 3px solid #f59e0b">
-            <div class="d-flex align-items-center gap-3 mb-4">
-                <div class="avatar" style="background: rgba(245,158,11,0.1); color: #f59e0b">
-                    <span class="material-icons">military_tech</span>
-                </div>
-                <div>
-                    <h3 class="fs-xl fw-700 m-0">Gold Plan Demo</h3>
-                    <div class="fs-sm text-secondary">Secure PIN Check-in Mode</div>
-                </div>
-            </div>
-
-            <div class="form-group mb-4">
-                <label class="form-label text-secondary">Admin Login</label>
-                <div class="d-flex gap-2">
-                    <input type="text" readonly class="form-control bg-body" value="golden@platform.com">
-                </div>
-            </div>
-
-            <div class="form-group mb-4">
-                <label class="form-label text-secondary">Admin Password</label>
-                <div class="d-flex gap-2">
-                    <input type="text" readonly class="form-control bg-body" value="{{ golden_password }}">
-                </div>
-            </div>
-
-            <hr class="my-4" style="border-color: var(--border-color)">
-
-            <div class="form-group mb-0">
-                <label class="form-label text-secondary">Public Kiosk Link</label>
-                <div class="d-flex gap-2">
-                    <input type="text" readonly class="form-control bg-body" value="{{ url('app_kiosk', {slug: 'golden-demo', token: golden_token}) }}">
-                    <a href="{{ path('app_kiosk', {slug: 'golden-demo', token: golden_token}) }}" target="_blank" class="btn btn-outline-primary px-3">
-                        <span class="material-icons">open_in_new</span>
-                    </a>
-                </div>
-            </div>
+        <div class="mt-4 pt-3 border-top fs-xs text-muted d-flex align-items-center gap-2">
+            <span class="material-icons text-warning fs-md">lightbulb</span>
+            <span><strong>Walkthrough Tip:</strong> Open the Manager Portal in Tab 1 and the Kiosk in Tab 2. Perform a check-in on the Kiosk and watch your Manager Dashboard update live!</span>
         </div>
     </div>
 
-    <div class="text-center mt-8">
-        <a href="{{ path('app_login') }}" target="_blank" class="btn btn-primary btn-lg px-8">
-            Go to Manager Login <span class="material-icons">arrow_forward</span>
-        </a>
+    <!-- Tab 2: Gold Plan -->
+    <div id="demo-tab-gold" class="demo-tab-content glass-panel p-6 demo-card d-none" style="border-top: 4px solid #f59e0b;">
+        <div class="d-flex align-items-center justify-content-between mb-5 pb-3 border-bottom">
+            <div>
+                <h3 class="fs-xl fw-700 m-0 d-flex align-items-center gap-2" style="color: #d97706;">
+                    <span class="material-icons text-warning">military_tech</span> Gold Plan Demo
+                </h3>
+                <div class="fs-sm text-secondary mt-1">Secure PIN Mode (PIN protection, custom categories, barcoding & policies)</div>
+            </div>
+            <span class="badge badge-warning px-3 py-2 fs-xs">Secure PIN Mode</span>
+        </div>
+
+        <div class="d-flex flex-column gap-4">
+            <!-- Experience 1: Manager Portal -->
+            <div class="p-4 rounded-3" style="background: var(--bg-body-secondary); border: 1px solid var(--border-color);">
+                <div class="d-flex align-items-center justify-content-between mb-3">
+                    <div class="d-flex align-items-center gap-2">
+                        <span class="material-icons text-warning fs-md">admin_panel_settings</span>
+                        <h4 class="fs-sm fw-700 uppercase tracking-wide m-0 text-warning">1. Manager Portal (Admin Experience)</h4>
+                    </div>
+                    <span class="fs-xs text-muted">Web Dashboard</span>
+                </div>
+
+                <div class="d-flex flex-column gap-3 mb-3">
+                    <div>
+                        <label class="form-label fs-xs text-secondary mb-1">Manager Email</label>
+                        <div class="input-group" style="max-width: 360px;">
+                            <input type="text" readonly class="form-control font-mono fs-sm" id="gold-email" value="golden@platform.com">
+                            <button type="button" class="btn btn-outline-secondary btn-sm" onclick="copyToClipboard('gold-email')" title="Copy Email">
+                                <span class="material-icons fs-sm">content_copy</span>
+                            </button>
+                        </div>
+                    </div>
+                    <div>
+                        <label class="form-label fs-xs text-secondary mb-1">Manager Password</label>
+                        <div class="input-group" style="max-width: 360px;">
+                            <input type="text" readonly class="form-control font-mono fs-sm" id="gold-pass" value="{{ golden_password }}">
+                            <button type="button" class="btn btn-outline-secondary btn-sm" onclick="copyToClipboard('gold-pass')" title="Copy Password">
+                                <span class="material-icons fs-sm">content_copy</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <a href="{{ path('app_login') }}" target="_blank" class="btn btn-metal-gold btn-sm w-100">
+                    <span class="material-icons fs-sm">login</span> Open Manager Portal Dashboard
+                </a>
+            </div>
+
+            <!-- Experience 2: Kiosk Terminal -->
+            <div class="p-4 rounded-3" style="background: var(--bg-body-secondary); border: 1px solid var(--border-color);">
+                <div class="d-flex align-items-center justify-content-between mb-3">
+                    <div class="d-flex align-items-center gap-2">
+                        <span class="material-icons text-warning fs-md">lock</span>
+                        <h4 class="fs-sm fw-700 uppercase tracking-wide m-0 text-warning">2. Check-In Kiosk (Student/Employee)</h4>
+                    </div>
+                    <span class="fs-xs text-muted">Tablet / Mobile Screen</span>
+                </div>
+
+                <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-3">
+                    <div class="flex-1" style="min-width: 240px;">
+                        <label class="form-label fs-xs text-secondary mb-1">Public Check-In Kiosk Link</label>
+                        <div class="input-group" style="max-width: 360px;">
+                            <input type="text" readonly class="form-control font-mono fs-xs" id="gold-kiosk" value="{{ url('app_kiosk', {slug: 'golden-demo', token: golden_token}) }}" style="text-overflow: ellipsis; white-space: nowrap; overflow: hidden;">
+                            <button type="button" class="btn btn-outline-secondary btn-sm" onclick="copyToClipboard('gold-kiosk')" title="Copy Link">
+                                <span class="material-icons fs-sm">content_copy</span>
+                            </button>
+                        </div>
+                        <div class="fs-2xs text-muted mt-2">Scan QR code or click launch button to test check-in.</div>
+                    </div>
+
+                    <div class="p-2 rounded bg-white text-center shadow-sm flex-shrink-0" style="border: 1px solid var(--border-color);">
+                        <img src="https://api.qrserver.com/v1/create-qr-code/?size=100x100&data={{ url('app_kiosk', {slug: 'golden-demo', token: golden_token})|url_encode }}&ecc=M&color=d97706" alt="Kiosk QR Code" style="width: 76px; height: 76px; display: block; border-radius: 4px;">
+                        <span class="fs-2xs fw-600 text-dark d-block mt-1">Scan with Phone</span>
+                    </div>
+                </div>
+
+                <a href="{{ path('app_kiosk', {slug: 'golden-demo', token: golden_token}) }}" target="_blank" class="btn btn-outline-warning btn-sm w-100">
+                    <span class="material-icons fs-sm">open_in_new</span> Launch Check-In Kiosk
+                </a>
+            </div>
+        </div>
+
+        <div class="mt-4 pt-3 border-top fs-xs text-muted d-flex align-items-center gap-2">
+            <span class="material-icons text-warning fs-md">lightbulb</span>
+            <span><strong>Walkthrough Tip:</strong> Open the Manager Portal in Tab 1 and the Kiosk in Tab 2. Enter PIN A1234 on the Kiosk and watch your Manager Dashboard update live!</span>
+        </div>
     </div>
+
 </div>
+
+<script>
+function switchDemoTab(tabName) {
+    document.querySelectorAll('.demo-segmented-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.demo-tab-content').forEach(c => c.classList.add('d-none'));
+    
+    const btn = document.getElementById('tab-btn-' + tabName);
+    const content = document.getElementById('demo-tab-' + tabName);
+    if (btn) btn.classList.add('active');
+    if (content) content.classList.remove('d-none');
+}
+
+function copyToClipboard(elementId) {
+    const input = document.getElementById(elementId);
+    if (!input) return;
+    input.select();
+    input.setSelectionRange(0, 99999);
+    navigator.clipboard.writeText(input.value).then(() => {
+        const btn = input.nextElementSibling;
+        if (btn) {
+            const originalHTML = btn.innerHTML;
+            btn.innerHTML = '<span class="material-icons fs-sm text-success">done</span>';
+            setTimeout(() => {
+                btn.innerHTML = originalHTML;
+            }, 1500);
+        }
+    });
+}
+</script>
 {% endblock %}

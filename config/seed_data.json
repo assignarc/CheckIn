@@ -74,8 +74,6 @@
             "plan": "gold",
             "access_mode": "secure",
             "token": "acme-secret-token",
-            "overtime_grace_minutes": 15,
-            "overtime_multiplier": "1.50",
             "managers": [
                 {
                     "email": "manager@acme.com",
@@ -172,8 +170,6 @@
             "plan": "gold",
             "access_mode": "secure",
             "token": "temp_token_g",
-            "overtime_grace_minutes": 15,
-            "overtime_multiplier": "1.50",
             "manager": {
                 "email": "golden@centertime.us",
                 "first_name": "Golden",

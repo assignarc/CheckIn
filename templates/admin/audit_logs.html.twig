@@ -36,27 +36,25 @@
         <table class="table fs-md">
             <thead>
                 <tr>
-                    <th>Timestamp</th>
-                    <th>Org</th>
-                    <th>Actor</th>
-                    <th>Action</th>
+                    <th style="width: 160px;">Timestamp</th>
+                    <th style="width: 260px;">Org / Actor / Action</th>
                     <th>Details</th>
-                    <th>IP</th>
+                    <th style="width: 120px;">IP</th>
                 </tr>
             </thead>
             <tbody>
                 {% for log in logs %}
                     <tr>
-                        <td class="white-space-nowrap">{{ log.createdAt|date('Y-m-d H:i:s') }}</td>
-                        <td class="fw-600">{{ log.organization ? log.organization.name : 'System' }}</td>
-                        <td>
-                            {% if log.manager %}
-                                {{ log.manager.email }}
-                            {% else %}
-                                System
-                            {% endif %}
-                        </td>
-                        <td>
+                        <td class="white-space-nowrap align-top">{{ log.createdAt|date('Y-m-d H:i:s') }}</td>
+                        <td class="align-top" style="min-width: 220px;">
+                            <div class="fw-600 text-white">{{ log.organization ? log.organization.name : 'System' }}</div>
+                            <div class="fs-xs text-muted mb-1">
+                                {% if log.manager %}
+                                    {{ log.manager.email }}
+                                {% else %}
+                                    System
+                                {% endif %}
+                            </div>
                             <span class="badge badge-secondary">{{ log.action }}</span>
                         </td>
                         <td>

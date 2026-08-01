@@ -1,21 +1,16 @@
 {% extends 'manager/layout.html.twig' %}
 
-{% block title %}Users & Managers - CenterTime{% endblock %}
+{% block title %}Students & Instructors - CenterTime{% endblock %}
 {% block header_title %}Directory Management{% endblock %}
-{% block stylesheets %}
-
-    
-{% endblock %}
-
 {% block manager_content %}
 <div class="tabs-container">
     <div class="tab active" onclick="switchTab('orgUsers-tab')" id="tab-orgUsers-tab" style="display: flex; align-items: center; gap: 6px;">
         <span class="material-icons" style="font-size: 1.1rem; vertical-align: middle;">people</span>
-        <span class="tab-text">Users ({{ limitsData.usage.orgUsers }} / {{ limitsData.limits.max_orgUsers }})</span>
+        <span class="tab-text">Students ({{ limitsData.usage.orgUsers }} / {{ limitsData.limits.max_orgUsers }})</span>
     </div>
     <div class="tab" onclick="switchTab('managers-tab')" id="tab-managers-tab" style="display: flex; align-items: center; gap: 6px;">
         <span class="material-icons" style="font-size: 1.1rem; vertical-align: middle;">shield</span>
-        <span class="tab-text">Managers ({{ limitsData.usage.managers }} / {{ limitsData.limits.max_managers }})</span>
+        <span class="tab-text">Instructors ({{ limitsData.usage.managers }} / {{ limitsData.limits.max_managers }})</span>
     </div>
 </div>
 
@@ -26,7 +21,7 @@
         <!-- Left: Users List -->
         <div class="glass-panel">
             <div class="d-flex align-items-center justify-content-between flex-wrap gap-4 mb-4">
-                <h3 class="fs-md m-0">User Registry</h3>
+                <h3 class="fs-md m-0">Student Registry</h3>
                 
                 <div class="d-flex align-items-center gap-2">
                     <form method="get" class="d-flex align-items-center gap-2 m-0">
@@ -229,13 +224,13 @@
                         </div>
 
                         <!-- Unified Pin Pad -->
-                        <div class="grid-cols-3 mt-2">
-                            <button type="button" class="btn btn-outline-primary btn-sm pin-prefix-btn py-2" data-char="A" onclick="setPinPrefix('A')" class="fs-md fw-700 font-mono">A</button>
-                            <button type="button" class="btn btn-outline-primary btn-sm pin-prefix-btn py-2" data-char="B" onclick="setPinPrefix('B')" class="fs-md fw-700 font-mono">B</button>
-                            <button type="button" class="btn btn-outline-primary btn-sm pin-prefix-btn py-2" data-char="C" onclick="setPinPrefix('C')" class="fs-md fw-700 font-mono">C</button>
+                        <div class="pin-pad-grid mt-2">
+                            <button type="button" class="btn btn-outline-primary btn-sm pin-prefix-btn py-2 fs-md fw-700 font-mono" data-char="A" onclick="setPinPrefix('A')">A</button>
+                            <button type="button" class="btn btn-outline-primary btn-sm pin-prefix-btn py-2 fs-md fw-700 font-mono" data-char="B" onclick="setPinPrefix('B')">B</button>
+                            <button type="button" class="btn btn-outline-primary btn-sm pin-prefix-btn py-2 fs-md fw-700 font-mono" data-char="C" onclick="setPinPrefix('C')">C</button>
                             
                             {% for d in [1,2,3,4,5,6,7,8,9] %}
-                                <button type="button" class="btn btn-secondary btn-sm py-2" onclick="appendPinDigit('{{ d }}')" class="fs-md font-mono">{{ d }}</button>
+                                <button type="button" class="btn btn-secondary btn-sm py-2 fs-md font-mono" onclick="appendPinDigit('{{ d }}')">{{ d }}</button>
                             {% endfor %}
                             
                             <button type="button" class="btn btn-secondary btn-sm py-2" onclick="clearPin()" class="fs-sm font-mono">Clear</button>
@@ -283,13 +278,13 @@
                             <span id="edit-pin-text">——</span>
                         </div>
                     </div>
-                    <div class="grid-cols-3 mt-2">
-                        <button type="button" class="btn btn-outline-primary btn-sm edit-prefix-btn py-2" data-char="A" onclick="setEditPinPrefix('A')" class="fs-md fw-700 font-mono">A</button>
-                        <button type="button" class="btn btn-outline-primary btn-sm edit-prefix-btn py-2" data-char="B" onclick="setEditPinPrefix('B')" class="fs-md fw-700 font-mono">B</button>
-                        <button type="button" class="btn btn-outline-primary btn-sm edit-prefix-btn py-2" data-char="C" onclick="setEditPinPrefix('C')" class="fs-md fw-700 font-mono">C</button>
+                    <div class="pin-pad-grid mt-2">
+                        <button type="button" class="btn btn-outline-primary btn-sm edit-prefix-btn py-2 fs-md fw-700 font-mono" data-char="A" onclick="setEditPinPrefix('A')">A</button>
+                        <button type="button" class="btn btn-outline-primary btn-sm edit-prefix-btn py-2 fs-md fw-700 font-mono" data-char="B" onclick="setEditPinPrefix('B')">B</button>
+                        <button type="button" class="btn btn-outline-primary btn-sm edit-prefix-btn py-2 fs-md fw-700 font-mono" data-char="C" onclick="setEditPinPrefix('C')">C</button>
                         
                         {% for d in [1,2,3,4,5,6,7,8,9] %}
-                            <button type="button" class="btn btn-secondary btn-sm py-2" onclick="appendEditPinDigit('{{ d }}')" class="fs-md font-mono">{{ d }}</button>
+                            <button type="button" class="btn btn-secondary btn-sm py-2 fs-md font-mono" onclick="appendEditPinDigit('{{ d }}')">{{ d }}</button>
                         {% endfor %}
                         
                         <button type="button" class="btn btn-secondary btn-sm py-2" onclick="clearEditPin()" class="fs-sm font-mono">Clear</button>

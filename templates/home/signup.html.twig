@@ -136,7 +136,7 @@
 
             <div class="form-group" style="max-width: 400px;">
                 <label class="form-label" for="org_phone">Organization Phone</label>
-                <input type="tel" class="form-control" id="org_phone" name="org_phone" data-controller="intl-tel-input" data-intl-tel-input-allowed-countries-value="{{ app_config('allowed_phone_countries', ['us'])|json_encode|e('html_attr') }}" placeholder="(555) 123-4567" required value="{{ org_phone|default('') }}">
+                <input type="tel" class="form-control" id="org_phone" name="org_phone" placeholder="(555) 123-4567" required value="{{ org_phone|default('') }}">
             </div>
 
             <div class="d-flex justify-content-end mt-8">
@@ -170,7 +170,7 @@
                 </div>
                 <div class="form-group">
                     <label class="form-label" for="manager_phone">Manager Phone Number</label>
-                    <input type="tel" class="form-control" id="manager_phone" name="manager_phone" data-controller="intl-tel-input" data-intl-tel-input-allowed-countries-value="{{ app_config('allowed_phone_countries', ['us'])|json_encode|e('html_attr') }}" placeholder="(555) 987-6543" required value="{{ manager_phone|default('') }}">
+                    <input type="tel" class="form-control" id="manager_phone" name="manager_phone" placeholder="(555) 987-6543" required value="{{ manager_phone|default('') }}">
                 </div>
             </div>
 
@@ -256,44 +256,21 @@
         <!-- STEP 4: Payment Details -->
         <div class="step-content" id="step-4" style="display: none;">
             <h3 class="fs-xl d-flex align-items-center gap-2 mb-6">
-                <span class="material-icons text-primary">payment</span> Stripe Payment Details
+                <span class="material-icons text-primary">task_alt</span> Review &amp; Complete
             </h3>
 
             <div id="no-payment-needed" class="text-center d-none mb-8 p-6 rounded-md" style="background: rgba(16,185,129,0.05); border: 1px solid rgba(16,185,129,0.2)">
                 <span class="material-icons fs-4xl text-success mb-2">check_circle</span>
                 <h4>No payment required!</h4>
-                <p class="fs-md text-secondary mt-1">You selected the Basic Free plan. Click submit below to complete onboarding.</p>
+                <p class="fs-md text-secondary mt-1">You selected the Basic Free plan. Click submit below to complete your registration.</p>
             </div>
 
             <div id="stripe-form" class="d-block">
-                <div class="d-flex align-items-center gap-2 mb-6 p-0 rounded-sm" style="padding: .75rem 1rem; background: rgba(99,102,241,0.05); border: 1px solid rgba(99,102,241,0.15)">
-                    <span class="material-icons text-primary">info</span>
-                    <span class="fs-sm text-secondary">
-                        Payment processing is securely simulated via Stripe SDK wrapper. Enter any valid mock credit card info to test.
-                    </span>
-                </div>
-
-                <div class="form-group">
-                    <label class="form-label" for="card_name">Name on Card</label>
-                    <input type="text" id="card_name" class="form-control" placeholder="Jane Doe">
-                </div>
-
-                <div class="form-group">
-                    <label class="form-label" for="card_number">Card Number</label>
-                    <div class="position-relative">
-                        <input type="text" id="card_number" class="form-control" placeholder="4242 4242 4242 4242" maxlength="19">
-                        <span class="material-icons text-muted position-absolute" style="right: 12px; top: 10px">credit_card</span>
-                    </div>
-                </div>
-
-                <div class="grid-cols-2">
-                    <div class="form-group">
-                        <label class="form-label" for="card_expiry">Expiry Date</label>
-                        <input type="text" id="card_expiry" class="form-control" placeholder="MM/YY" maxlength="5">
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label" for="card_cvv">CVV</label>
-                        <input type="text" id="card_cvv" class="form-control" placeholder="123" maxlength="4">
+                <div class="d-flex align-items-start gap-3 mb-6 p-4 rounded-md" style="background: rgba(99,102,241,0.05); border: 1px solid rgba(99,102,241,0.15)">
+                    <span class="material-icons text-primary mt-0.5">lock</span>
+                    <div>
+                        <p class="fw-600 fs-md mb-1">Secure payment setup after registration</p>
+                        <p class="fs-sm text-secondary m-0">After your account is created, you'll be securely redirected to complete your subscription payment. Your card details are never handled by our servers.</p>
                     </div>
                 </div>
             </div>
@@ -320,11 +297,14 @@
             </div>
 
             <div class="form-group mt-6 p-4 rounded-md border" style="background: var(--bg-body)">
-                <label class="form-label" for="captcha_answer" class="d-flex align-items-center gap-2 mb-2">
-                    <span class="material-icons text-primary">security</span>
-                    Security Verification: What is {{ captcha_question }}?
-                </label>
-                <input type="number" name="captcha_answer" id="captcha_answer" class="form-control" required placeholder="Enter the result">
+                <div class="d-flex align-items-center justify-content-between mb-2">
+                    <label class="form-label m-0 d-flex align-items-center gap-2" for="captcha_answer">
+                        <span class="material-icons text-primary">security</span>
+                        <span>Security Verification</span>
+                    </label>
+                    <img src="{{ captcha_image }}" alt="Math Captcha" style="height: 38px; border-radius: 6px;">
+                </div>
+                <input type="number" name="captcha_answer" id="captcha_answer" class="form-control" required placeholder="Enter answer">
             </div>
 
             <div class="d-flex justify-content-between mt-8">
@@ -341,8 +321,24 @@
 {% endblock %}
 
 {% block javascripts %}
+    {# Load intl-tel-input UMD build directly — more reliable than ESM importmap on shared hosting #}
+    <script src="https://cdn.jsdelivr.net/npm/intl-tel-input@29.1.2/dist/js/intlTelInput.min.js"></script>
     <script>
+        // Allowed countries from app config
+        const allowedPhoneCountries = {{ app_config('allowed_phone_countries', ['us'])|json_encode|raw }};
+
         document.addEventListener('DOMContentLoaded', function() {
+            // Initialize org phone (step 1 — visible on load)
+            const orgPhoneInput = document.getElementById('org_phone');
+            if (orgPhoneInput && window.intlTelInput) {
+                window._itiOrgPhone = intlTelInput(orgPhoneInput, {
+                    loadUtils: () => import("https://cdn.jsdelivr.net/npm/intl-tel-input@29.1.2/dist/js/utils.js"),
+                    initialCountry: "us",
+                    onlyCountries: allowedPhoneCountries,
+                    separateDialCode: true,
+                    dropdownContainer: document.body,
+                });
+            }
             // Realtime Slug preview
             const orgNameInput = document.getElementById('org_name');
             const orgSlugInput = document.getElementById('org_slug');
@@ -381,27 +377,48 @@
                 for (let s = currentStep; s < step; s++) {
                     const requiredFields = document.querySelectorAll(`#step-${s} [required]`);
                     let valid = true;
+                    let errorMsg = 'Please fill in all required fields before proceeding.';
+
                     requiredFields.forEach(field => {
-                        if (!field.value.trim()) {
+                        const val = field.value.trim();
+                        let fieldValid = true;
+
+                        if (!val) {
+                            fieldValid = false;
+                        } else if (field.type === 'email' && !/\S+@\S+\.\S+/.test(val)) {
+                            fieldValid = false;
+                            errorMsg = 'Please enter a valid email address.';
+                        } else if (field.id === 'password' && val.length < 8) {
+                            fieldValid = false;
+                            errorMsg = 'Password must be at least 8 characters long.';
+                        } else if (field.id === 'org_slug' && !/^[a-z0-9\-]{2,50}$/.test(val)) {
+                            fieldValid = false;
+                            errorMsg = 'Kiosk URL slug must be 2-50 lowercase alphanumeric characters or hyphens.';
+                        } else if ((field.id === 'org_name' || field.id === 'first_name' || field.id === 'last_name') && val.length < 2) {
+                            fieldValid = false;
+                            errorMsg = 'Name fields must be at least 2 characters.';
+                        }
+
+                        if (!fieldValid) {
                             field.classList.add('error');
                             valid = false;
                         } else {
                             field.classList.remove('error');
                         }
                     });
+
                     if (!valid) {
-                        $.alert({
-                            title: 'Validation Error',
-                            content: 'Please fill in all required fields before proceeding.',
-                            theme: 'modern',
-                            type: 'red',
-                            buttons: {
-                                ok: {
-                                    text: 'OK',
-                                    btnClass: 'btn-red'
-                                }
-                            }
-                        });
+                        if (typeof $ !== 'undefined' && $.alert) {
+                            $.alert({
+                                title: 'Validation Error',
+                                content: errorMsg,
+                                theme: 'modern',
+                                type: 'red',
+                                buttons: { ok: { text: 'OK', btnClass: 'btn-red' } }
+                            });
+                        } else {
+                            alert(errorMsg);
+                        }
                         return;
                     }
                 }
@@ -411,6 +428,24 @@
             document.querySelectorAll('.step-content').forEach(el => el.style.display = 'none');
             // Show current step
             document.getElementById(`step-${step}`).style.display = 'block';
+
+            // intl-tel-input calculates dropdown width on connect(); hidden elements have 0 width.
+            // Trigger a resize so the flag widget repaints correctly when step 2 becomes visible.
+            if (step === 2) {
+                window.dispatchEvent(new Event('resize'));
+
+                // Initialize manager phone intl-tel-input on first visit to step 2
+                const mgPhoneInput = document.getElementById('manager_phone');
+                if (mgPhoneInput && window.intlTelInput && !window._itiManagerPhone) {
+                    window._itiManagerPhone = intlTelInput(mgPhoneInput, {
+                        loadUtils: () => import("https://cdn.jsdelivr.net/npm/intl-tel-input@29.1.2/dist/js/utils.js"),
+                        initialCountry: "us",
+                        onlyCountries: allowedPhoneCountries,
+                        separateDialCode: true,
+                        dropdownContainer: document.body,
+                    });
+                }
+            }
 
             // Update indicators
             document.querySelectorAll('.wizard-step').forEach((el, index) => {
@@ -426,31 +461,18 @@
                 }
             });
 
-            // Toggle payment elements depending on plan in Step 4
+                    // Toggle payment elements depending on plan in Step 4
             if (step === 4) {
                 const selectedPlan = document.getElementById('selected-plan').value;
                 const stripeForm = document.getElementById('stripe-form');
                 const noPaymentDiv = document.getElementById('no-payment-needed');
-                
-                const cardName = document.getElementById('card_name');
-                const cardNum = document.getElementById('card_number');
-                const cardExp = document.getElementById('card_expiry');
-                const cardCvv = document.getElementById('card_cvv');
 
                 if (selectedPlan === 'basic') {
                     stripeForm.style.display = 'none';
                     noPaymentDiv.style.display = 'block';
-                    cardName.required = false;
-                    cardNum.required = false;
-                    cardExp.required = false;
-                    cardCvv.required = false;
                 } else {
                     stripeForm.style.display = 'block';
                     noPaymentDiv.style.display = 'none';
-                    cardName.required = true;
-                    cardNum.required = true;
-                    cardExp.required = true;
-                    cardCvv.required = true;
                 }
             }
 
@@ -463,31 +485,5 @@
             document.getElementById(`plan-${plan}-card`).classList.add('selected');
         }
 
-        // CC Input Mask helpers
-        document.getElementById('card_number')?.addEventListener('input', function (e) {
-            let val = e.target.value.replace(/\s+/g, '').replace(/[^0-9]/gi, '');
-            let matches = val.match(/\d{4,16}/g);
-            let match = matches && matches[0] || '';
-            let parts = [];
-
-            for (let i=0, len=match.length; i<len; i+=4) {
-                parts.push(match.substring(i, i+4));
-            }
-
-            if (parts.length > 0) {
-                e.target.value = parts.join(' ');
-            } else {
-                e.target.value = val;
-            }
-        });
-
-        document.getElementById('card_expiry')?.addEventListener('input', function (e) {
-            let val = e.target.value.replace(/\s+/g, '').replace(/[^0-9]/gi, '');
-            if (val.length >= 2) {
-                e.target.value = val.substring(0, 2) + '/' + val.substring(2, 4);
-            } else {
-                e.target.value = val;
-            }
-        });
     </script>
 {% endblock %}

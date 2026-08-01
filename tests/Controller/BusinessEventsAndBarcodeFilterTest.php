@@ -25,8 +25,8 @@ class BusinessEventsAndBarcodeFilterTest extends WebTestCase
         $client->loginUser($manager);
 
         // Generate a random PIN to avoid duplicate entry constraint violations
-        $pin1 = 'A' . rand(100, 999);
-        $pin2 = 'B' . rand(100, 999);
+        $pin1 = 'A' . substr(md5(uniqid((string)mt_rand(), true)), 0, 5);
+        $pin2 = 'B' . substr(md5(uniqid((string)mt_rand(), true)), 0, 5);
 
         // 1. Create a user created 5 days ago (active)
         $user1 = new OrgUser();

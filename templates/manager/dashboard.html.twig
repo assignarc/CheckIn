@@ -13,7 +13,7 @@
         </div>
         <div class="metric-info">
             <h3>{{ activeCount }}</h3>
-            <p>Users Checked In Now</p>
+            <p>Students Checked In Now</p>
         </div>
     </a>
  
@@ -24,7 +24,7 @@
         </div>
         <div class="metric-info">
             <h3>{{ limitsData.usage.orgUsers }} <span class="fs-md fw-400 text-muted">/ {{ limitsData.limits.max_orgUsers }}</span></h3>
-            <p>Total Registered Users</p>
+            <p>Total Registered Students</p>
         </div>
     </a>
 
@@ -51,7 +51,7 @@
         <div class="quota-box">
             {% set empPercent = (limitsData.usage.orgUsers / limitsData.limits.max_orgUsers * 100)|round %}
             <div class="fs-sm fw-600 d-flex justify-content-between">
-                <span>User Registry Allocation</span>
+                <span>Student Allocation</span>
                 <span>{{ limitsData.usage.orgUsers }} of {{ limitsData.limits.max_orgUsers }} ({{ empPercent }}%)</span>
             </div>
             <div class="quota-bar">
@@ -194,13 +194,9 @@
                             {% if session.endMethod == 'Auto End' or session.endMethod == 'Force End' %}
                                 <span class="badge badge-danger">{{ session.endMethod }}</span>
                             {% else %}
-                                {% if session.isOvertime %}
-                                    <span class="badge badge-danger mr-1">Overtime</span>
-                                {% endif %}
                                 {% if session.isOutOfWindow %}
                                     <span class="badge badge-warning">Out of Window</span>
-                                {% endif %}
-                                {% if not session.isOvertime and not session.isOutOfWindow %}
+                                {% else %}
                                     <span class="fs-sm text-muted">Normal</span>
                                 {% endif %}
                             {% endif %}

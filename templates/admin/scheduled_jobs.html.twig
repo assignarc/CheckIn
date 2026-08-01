@@ -55,17 +55,6 @@
             <div class="fw-bold fs-sm mb-1">3. Archive Audit Logs</div>
             <div class="fs-xs text-muted">Automatically archives logs older than the configured global retention period to a JSON zipped file on the server.</div>
         </div>
-        <div class="alert alert-info mt-4">
-            <span class="material-icons text-info">info</span>
-            <div class="ms-2">
-                <strong>Wait, isn't there another way?</strong><br>
-                Yes! If you have direct CLI access to the server, you can trigger these manually or set them up in standard server crontab:
-                <ul class="mb-0 mt-2 text-primary fs-sm">
-                    <li>Sweep Sessions: <code>php bin/console app:sweep-sessions</code></li>
-                    <li>Archive Audit Logs: <code>php bin/console app:archive-audit-logs</code></li>
-                </ul>
-            </div>
-        </div>
     </div>
 </div>
 {% endblock %}

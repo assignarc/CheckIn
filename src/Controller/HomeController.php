@@ -81,11 +81,78 @@ class HomeController extends AbstractController
                 $this->addFlash('danger', 'Incorrect math captcha answer. Please try again.');
                 return $this->redirectToRoute('app_signup');
             }
+
+            // Length and data-type validations
+            if (!$orgName || strlen($orgName) < 2 || strlen($orgName) > 100) {
+                $this->addFlash('danger', 'Organization name must be between 2 and 100 characters.');
+                return $this->redirectToRoute('app_signup');
+            }
+
+            if (!$orgSlug || !preg_match('/^[a-z0-9\-]{2,50}$/', $orgSlug)) {
+                $this->addFlash('danger', 'Kiosk URL slug must be 2-50 lowercase alphanumeric characters or hyphens.');
+                return $this->redirectToRoute('app_signup');
+            }
+
+            if (!$orgStreet || strlen($orgStreet) < 2 || strlen($orgStreet) > 150) {
+                $this->addFlash('danger', 'Street address must be between 2 and 150 characters.');
+                return $this->redirectToRoute('app_signup');
+            }
+
+            if (!$orgCity || strlen($orgCity) < 2 || strlen($orgCity) > 100) {
+                $this->addFlash('danger', 'City must be between 2 and 100 characters.');
+                return $this->redirectToRoute('app_signup');
+            }
+
+            if (!$orgState || strlen($orgState) < 2 || strlen($orgState) > 50) {
+                $this->addFlash('danger', 'State must be between 2 and 50 characters.');
+                return $this->redirectToRoute('app_signup');
+            }
+
+            if (!$orgZip || strlen($orgZip) < 3 || strlen($orgZip) > 10) {
+                $this->addFlash('danger', 'ZIP code must be between 3 and 10 characters.');
+                return $this->redirectToRoute('app_signup');
+            }
+
+            if (!$orgPhone || strlen(preg_replace('/[^0-9\+]/', '', $orgPhone)) < 7) {
+                $this->addFlash('danger', 'Please enter a valid organization phone number.');
+                return $this->redirectToRoute('app_signup');
+            }
+
+            if (!$firstName || strlen($firstName) < 2 || strlen($firstName) > 50) {
+                $this->addFlash('danger', 'Manager first name must be between 2 and 50 characters.');
+                return $this->redirectToRoute('app_signup');
+            }
+
+            if (!$lastName || strlen($lastName) < 2 || strlen($lastName) > 50) {
+                $this->addFlash('danger', 'Manager last name must be between 2 and 50 characters.');
+                return $this->redirectToRoute('app_signup');
+            }
+
+            if (!$email || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
+                $this->addFlash('danger', 'Please enter a valid manager email address.');
+                return $this->redirectToRoute('app_signup');
+            }
+
+            if (!$managerPhone || strlen(preg_replace('/[^0-9\+]/', '', $managerPhone)) < 7) {
+                $this->addFlash('danger', 'Please enter a valid manager phone number.');
+                return $this->redirectToRoute('app_signup');
+            }
+
+            if (!$password || strlen($password) < 8 || strlen($password) > 100) {
+                $this->addFlash('danger', 'Password must be at least 8 characters long.');
+                return $this->redirectToRoute('app_signup');
+            }
             
-            // Validate unique slug
-            $existingOrg = $entityManager->getRepository(Organization::class)->findOneBy(['slug' => $orgSlug]);
-            if ($existingOrg) {
-                $this->addFlash('danger', 'This organization URL slug is already taken.');
+            // Validate unique slug — use native SQL to catch conflicts with soft-deleted orgs
+            // (Doctrine's SoftDeleteable filter skips deleted rows, but the DB unique index does not)
+            $conn = $entityManager->getConnection();
+            $slugTaken = (bool) $conn->fetchOne(
+                'SELECT COUNT(*) FROM organizations WHERE slug = ?',
+                [$orgSlug]
+            );
+            if ($slugTaken) {
+                $this->addFlash('danger', 'This organization URL slug is already taken. Please choose a different one.');
+                $captchaImage = $captchaService->generateImage($request, 'signup');
                 return $this->render('home/signup.html.twig', [
                     'org_name' => $orgName,
                     'org_slug' => $orgSlug,
@@ -102,6 +169,35 @@ class HomeController extends AbstractController
                     'plan' => $plan,
                     'plans' => $plans,
                     'new_signups_enabled' => true,
+                    'captcha_image' => $captchaImage,
+                ]);
+            }
+
+            // Validate unique organization name — use native SQL to include soft-deleted rows
+            $nameTaken = (bool) $conn->fetchOne(
+                'SELECT COUNT(*) FROM organizations WHERE LOWER(name) = LOWER(?)',
+                [$orgName]
+            );
+            if ($nameTaken) {
+                $this->addFlash('danger', 'An organization with this name already exists. Please use a different name.');
+                $captchaImage = $captchaService->generateImage($request, 'signup');
+                return $this->render('home/signup.html.twig', [
+                    'org_name' => $orgName,
+                    'org_slug' => $orgSlug,
+                    'org_street' => $orgStreet,
+                    'org_suite' => $orgSuite,
+                    'org_city' => $orgCity,
+                    'org_state' => $orgState,
+                    'org_zip' => $orgZip,
+                    'org_phone' => $orgPhone,
+                    'first_name' => $firstName,
+                    'last_name' => $lastName,
+                    'email' => $email,
+                    'manager_phone' => $managerPhone,
+                    'plan' => $plan,
+                    'plans' => $plans,
+                    'new_signups_enabled' => true,
+                    'captcha_image' => $captchaImage,
                 ]);
             }
 
@@ -109,6 +205,7 @@ class HomeController extends AbstractController
             $existingManager = $entityManager->getRepository(Manager::class)->findOneBy(['email' => $email]);
             if ($existingManager) {
                 $this->addFlash('danger', 'A user with this email address already exists.');
+                $captchaImage = $captchaService->generateImage($request, 'signup');
                 return $this->render('home/signup.html.twig', [
                     'org_name' => $orgName,
                     'org_slug' => $orgSlug,
@@ -125,6 +222,7 @@ class HomeController extends AbstractController
                     'plan' => $plan,
                     'plans' => $plans,
                     'new_signups_enabled' => true,
+                    'captcha_image' => $captchaImage,
                 ]);
             }
 
@@ -219,24 +317,24 @@ class HomeController extends AbstractController
             return $this->redirectToRoute('app_login');
         }
 
-        $captchaQuestion = $captchaService->generateQuestion($request, 'signup');
+        $captchaImage = $captchaService->generateImage($request, 'signup');
 
         return $this->render('home/signup.html.twig', [
             'plans' => $plans,
-            'captcha_question' => $captchaQuestion,
+            'captcha_image' => $captchaImage,
             'new_signups_enabled' => true,
-        ]);
+        ]); // GET render — captcha_image also generated at top of POST block for error re-renders
     }
 
     #[Route('/demo', name: 'app_demo')]
     public function demo(Request $request, CaptchaService $captchaService): Response
     {
         $captchaEnabled = $captchaService->isEnabled('demo');
-        $captchaQuestion = $captchaEnabled ? $captchaService->generateQuestion($request, 'demo') : '';
+        $captchaImage = $captchaEnabled ? $captchaService->generateImage($request, 'demo') : '';
 
         return $this->render('home/demo.html.twig', [
             'captcha_enabled' => $captchaEnabled,
-            'captcha_question' => $captchaQuestion,
+            'captcha_image' => $captchaImage,
         ]);
     }
 

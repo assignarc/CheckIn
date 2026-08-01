@@ -24,73 +24,81 @@ class BarcodePlanLimiterTest extends WebTestCase
         $goldOrg = null;
 
         foreach ($orgs as $org) {
-            if ($org->getPlan()->getName() === 'basic') {
+            if ($org->getPlan() && strtolower($org->getPlan()->getName()) === 'basic') {
                 $basicOrg = $org;
-            } elseif ($org->getPlan()->getName() === 'gold') {
+            } elseif ($org->getPlan() && strtolower($org->getPlan()->getName()) === 'gold') {
                 $goldOrg = $org;
             }
         }
 
-        // If not found in the test DB, let's create a temporary mock organization/plan for test reliability
-        if (!$basicOrg || !$goldOrg) {
-            $basicPlan = $em->getRepository(Plan::class)->findOneBy(['name' => 'basic']);
-            if (!$basicPlan) {
-                $basicPlan = new Plan();
-                $basicPlan->setName('basic');
-                $basicPlan->setMaxOrgUsers(10);
-                $basicPlan->setMaxManagers(1);
-                $basicPlan->setMaxFields(3);
-                $basicPlan->setMaxCategories(1);
-                $basicPlan->setSessionLimitHours(2);
-                $basicPlan->setRetentionDays(45);
-                $basicPlan->setExportsEnabled(false);
-                $basicPlan->setPriceMonthly('0.00');
-                $basicPlan->setHasBarcodeFeatures(false);
-                $em->persist($basicPlan);
-            } else {
-                $basicPlan->setHasBarcodeFeatures(false);
-                $em->persist($basicPlan);
-            }
-
-            $goldPlan = $em->getRepository(Plan::class)->findOneBy(['name' => 'gold']);
-            if (!$goldPlan) {
-                $goldPlan = new Plan();
-                $goldPlan->setName('gold');
-                $goldPlan->setMaxOrgUsers(1000);
-                $goldPlan->setMaxManagers(9999);
-                $goldPlan->setMaxFields(99);
-                $goldPlan->setMaxCategories(99);
-                $goldPlan->setSessionLimitHours(24);
-                $goldPlan->setRetentionDays(365);
-                $goldPlan->setExportsEnabled(true);
-                $goldPlan->setPriceMonthly('99.00');
-                $goldPlan->setHasBarcodeFeatures(true);
-                $em->persist($goldPlan);
-            } else {
-                $goldPlan->setHasBarcodeFeatures(true);
-                $em->persist($goldPlan);
-            }
-
-            if (!$basicOrg) {
-                $basicOrg = new Organization();
-                $basicOrg->setName('Test Basic Org');
-                $basicOrg->setSlug('test-basic-org');
-                $basicOrg->setPlan($basicPlan);
-                $basicOrg->setCheckInLinkToken('basic-token');
-                $basicOrg->setIsSubscriptionActive(true);
-                $em->persist($basicOrg);
-            }
-            if (!$goldOrg) {
-                $goldOrg = new Organization();
-                $goldOrg->setName('Test Gold Org');
-                $goldOrg->setSlug('test-gold-org');
-                $goldOrg->setPlan($goldPlan);
-                $goldOrg->setCheckInLinkToken('gold-token');
-                $goldOrg->setIsSubscriptionActive(true);
-                $em->persist($goldOrg);
-            }
-            $em->flush();
+        $basicPlan = $em->getRepository(Plan::class)->findOneBy(['name' => 'basic'])
+                  ?? $em->getRepository(Plan::class)->findOneBy(['name' => 'Basic']);
+        if (!$basicPlan) {
+            $basicPlan = new Plan();
+            $basicPlan->setName('basic');
+            $basicPlan->setMaxOrgUsers(10);
+            $basicPlan->setMaxManagers(1);
+            $basicPlan->setMaxFields(3);
+            $basicPlan->setMaxCategories(1);
+            $basicPlan->setSessionLimitHours(2);
+            $basicPlan->setRetentionDays(45);
+            $basicPlan->setExportsEnabled(false);
+            $basicPlan->setPriceMonthly('0.00');
+            $em->persist($basicPlan);
         }
+        $basicPlan->setHasBarcodeFeatures(false);
+
+        $goldPlan = $em->getRepository(Plan::class)->findOneBy(['name' => 'gold'])
+                 ?? $em->getRepository(Plan::class)->findOneBy(['name' => 'Gold']);
+        if (!$goldPlan) {
+            $goldPlan = new Plan();
+            $goldPlan->setName('Gold');
+            $goldPlan->setMaxOrgUsers(1000);
+            $goldPlan->setMaxManagers(9999);
+            $goldPlan->setMaxFields(99);
+            $goldPlan->setMaxCategories(99);
+            $goldPlan->setSessionLimitHours(24);
+            $goldPlan->setRetentionDays(365);
+            $goldPlan->setExportsEnabled(true);
+            $goldPlan->setPriceMonthly('99.00');
+            $em->persist($goldPlan);
+        }
+
+        $plans = $em->getRepository(Plan::class)->findAll();
+        foreach ($plans as $p) {
+            if (in_array(strtolower($p->getName()), ['gold', 'platinum'])) {
+                $p->setHasBarcodeFeatures(true);
+            } elseif (strtolower($p->getName()) === 'basic') {
+                $p->setHasBarcodeFeatures(false);
+            }
+        }
+        $em->flush();
+
+        if (!$basicOrg) {
+            $basicOrg = new Organization();
+            $basicOrg->setName('Test Basic Org');
+            $basicOrg->setSlug('test-basic-org');
+            $em->persist($basicOrg);
+        }
+        $basicOrg->setCheckInLinkToken('basic-token');
+        $basicOrg->setIsSubscriptionActive(true);
+        $basicOrg->setIsArchived(false);
+        $basicOrg->setPlan($basicPlan);
+        $basicOrg->clearOverrides();
+
+        if (!$goldOrg) {
+            $goldOrg = new Organization();
+            $goldOrg->setName('Test Gold Org');
+            $goldOrg->setSlug('test-gold-org');
+            $em->persist($goldOrg);
+        }
+        $goldOrg->setCheckInLinkToken('gold-token');
+        $goldOrg->setIsSubscriptionActive(true);
+        $goldOrg->setIsArchived(false);
+        $goldOrg->setPlan($goldPlan);
+        $goldOrg->clearOverrides();
+
+        $em->flush();
 
         $em->clear();
         $basicOrg = $em->getRepository(Organization::class)->findOneBy(['slug' => $basicOrg ? $basicOrg->getSlug() : 'test-basic-org']);
