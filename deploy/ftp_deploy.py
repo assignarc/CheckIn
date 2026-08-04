@@ -23,6 +23,7 @@ EXCLUDE_DIRS = {
 }
 
 EXCLUDE_FILES = {
+    ".env",
     ".env.local",
     ".env.dev.local",
     ".env.test.local",

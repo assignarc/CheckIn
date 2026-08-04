@@ -55,6 +55,9 @@ class Plan
     #[ORM\Column(type: "decimal", precision: 10, scale: 2)]
     private string $priceMonthly;
 
+    #[ORM\Column(type: "string", length: 100, nullable: true)]
+    private ?string $stripePriceId = null;
+
     #[ORM\Column(type: "datetime_immutable")]
     private \DateTimeImmutable $createdAt;
 
@@ -165,6 +168,17 @@ class Plan
     public function setPriceMonthly(string $priceMonthly): self
     {
         $this->priceMonthly = $priceMonthly;
+        return $this;
+    }
+
+    public function getStripePriceId(): ?string
+    {
+        return $this->stripePriceId;
+    }
+
+    public function setStripePriceId(?string $stripePriceId): self
+    {
+        $this->stripePriceId = $stripePriceId;
         return $this;
     }
 

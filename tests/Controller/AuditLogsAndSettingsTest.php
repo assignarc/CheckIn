@@ -42,6 +42,8 @@ class AuditLogsAndSettingsTest extends WebTestCase
         // 1. Log in as platform administrator
         $admin = $em->getRepository(Manager::class)->findOneBy(['email' => 'admin@centertime.us']);
         $this->assertNotNull($admin);
+        $admin->setRole('ROLE_SYSTEM_ADMIN');
+        $em->flush();
         $client->loginUser($admin);
 
         // 2. Load admin settings page
@@ -56,6 +58,7 @@ class AuditLogsAndSettingsTest extends WebTestCase
             'demo_rotation_hours' => 24,
             'new_signups_enabled' => '1',
             'audit_log_archive_days' => 120,
+            'cron_empty_log_retention_hours' => 4,
             'session_sweep_throttle_seconds' => 120,
             'demo_reset_history_days' => 180,
             'audit_log_archive_dir' => '/var/log/test_archives',
@@ -68,6 +71,7 @@ class AuditLogsAndSettingsTest extends WebTestCase
         // 4. Verify that settings were updated in the database config service
         $this->assertEquals('America/New_York', $configService->get('display_timezone'));
         $this->assertEquals(150, $configService->get('max_import_records'));
+        $this->assertEquals(4, $configService->get('cron_empty_log_retention_hours'));
         $this->assertEquals('weekly_sunday', $configService->get('audit_log_archive_schedule'));
     }
 }

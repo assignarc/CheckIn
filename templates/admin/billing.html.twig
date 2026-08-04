@@ -11,7 +11,7 @@
 </div>
 
 <!-- Metrics Overview -->
-<div class="grid-cols-3 mb-8">
+<div class="grid-cols-4 mb-8">
     <div class="metric-card">
         <div class="metric-icon indigo-billing text-purple-500">
             <span class="material-icons">attach_money</span>
@@ -29,6 +29,16 @@
         <div class="metric-info">
             <h3>{{ activeSubCount }}</h3>
             <p>Active Paid Subscriptions</p>
+        </div>
+    </div>
+
+    <div class="metric-card">
+        <div class="metric-icon {% if scheduledTransitionsCount > 0 %}amber-billing{% else %}indigo-billing{% endif %}">
+            <span class="material-icons">update</span>
+        </div>
+        <div class="metric-info">
+            <h3>{{ scheduledTransitionsCount }}</h3>
+            <p>Scheduled Plan Changes</p>
         </div>
     </div>
 
@@ -60,6 +70,9 @@
     <div class="btn-group bg-card rounded-md p-1 d-inline-flex tab-btn-wrapper">
         <button type="button" class="tab-btn-custom active" id="tab-btn-tenants" onclick="switchBillingTab('tenants')">
             <span class="material-icons fs-sm align-middle mr-1">business</span> Tenant Subscriptions
+        </button>
+        <button type="button" class="tab-btn-custom" id="tab-btn-schedules" onclick="switchBillingTab('schedules')">
+            <span class="material-icons fs-sm align-middle mr-1">schedule</span> Scheduled Changes {% if scheduledTransitionsCount > 0 %}<span class="badge badge-warning ml-1">{{ scheduledTransitionsCount }}</span>{% endif %}
         </button>
         <button type="button" class="tab-btn-custom" id="tab-btn-payments" onclick="switchBillingTab('payments')">
             <span class="material-icons fs-sm align-middle mr-1">history</span> Transaction History
@@ -143,7 +156,65 @@
     </div>
 </div>
 
-<!-- 2. Global Payments Tab -->
+<!-- 2. Scheduled Transitions Tab -->
+<div id="billing-section-schedules" class="glass-panel p-0 overflow-hidden mb-8 d-none">
+    <div class="table-responsive">
+        <table class="table mb-0 fs-sm">
+            <thead>
+                <tr>
+                    <th>Organization</th>
+                    <th>Current Active Plan</th>
+                    <th>Pending Scheduled Plan</th>
+                    <th>Transition Type</th>
+                    <th>Effective End-of-Period Date</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in scheduledTransitions %}
+                    <tr>
+                        <td>
+                            <div class="fw-600 text-white">{{ item.org.name }}</div>
+                            <div class="text-secondary font-mono fs-xs">{{ item.org.slug }}</div>
+                        </td>
+                        <td>
+                            <span class="badge {% if item.currentPlan.name == 'gold' %}badge-success{% elseif item.currentPlan.name == 'silver' %}badge-info{% else %}badge-warning{% endif %}">
+                                {{ item.currentPlan.name|upper }} (${{ item.currentPlan.priceMonthly|number_format }}/mo)
+                            </span>
+                        </td>
+                        <td>
+                            <span class="badge {% if item.pendingPlan.name == 'gold' %}badge-success{% elseif item.pendingPlan.name == 'silver' %}badge-info{% else %}badge-warning{% endif %}">
+                                {{ item.pendingPlan.name|upper }} (${{ item.pendingPlan.priceMonthly|number_format }}/mo)
+                            </span>
+                        </td>
+                        <td>
+                            <span class="badge {% if 'Downgrade' in item.type %}badge-warning{% else %}badge-info{% endif %}">
+                                <span class="material-icons fs-xs align-middle mr-1">schedule</span> {{ item.type }}
+                            </span>
+                        </td>
+                        <td>
+                            {% if item.effectiveAt %}
+                                <div class="fw-600 text-primary">{{ item.effectiveAt|date('M d, Y') }}</div>
+                                <div class="text-secondary fs-xs">{{ item.effectiveAt|date('h:i A T') }}</div>
+                            {% else %}
+                                <span class="text-muted">At Period End</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <a href="{{ path('app_admin_organizations', {'q': item.org.name}) }}" class="btn btn-secondary btn-xs">View Organization</a>
+                        </td>
+                    </tr>
+                {% else %}
+                    <tr>
+                        <td colspan="6" class="text-center text-muted p-8">No pending scheduled subscription upgrades or downgrades.</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- 3. Global Payments Tab -->
 <div id="billing-section-payments" class="glass-panel p-0 overflow-hidden mb-8 d-none">
     <div class="table-responsive">
         <table class="table mb-0 fs-sm">
@@ -181,7 +252,7 @@
     </div>
 </div>
 
-<!-- 3. Webhook Event Log Tab -->
+<!-- 4. Webhook Event Log Tab -->
 <div id="billing-section-events" class="glass-panel p-0 overflow-hidden mb-8 d-none">
     <div class="table-responsive">
         <table class="table mb-0 fs-sm">
@@ -229,7 +300,7 @@
 
 <script>
     function switchBillingTab(activeTab) {
-        const sections = ['tenants', 'payments', 'events'];
+        const sections = ['tenants', 'schedules', 'payments', 'events'];
         
         sections.forEach(tab => {
             const container = document.getElementById('billing-section-' + tab);

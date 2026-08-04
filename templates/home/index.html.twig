@@ -326,13 +326,13 @@
         <div>
             <div class="d-inline-flex align-items-center gap-2 mb-6 p-0 rounded-full" style="padding: .35rem 1rem; background: var(--primary-glow); border: 1px solid rgba(99,102,241,0.2)">
                 <span class="material-icons fs-md text-primary">bolt</span>
-                <span class="fs-sm fw-600 text-uppercase text-indigo-200 tracking-wide">Multi-Tenant Time Kiosk</span>
+                <span class="fs-sm fw-600 text-uppercase text-indigo-200 tracking-wide">Automated Time Kiosk Platform</span>
             </div>
             <h1 class="fs-5xl mb-6" style="line-height: 1.15; letter-spacing: -0.03em">
-                Next-Gen <span class="text-gradient">Time Tracking</span><br>For Modern Teams.
+                Next-Gen <span class="text-gradient">Time Tracking</span> For Modern Teams.
             </h1>
-            <p class="fs-lg text-secondary mb-10 max-w-600" style="line-height: 1.6">
-                Streamline user check-ins with secure PIN entries, custom data fields, customizable time windows, and robust manager-level reporting. Built to scale with multi-tenant logical separation.
+            <p class="fs-lg text-secondary mb-10" style="line-height: 1.6">
+                Streamline user check-ins with secure PIN entries, contactless barcode scanning, customizable time windows, and robust manager-level reporting built for maximum accuracy and ease of use.
             </p>
             <div class="d-flex flex-wrap gap-4">
                 {% if new_signups_enabled %}
@@ -370,7 +370,7 @@
                 </button>
             </div>
 
-            <div class="position-relative flex-grow-1" style="zoom: 0.75;">
+            <div class="position-relative flex-grow-1 w-100" style="overflow: hidden;">
                 <!-- Mock Mouse Cursor for Basic mode -->
                 <span class="material-icons mock-cursor" id="kiosk-mock-cursor" style="color: #ffffff; text-shadow: 0 2px 4px rgba(0,0,0,0.5);">near_me</span>
 
@@ -481,784 +481,86 @@
         </div>
     </section>
 
-    <!-- Key Platform Benefits Section -->
-    <section class="d-flex flex-column gap-12 reveal-scale">
+    <!-- Summarized Overview Navigation Block -->
+    <section class="d-flex flex-column gap-8 mt-12 mb-12 w-100">
         <div class="text-center">
-            <h2 class="fs-3xl">Engineered for <span class="text-gradient">Precision</span> and Control</h2>
+            <h2 class="fs-3xl fw-800">Explore <span class="text-gradient">CenterTime</span></h2>
             <p class="fs-lg text-secondary mt-2 ml-auto mr-auto max-w-700">
-                CenterTime provides managers with high-fidelity control over shifts logs, auditing, and compliance constraints.
+                Discover our comprehensive feature suite, transparent pricing plans, and platform answers.
             </p>
         </div>
 
-        <div class="grid-cols-3 gap-6 mb-6">
-            <div class="glass-panel p-6">
-                <span class="material-icons text-primary mb-4 fs-3xl">gavel</span>
-                <h4 class="fs-lg mb-2">Time Window Enforcement</h4>
-                <p class="fs-md text-secondary lh-base">
-                    Set specific windows for clocking in and out (including overnight shifts support) and automatically flag violations in manager dashboards.
-                </p>
-            </div>
-            <div class="glass-panel p-6">
-                <span class="material-icons text-success mb-4 fs-3xl">cloud_sync</span>
-                <h4 class="fs-lg mb-2">Onboarding & Fuzzy Matching</h4>
-                <p class="fs-md text-secondary lh-base">
-                    Upload existing rosters via CSV. Map custom columns and run fuzzy matching checks to prevent duplicates while merging updates.
-                </p>
-            </div>
-            <div class="glass-panel p-6">
-                <span class="material-icons text-warning mb-4 fs-3xl">security</span>
-                <h4 class="fs-lg mb-2">Anti-Brute Force Lockout</h4>
-                <p class="fs-md text-secondary lh-base">
-                    Protects the workplace kiosk by automatically locking user accounts after 3 incorrect PIN attempts. Managers can clear blocks in a click.
-                </p>
-            </div>
-        </div>
-        <div class="grid-cols-3 gap-6">
-            <div class="glass-panel p-6">
-                <span class="material-icons text-info mb-4 fs-3xl">category</span>
-                <h4 class="fs-lg mb-2">Custom Category Limits</h4>
-                <p class="fs-md text-secondary lh-base">
-                    Override organization-wide limits with custom max session durations per category, giving you granular control.
-                </p>
-            </div>
-            <div class="glass-panel p-6">
-                <span class="material-icons text-indigo mb-4 fs-3xl">payments</span>
-                <h4 class="fs-lg mb-2">Advanced Overtime Rules</h4>
-                <p class="fs-md text-secondary lh-base">
-                    Configure overtime multipliers and grace periods to accurately track and calculate shift overages.
-                </p>
-            </div>
-            <div class="glass-panel p-6">
-                <span class="material-icons text-danger mb-4 fs-3xl">verified_user</span>
-                <h4 class="fs-lg mb-2">Math Captcha Security</h4>
-                <p class="fs-md text-secondary lh-base">
-                    Built-in mathematical captchas on sensitive operations to prevent automated abuse and enhance platform security.
-                </p>
-            </div>
-        </div>
-    </section>
-
-    <!-- Real-Time Event & Audit Stream Catalog -->
-    <section class="d-flex flex-column gap-12 mt-16 mb-12 reveal-scale">
-        <div class="text-center">
-            <h2 class="fs-3xl">Traceability & Audit: <span class="text-gradient">10 Core System Events</span></h2>
-            <p class="fs-lg text-secondary mt-2 ml-auto mr-auto max-w-700">
-                CenterTime logs every critical business mutation to ensure security, automated compliance, and absolute accountability. Explore our core audit logs below.
-            </p>
-        </div>
-
-        <div class="grid-cols-5 gap-6">
-            <!-- Event 1 -->
-            <div class="glass-panel p-6 d-flex flex-column justify-content-between" style="border-top: 4px solid var(--primary); min-height: 250px;">
+        <div class="grid-cols-3 gap-6 w-100">
+            <!-- Features Overview Card -->
+            <div class="glass-panel p-8 d-flex flex-column justify-content-between text-left hover-lift w-100" style="border-top: 4px solid var(--primary); min-height: 320px;">
                 <div>
-                    <div class="d-flex justify-content-between align-items-center mb-3">
-                        <span class="material-icons text-primary fs-xl" style="font-size: 1.5rem;">login</span>
-                        <span class="fs-xs fw-600 text-muted">Attendance</span>
-                    </div>
-                    <h4 class="fs-md fw-700 mb-2">User Check-In / Out</h4>
-                    <p class="fs-xs text-secondary lh-base mb-3">
-                        Fired when an employee clocks in or out at the kiosk using their PIN or barcode.
-                    </p>
-                </div>
-                <div class="border-t pt-3">
-                    <span class="fs-xs text-success fw-600">Why it matters:</span>
-                    <p class="m-0 fs-xs text-secondary mt-1">Crucial for payroll accuracy, tracking labor hours, and calculating timesheets.</p>
-                </div>
-            </div>
-
-            <!-- Event 2 -->
-            <div class="glass-panel p-6 d-flex flex-column justify-content-between" style="border-top: 4px solid #10b981; min-height: 250px;">
-                <div>
-                    <div class="d-flex justify-content-between align-items-center mb-3">
-                        <span class="material-icons text-success fs-xl" style="font-size: 1.5rem;">cloud_upload</span>
-                        <span class="fs-xs fw-600 text-muted">Onboarding</span>
-                    </div>
-                    <h4 class="fs-md fw-700 mb-2">Bulk User Import</h4>
-                    <p class="fs-xs text-secondary lh-base mb-3">
-                        Emitted when a manager imports multiple employee records using the CSV Wizard.
-                    </p>
-                </div>
-                <div class="border-t pt-3">
-                    <span class="fs-xs text-success fw-600">Why it matters:</span>
-                    <p class="m-0 fs-xs text-secondary mt-1">Saves hours of data entry and audits newly added, updated, or skipped employee counts.</p>
-                </div>
-            </div>
-
-            <!-- Event 3 -->
-            <div class="glass-panel p-6 d-flex flex-column justify-content-between" style="border-top: 4px solid #f59e0b; min-height: 250px;">
-                <div>
-                    <div class="d-flex justify-content-between align-items-center mb-3">
-                        <span class="material-icons text-warning fs-xl" style="font-size: 1.5rem;">lock_reset</span>
-                        <span class="fs-xs fw-600 text-muted">Security</span>
-                    </div>
-                    <h4 class="fs-md fw-700 mb-2">Manager Password Reset</h4>
-                    <p class="fs-xs text-secondary lh-base mb-3">
-                        Fired when a manager updates their password or when an admin overrides credentials.
-                    </p>
-                </div>
-                <div class="border-t pt-3">
-                    <span class="fs-xs text-success fw-600">Why it matters:</span>
-                    <p class="m-0 fs-xs text-secondary mt-1">Essential security audit checkpoint to satisfy SOC2 compliance and prevent credential fraud.</p>
-                </div>
-            </div>
-
-            <!-- Event 4 -->
-            <div class="glass-panel p-6 d-flex flex-column justify-content-between" style="border-top: 4px solid #ef4444; min-height: 250px;">
-                <div>
-                    <div class="d-flex justify-content-between align-items-center mb-3">
-                        <span class="material-icons text-danger fs-xl" style="font-size: 1.5rem;">vpn_key</span>
-                        <span class="fs-xs fw-600 text-muted">Credentials</span>
-                    </div>
-                    <h4 class="fs-md fw-700 mb-2">PIN Modification</h4>
-                    <p class="fs-xs text-secondary lh-base mb-3">
-                        Triggered when an employee's check-in PIN is generated, updated, or reset.
-                    </p>
-                </div>
-                <div class="border-t pt-3">
-                    <span class="fs-xs text-success fw-600">Why it matters:</span>
-                    <p class="m-0 fs-xs text-secondary mt-1">Prevents "buddy punching" and ensures each user has a unique, authenticated PIN.</p>
-                </div>
-            </div>
-
-            <!-- Event 5 -->
-            <div class="glass-panel p-6 d-flex flex-column justify-content-between" style="border-top: 4px solid #8b5cf6; min-height: 250px;">
-                <div>
-                    <div class="d-flex justify-content-between align-items-center mb-3">
-                        <span class="material-icons text-indigo fs-xl" style="font-size: 1.5rem;">business</span>
-                        <span class="fs-xs fw-600 text-muted">Configuration</span>
-                    </div>
-                    <h4 class="fs-md fw-700 mb-2">Profile Modification</h4>
-                    <p class="fs-xs text-secondary lh-base mb-3">
-                        Logged when organization settings (branding, name, address) are updated.
-                    </p>
-                </div>
-                <div class="border-t pt-3">
-                    <span class="fs-xs text-success fw-600">Why it matters:</span>
-                    <p class="m-0 fs-xs text-secondary mt-1">Maintains organization profile integrity and logs CRM sync actions.</p>
-                </div>
-            </div>
-
-            <!-- Event 6 -->
-            <div class="glass-panel p-6 d-flex flex-column justify-content-between" style="border-top: 4px solid #ec4899; min-height: 250px;">
-                <div>
-                    <div class="d-flex justify-content-between align-items-center mb-3">
-                        <span class="material-icons text-pink fs-xl" style="font-size: 1.5rem;">credit_card</span>
-                        <span class="fs-xs fw-600 text-muted">Billing</span>
-                    </div>
-                    <h4 class="fs-md fw-700 mb-2">Subscription Change</h4>
-                    <p class="fs-xs text-secondary lh-base mb-3">
-                        Logged when the organization upgrades, downgrades, or modifies its plan limits.
-                    </p>
-                </div>
-                <div class="border-t pt-3">
-                    <span class="fs-xs text-success fw-600">Why it matters:</span>
-                    <p class="m-0 fs-xs text-secondary mt-1">Enables financial alignment and tracks limit/quota updates instantly.</p>
-                </div>
-            </div>
-
-            <!-- Event 7 -->
-            <div class="glass-panel p-6 d-flex flex-column justify-content-between" style="border-top: 4px solid #3b82f6; min-height: 250px;">
-                <div>
-                    <div class="d-flex justify-content-between align-items-center mb-3">
-                        <span class="material-icons text-blue fs-xl" style="font-size: 1.5rem;">timer</span>
-                        <span class="fs-xs fw-600 text-muted">Automation</span>
-                    </div>
-                    <h4 class="fs-md fw-700 mb-2">Auto-Termination</h4>
-                    <p class="fs-xs text-secondary lh-base mb-3">
-                        Fired when the system automatically ends a work session that exceeded its maximum duration.
-                    </p>
-                </div>
-                <div class="border-t pt-3">
-                    <span class="fs-xs text-success fw-600">Why it matters:</span>
-                    <p class="m-0 fs-xs text-secondary mt-1">Ensures data hygiene by preventing indefinitely open sessions.</p>
-                </div>
-            </div>
-
-            <!-- Event 8 -->
-            <div class="glass-panel p-6 d-flex flex-column justify-content-between" style="border-top: 4px solid #06b6d4; min-height: 250px;">
-                <div>
-                    <div class="d-flex justify-content-between align-items-center mb-3">
-                        <span class="material-icons text-cyan fs-xl" style="font-size: 1.5rem;">calculate</span>
-                        <span class="fs-xs fw-600 text-muted">Payroll Rules</span>
-                    </div>
-                    <h4 class="fs-md fw-700 mb-2">Overtime Rules Changed</h4>
-                    <p class="fs-xs text-secondary lh-base mb-3">
-                        Logged when overtime multipliers or grace period limits are adjusted.
-                    </p>
-                </div>
-                <div class="border-t pt-3">
-                    <span class="fs-xs text-success fw-600">Why it matters:</span>
-                    <p class="m-0 fs-xs text-secondary mt-1">Ensures compliance with labor regulations and tracks changes to cost multipliers.</p>
-                </div>
-            </div>
-
-            <!-- Event 9 -->
-            <div class="glass-panel p-6 d-flex flex-column justify-content-between" style="border-top: 4px solid #f97316; min-height: 250px;">
-                <div>
-                    <div class="d-flex justify-content-between align-items-center mb-3">
-                        <span class="material-icons text-orange fs-xl" style="font-size: 1.5rem;">toggle_on</span>
-                        <span class="fs-xs fw-600 text-muted">Licensing</span>
-                    </div>
-                    <h4 class="fs-md fw-700 mb-2">Status Activation Toggle</h4>
-                    <p class="fs-xs text-secondary lh-base mb-3">
-                        Triggered when a manager enables or disables an employee's active status.
-                    </p>
-                </div>
-                <div class="border-t pt-3">
-                    <span class="fs-xs text-success fw-600">Why it matters:</span>
-                    <p class="m-0 fs-xs text-secondary mt-1">Ensures inactive users cannot check in and tracks active license quota utilization.</p>
-                </div>
-            </div>
-
-            <!-- Event 10 -->
-            <div class="glass-panel p-6 d-flex flex-column justify-content-between" style="border-top: 4px solid #14b8a6; min-height: 250px;">
-                <div>
-                    <div class="d-flex justify-content-between align-items-center mb-3">
-                        <span class="material-icons text-teal fs-xl" style="font-size: 1.5rem;">category</span>
-                        <span class="fs-xs fw-600 text-muted">Operations</span>
-                    </div>
-                    <h4 class="fs-md fw-700 mb-2">Category Limit Change</h4>
-                    <p class="fs-xs text-secondary lh-base mb-3">
-                        Emitted when max session duration limits are configured per specific work category.
-                    </p>
-                </div>
-                <div class="border-t pt-3">
-                    <span class="fs-xs text-success fw-600">Why it matters:</span>
-                    <p class="m-0 fs-xs text-secondary mt-1">Tracks adjustments made to granular department constraints.</p>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <!-- Spreadsheet Onboarding Wizard Section -->
-    <section class="d-flex flex-column gap-12 mt-12 mb-12 reveal-left">
-        <div class="text-center">
-            <h2 class="fs-3xl">Streamlined <span class="text-gradient">Spreadsheet Onboarding</span></h2>
-            <p class="fs-lg text-secondary mt-2 ml-auto mr-auto max-w-700">
-                Move your users from legacy systems to CenterTime instantly using our high-fidelity CSV mapping tool.
-            </p>
-        </div>
-
-        <div class="grid-cols-2 gap-8 align-items-center">
-            <!-- Left Side: Interactive Mockup of mapping columns -->
-            <!-- Left Side: Interactive Mockup showing all onboarding steps -->
-            <div class="glass-panel p-6" style="min-height: 380px; display: flex; flex-direction: column; justify-content: space-between;">
-                <!-- Header (Dynamic based on step) -->
-                <div class="d-flex justify-content-between align-items-center mb-6 border-b" style="padding-bottom: 1.25rem !important;">
-                    <div class="d-flex align-items-center gap-2">
-                        <span class="material-icons text-primary" id="onboarding-step-icon">upload_file</span>
-                        <span class="fs-sm fw-700 text-indigo-200 text-uppercase tracking-wider" id="onboarding-step-title">Upload Roster CSV</span>
-                    </div>
-                    <span class="badge bg-primary-glow text-primary fs-xs fw-700" id="onboarding-step-badge">Step 1 of 5</span>
-                </div>
-
-                <!-- Slide Container -->
-                <div class="flex-grow-1 d-flex flex-column justify-content-center" style="min-height: 220px;">
-                    <!-- Step 1: Upload Roster CSV -->
-                    <div class="onboarding-slide active" id="onboarding-slide-1">
-                        <div class="p-6 rounded-md border bg-input text-center d-flex flex-column align-items-center justify-content-center gap-3" style="border-style: dashed !important; border-width: 2px !important; border-color: rgba(99, 102, 241, 0.4) !important;">
-                            <span class="material-icons text-primary fs-3xl" style="animation: pulse 1.5s infinite">cloud_upload</span>
-                            <div>
-                                <div class="fs-sm fw-600">roster_export_july.csv</div>
-                                <div class="fs-xs text-secondary mt-1">12.4 KB • Ready to map</div>
-                            </div>
-                            <div class="w-100 bg-secondary rounded-full" style="height: 6px; overflow: hidden;">
-                                <div class="bg-primary" style="width: 100%; height: 100%; animation: slide-progress 2.5s ease-in-out infinite"></div>
-                            </div>
+                    <div class="d-flex align-items-center gap-3 mb-4">
+                        <div class="icon-48 rounded-full bg-primary-glow text-primary d-flex align-items-center justify-content-center flex-shrink-0">
+                            <span class="material-icons text-primary fs-2xl">auto_awesome</span>
                         </div>
-                    </div>
-
-                    <!-- Step 2: CSV Header Mapping -->
-                    <div class="onboarding-slide" id="onboarding-slide-2">
-                        <div class="d-flex flex-column gap-3">
-                            <div class="d-flex align-items-center justify-content-between p-2 rounded-sm bg-input border" style="font-size: 0.85rem;">
-                                <div>
-                                    <span class="fs-xs text-secondary d-block">CSV Column</span>
-                                    <span class="fw-700">user_first_name</span>
-                                </div>
-                                <span class="material-icons text-secondary fs-sm">trending_flat</span>
-                                <div style="text-align: right;">
-                                    <span class="fs-xs text-secondary d-block">CenterTime Property</span>
-                                    <span class="badge bg-success-glow text-success fs-xs fw-600">First Name <span class="material-icons fs-xs align-middle">check</span></span>
-                                </div>
-                            </div>
-                            <div class="d-flex align-items-center justify-content-between p-2 rounded-sm bg-input border" style="font-size: 0.85rem;">
-                                <div>
-                                    <span class="fs-xs text-secondary d-block">CSV Column</span>
-                                    <span class="fw-700">contact_email_addr</span>
-                                </div>
-                                <span class="material-icons text-secondary fs-sm">trending_flat</span>
-                                <div style="text-align: right;">
-                                    <span class="fs-xs text-secondary d-block">CenterTime Property</span>
-                                    <span class="badge bg-success-glow text-success fs-xs fw-600">Email Address <span class="material-icons fs-xs align-middle">check</span></span>
-                                </div>
-                            </div>
-                            <div class="d-flex align-items-center justify-content-between p-2 rounded-sm bg-input border" style="font-size: 0.85rem;">
-                                <div>
-                                    <span class="fs-xs text-secondary d-block">CSV Column</span>
-                                    <span class="fw-700">personal_kiosk_pin</span>
-                                </div>
-                                <span class="material-icons text-secondary fs-sm">trending_flat</span>
-                                <div style="text-align: right;">
-                                    <span class="fs-xs text-secondary d-block">CenterTime Property</span>
-                                    <span class="badge bg-secondary-glow text-secondary fs-xs fw-600">Secure PIN (Auto-Seeded)</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Step 3: Fuzzy Matching Checks -->
-                    <div class="onboarding-slide" id="onboarding-slide-3">
-                        <div class="p-4 rounded-md border bg-input">
-                            <div class="d-flex align-items-center gap-2 mb-3">
-                                <span class="material-icons text-warning spinner" style="animation: spin 2s linear infinite">sync</span>
-                                <span class="fs-sm fw-600">Reconciling records with database...</span>
-                            </div>
-                            <div class="d-flex flex-column gap-2" style="font-size: 0.8rem;">
-                                <div class="d-flex justify-content-between text-success">
-                                    <span>✓ Alphanumeric PIN collisions checked</span>
-                                    <span>Passed</span>
-                                </div>
-                                <div class="d-flex justify-content-between text-success">
-                                    <span>✓ Duplicate emails resolved</span>
-                                    <span>0 conflicts</span>
-                                </div>
-                                <div class="d-flex justify-content-between text-warning">
-                                    <span>⚠ Formatting phone area codes...</span>
-                                    <span>Auto-formatted</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Step 4: License Quota Verification -->
-                    <div class="onboarding-slide" id="onboarding-slide-4">
-                        <div class="p-4 rounded-md border bg-input text-center">
-                            <h4 class="fs-sm mb-2 text-indigo-200">Silver Plan Verification</h4>
-                            <div class="d-flex justify-content-between fs-xs text-secondary mb-1">
-                                <span>Users Quota Limit</span>
-                                <span>15 / 100 Used</span>
-                            </div>
-                            <div class="w-100 bg-secondary rounded-full mb-3" style="height: 10px; overflow: hidden;">
-                                <div class="bg-success" style="width: 15%; height: 100%;"></div>
-                                <div class="bg-primary" style="width: 35%; height: 100%; animation: fill-bar 1.5s ease-out"></div>
-                            </div>
-                            <p class="fs-xs text-success m-0 d-flex align-items-center justify-content-center gap-1">
-                                <span class="material-icons fs-sm">check_circle</span> Importing +35 users is fully within your plan limits.
-                            </p>
-                        </div>
-                    </div>
-
-                    <!-- Step 5: Finalized & PINs Generated -->
-                    <div class="onboarding-slide" id="onboarding-slide-5">
-                        <div class="p-4 rounded-md border bg-success-glow text-center d-flex flex-column align-items-center gap-2" style="border-color: rgba(16, 185, 129, 0.3) !important;">
-                            <span class="material-icons text-success fs-3xl" style="animation: scale-up 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275)">done_all</span>
-                            <h4 class="fs-md mb-1 text-success fw-700">Import Complete!</h4>
-                            <p class="fs-xs text-secondary lh-base max-w-300">
-                                35 users successfully imported. Security PINs and Avery scannable PDF sheets have been updated.
-                            </p>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="d-flex justify-content-between align-items-center mt-6 pt-4 border-t">
-                    <div class="d-flex gap-2 align-items-center" id="onboarding-dots" style="padding: 0.25rem 0;">
-                        <span class="dot active" onclick="setOnboardingStep(1, true)" title="Step 1: Upload CSV"></span>
-                        <span class="dot" onclick="setOnboardingStep(2, true)" title="Step 2: CSV Mapping"></span>
-                        <span class="dot" onclick="setOnboardingStep(3, true)" title="Step 3: Fuzzy Matching"></span>
-                        <span class="dot" onclick="setOnboardingStep(4, true)" title="Step 4: Quota Check"></span>
-                        <span class="dot" onclick="setOnboardingStep(5, true)" title="Step 5: Import Success"></span>
-                    </div>
-                    <span class="fs-xs text-muted" style="letter-spacing: 0.05em; font-weight: 600;" id="autoplay-indicator">AUTOPLAYING</span>
-                </div>
-            </div>
-
-            <!-- Right Side: Details on importing features -->
-            <div class="d-flex flex-column gap-6">
-                <div>
-                    <h3 class="fs-2xl mb-2">Import, Reconcile, and Deploy in Minutes</h3>
-                    <p class="fs-md text-secondary lh-base">
-                        Managers can upload roster lists containing thousands of user records. Our onboarding wizard validates data integrity dynamically to keep you within plans parameters.
-                    </p>
-                </div>
-
-                <div class="d-flex flex-column gap-4">
-                    <div class="d-flex gap-3 align-items-start">
-                        <span class="material-icons text-primary fs-xl mt-1">auto_awesome</span>
                         <div>
-                            <h4 class="fs-md mb-1 fw-600">Smart Headers Mapping</h4>
-                            <p class="fs-sm text-secondary">
-                                Algorithms automatically match standard columns (e.g. emails, phone formats) to target attributes.
-                            </p>
+                            <span class="fs-xs fw-700 text-uppercase text-indigo-200 tracking-wider">Capabilities</span>
+                            <h3 class="fs-xl fw-700 m-0">Features</h3>
                         </div>
                     </div>
+                    <p class="fs-md text-secondary lh-base mb-6">
+                        Engineered for Precision &amp; Control. Explore time window enforcement, anti-brute force security lockouts, 10 core audit system events, and our streamlined CSV roster onboarding wizard.
+                    </p>
+                </div>
+                <div>
+                    <a href="{{ path('app_features') }}" class="btn btn-secondary w-100 d-flex align-items-center justify-content-center gap-2">
+                        Explore Features <span class="material-icons fs-sm">arrow_forward</span>
+                    </a>
+                </div>
+            </div>
 
-                    <div class="d-flex gap-3 align-items-start">
-                        <span class="material-icons text-success fs-xl mt-1">difference</span>
+            <!-- Pricing Overview Card -->
+            <div class="glass-panel p-8 d-flex flex-column justify-content-between text-left hover-lift w-100" style="border-top: 4px solid #10b981; min-height: 320px;">
+                <div>
+                    <div class="d-flex align-items-center gap-3 mb-4">
+                        <div class="icon-48 rounded-full bg-success-glow text-success d-flex align-items-center justify-content-center flex-shrink-0">
+                            <span class="material-icons text-success fs-2xl">sell</span>
+                        </div>
                         <div>
-                            <h4 class="fs-md mb-1 fw-600">Reconciliation Diff Preview</h4>
-                            <p class="fs-sm text-secondary">
-                                Displays a side-by-side reconciliation list of Added, Updated, and Unchanged profiles before committing database writes.
-                            </p>
+                            <span class="fs-xs fw-700 text-uppercase text-indigo-200 tracking-wider">Subscription Tiers</span>
+                            <h3 class="fs-xl fw-700 m-0">Pricing &amp; Plans</h3>
                         </div>
                     </div>
+                    <p class="fs-md text-secondary lh-base mb-6">
+                        Simple, transparent pricing. View side-by-side plan comparisons, per-student monthly costs, category limits, and feature breakdowns for Basic, Silver, Gold, and Platinum tiers.
+                    </p>
+                </div>
+                <div>
+                    <a href="{{ path('app_pricing') }}" class="btn btn-primary w-100 d-flex align-items-center justify-content-center gap-2">
+                        View Pricing &amp; Plans <span class="material-icons fs-sm">arrow_forward</span>
+                    </a>
+                </div>
+            </div>
 
-                    <div class="d-flex gap-3 align-items-start">
-                        <span class="material-icons text-warning fs-xl mt-1">vpn_key</span>
+            <!-- FAQ Overview Card -->
+            <div class="glass-panel p-8 d-flex flex-column justify-content-between text-left hover-lift w-100" style="border-top: 4px solid #f59e0b; min-height: 320px;">
+                <div>
+                    <div class="d-flex align-items-center gap-3 mb-4">
+                        <div class="icon-48 rounded-full bg-warning-glow text-warning d-flex align-items-center justify-content-center flex-shrink-0">
+                            <span class="material-icons text-warning fs-2xl">help_outline</span>
+                        </div>
                         <div>
-                            <h4 class="fs-md mb-1 fw-600">Auto PIN Generator Fallback</h4>
-                            <p class="fs-sm text-secondary">
-                                If users don't have PIN numbers in the spreadsheet, the seeder creates unique 4-character numbers securely.
-                            </p>
+                            <span class="fs-xs fw-700 text-uppercase text-indigo-200 tracking-wider">Knowledge Base</span>
+                            <h3 class="fs-xl fw-700 m-0">Frequently Asked Questions</h3>
                         </div>
                     </div>
+                    <p class="fs-md text-secondary lh-base mb-6">
+                        Got questions? Find clear answers regarding kiosk modes, roster importing, automatic session termination, anti-brute force protections, and subscription billing.
+                    </p>
+                </div>
+                <div>
+                    <a href="{{ path('app_faq') }}" class="btn btn-secondary w-100 d-flex align-items-center justify-content-center gap-2">
+                        Read FAQ <span class="material-icons fs-sm">help</span>
+                    </a>
                 </div>
             </div>
         </div>
-    </section>
-
-    <!-- Pricing Section -->
-    <section id="pricing-section" class="d-flex flex-column gap-12 reveal-scale">
-        <div class="text-center">
-            <h2 class="fs-3xl">Simple, Transparent <span class="text-gradient">Subscription Tiers</span></h2>
-            <p class="fs-lg text-secondary mt-2 ml-auto mr-auto max-w-700">
-                Choose the best fit for your team. Start basic or unlock premium limits and audit exports.
-            </p>
-        </div>
-
-        <div class="align-items-stretch gap-6" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));">
-            {% for plan in plans %}
-                <div class="glass-panel text-primary d-flex flex-column justify-content-between position-relative" style="padding: 2.25rem; {% if plan.name == 'silver' %}border: 1px solid var(--primary); box-shadow: var(--shadow-glow);{% else %}border-color: var(--border-color);{% endif %}">
-                    {% if plan.name == 'silver' %}
-                        <div class="fs-sm fw-700 text-uppercase text-white rounded-full position-absolute" style="top: -15px; right: 2rem; background: var(--primary); padding: 0.35rem 1rem; box-shadow: var(--shadow-glow);">
-                            Best Value
-                        </div>
-                    {% endif %}
-                    <div>
-                        <h3 class="fs-xl text-indigo-200 d-flex align-items-center gap-2" style="text-transform: capitalize">
-                            <span class="material-icons text-primary">{% if plan.name == 'basic' %}tag{% elseif plan.name == 'silver' %}stars{% elseif plan.name == 'gold' %}military_tech{% else %}workspace_premium{% endif %}</span> {{ plan.name }} Plan
-                        </h3>
-                        <div style="margin: 1.5rem 0;">
-                            <span class="fw-800 fs-3xl">${{ plan.priceMonthly|round }}</span>
-                            <span class="fs-md text-muted"> / month</span>
-                        </div>
-                        <ul class="fs-md text-secondary d-flex flex-column gap-3 mb-8 p-0" >
-                            <li class="d-flex align-items-center gap-2">
-                                <span class="material-icons fs-lg text-success">check_circle</span>
-                                Up to {{ plan.maxOrgUsers|number_format }} Users
-                            </li>
-                            <li class="d-flex align-items-center gap-2">
-                                <span class="material-icons fs-lg text-success">check_circle</span>
-                                {% if plan.maxManagers >= 9999 %}Unlimited{% else %}{{ plan.maxManagers }}{% endif %} Manager{% if plan.maxManagers != 1 %}s{% endif %} limit
-                            </li>
-                            <li class="d-flex align-items-center gap-2">
-                                <span class="material-icons fs-lg text-success">check_circle</span>
-                                Up to {{ plan.maxCategories }} Categories & {{ plan.maxFields }} Custom Fields
-                            </li>
-                            <li class="d-flex align-items-center gap-2">
-                                <span class="material-icons fs-lg text-success">check_circle</span>
-                                {{ plan.sessionLimitHours }}-hour max sessions
-                            </li>
-                            <li class="d-flex align-items-center gap-2">
-                                <span class="material-icons fs-lg text-success">check_circle</span>
-                                {{ plan.retentionDays }} days history retention
-                            </li>
-                            <li class="{% if not plan.hasClickList %}text-muted {% endif %}d-flex align-items-center gap-2">
-                                <span class="material-icons fs-lg {% if plan.hasClickList %}text-success{% else %}text-muted{% endif %}">
-                                    {% if plan.hasClickList %}check_circle{% else %}cancel{% endif %}
-                                </span>
-                                Click List - Check in
-                            </li>
-                            <li class="{% if not plan.hasSecureKiosk %}text-muted {% endif %}d-flex align-items-center gap-2">
-                                <span class="material-icons fs-lg {% if plan.hasSecureKiosk %}text-success{% else %}text-muted{% endif %}">
-                                    {% if plan.hasSecureKiosk %}check_circle{% else %}cancel{% endif %}
-                                </span>
-                                Secure pin - Check in
-                            </li>
-                            <li class="text-muted d-flex align-items-center gap-2" >
-                                <span class="material-icons fs-lg text-muted {% if plan.hasCustomSessionDurations %}text-success{% endif %}" >
-                                    {% if plan.hasCustomSessionDurations %}check_circle{% else %}cancel{% endif %}
-                                </span>
-                                Custom Session Limits
-                            </li>
-                            <li class="text-muted d-flex align-items-center gap-2" >
-                                <span class="material-icons fs-lg text-muted {% if plan.hasOvertimeRules %}text-success{% endif %}" >
-                                    {% if plan.hasOvertimeRules %}check_circle{% else %}cancel{% endif %}
-                                </span>
-                                Overtime Rules & Multipliers
-                            </li>
-                            <li class="text-muted d-flex align-items-center gap-2" >
-                                <span class="material-icons fs-lg text-muted text-success" >
-                                    {% if plan.exportsEnabled %}check_circle{% else %}cancel{% endif %}
-                                </span>
-                                Excel / CSV logs downloads
-                            </li>
-                            <li class="{% if not plan.hasBarcodeFeatures %}text-muted {% endif %}d-flex align-items-center gap-2" >
-                                <span class="material-icons fs-lg {% if plan.hasBarcodeFeatures %}text-success{% else %}text-muted{% endif %}" >
-                                    {% if plan.hasBarcodeFeatures %}check_circle{% else %}cancel{% endif %}
-                                </span>
-                                barcode scan - Check in
-                            </li>
-                        </ul>
-                    </div>
-                    {% if new_signups_enabled %}
-                        <a href="{{ path('app_signup', {plan: plan.name}) }}" class="btn {% if plan.name == 'silver' %}btn-primary{% else %}btn-secondary{% endif %} w-100">
-                            {% if plan.name == 'basic' %}Get Started Free{% else %}Start {{ plan.name|capitalize }} Trial{% endif %}
-                        </a>
-                    {% else %}
-                        <button class="btn btn-secondary w-100" disabled style="opacity: 0.6; cursor: not-allowed;">Disabled</button>
-                    {% endif %}
-                </div>
-            {% endfor %}
-        </div>
-    </section>
-
-    <!-- Plan Settings Comparison Matrix -->
-    <section class="d-flex flex-column gap-12">
-        <div class="text-center">
-            <h2 class="fs-3xl">Detailed Plan <span class="text-gradient">Comparison</span></h2>
-            <p class="fs-lg text-secondary mt-2">
-                Compare specs side-by-side. Remember that platform admins can override limits individually.
-            </p>
-        </div>
-
-        <div class="glass-panel p-6">
-            <div class="table-responsive">
-                <table class="table">
-                    <thead>
-                        <tr>
-                            <th>Feature specs</th>
-                            {% for plan in plans %}
-                                <th>{{ plan.name }}</th>
-                            {% endfor %}
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr>
-                            <td class="fw-600">Base Price</td>
-                            {% for plan in plans %}
-                                <td>${{ plan.priceMonthly|round }}/mo</td>
-                            {% endfor %}
-                        </tr>
-                        <tr>
-                            <td class="fw-600">Max Registered</td>
-                            {% for plan in plans %}
-                                <td>{{ plan.maxOrgUsers|number_format }} Users</td>
-                            {% endfor %}
-                        </tr>
-                        <tr>
-                            <td class="fw-600">Authorized Managers</td>
-                            {% for plan in plans %}
-                                <td>{% if plan.maxManagers >= 9999 %}Unlimited{% else %}{{ plan.maxManagers }}{% endif %}</td>
-                            {% endfor %}
-                        </tr>
-                        <tr>
-                            <td class="fw-600">Maximum Shift Duration</td>
-                            {% for plan in plans %}
-                                <td>{{ plan.sessionLimitHours }} Hours</td>
-                            {% endfor %}
-                        </tr>
-                        <tr>
-                            <td class="fw-600">Click List - Check in</td>
-                            {% for plan in plans %}
-                                <td>
-                                    {% if plan.hasClickList %}
-                                        <span class="text-success">Yes</span>
-                                    {% else %}
-                                        <span class="text-danger">No</span>
-                                    {% endif %}
-                                </td>
-                            {% endfor %}
-                        </tr>
-                        <tr>
-                            <td class="fw-600">Secure pin - Check in</td>
-                            {% for plan in plans %}
-                                <td>
-                                    {% if plan.hasSecureKiosk %}
-                                        <span class="text-success">Yes</span>
-                                    {% else %}
-                                        <span class="text-danger">No</span>
-                                    {% endif %}
-                                </td>
-                            {% endfor %}
-                        </tr>
-                        <tr>
-                            <td class="fw-600">barcode scan - Check in</td>
-                            {% for plan in plans %}
-                                <td>
-                                    {% if plan.hasBarcodeFeatures %}
-                                        <span class="text-success">Yes</span>
-                                    {% else %}
-                                        <span class="text-danger">No</span>
-                                    {% endif %}
-                                </td>
-                            {% endfor %}
-                        </tr>
-                        <tr>
-                            <td class="fw-600">Custom Category Durations</td>
-                            {% for plan in plans %}
-                                <td>
-                                    {% if plan.hasCustomSessionDurations %}
-                                        <span class="text-success">Yes</span>
-                                    {% else %}
-                                        <span class="text-danger">No</span>
-                                    {% endif %}
-                                </td>
-                            {% endfor %}
-                        </tr>
-                        <tr>
-                            <td class="fw-600">Overtime Multipliers</td>
-                            {% for plan in plans %}
-                                <td>
-                                    {% if plan.hasOvertimeRules %}
-                                        <span class="text-success">Yes</span>
-                                    {% else %}
-                                        <span class="text-danger">No</span>
-                                    {% endif %}
-                                </td>
-                            {% endfor %}
-                        </tr>
-                        <tr>
-                            <td class="fw-600">Audit Logs exports</td>
-                            {% for plan in plans %}
-                                <td>
-                                    {% if plan.exportsEnabled %}
-                                        <span class="text-success">Yes</span>
-                                    {% else %}
-                                        <span class="text-danger">No</span>
-                                    {% endif %}
-                                </td>
-                            {% endfor %}
-                        </tr>
-
-                        <tr>
-                            <td class="fw-600">Roster CSV upload</td>
-                            {% for plan in plans %}
-                                <td><span class="text-success">Yes</span></td>
-                            {% endfor %}
-                        </tr>
-                        <tr>
-                            <td class="fw-600">Data Retention</td>
-                            {% for plan in plans %}
-                                <td>{{ plan.retentionDays }} Days</td>
-                            {% endfor %}
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
-        </div>
-    </section>
-
-    <!-- FAQ Section -->
-    <section class="d-flex flex-column gap-12 mb-8 reveal-right">
-        <div class="text-center">
-            <h2 class="fs-3xl">Frequently Asked <span class="text-gradient">Questions</span></h2>
-            <p class="fs-lg text-secondary mt-2">
-                Common questions regarding multi-tenant time clocks and manager policy options.
-            </p>
-        </div>
-
-        <div class="d-flex flex-column gap-6 m-0 w-100 max-w-800" >
-            <div class="glass-panel p-5" >
-                <h4 class="fs-lg mb-2">How do subscription licensing limits affect my organization?</h4>
-                <p class="fs-md text-secondary lh-base">
-                    Licensing plans restrict user limits, history retention windows, and kiosk features. Basic plans support open lists, whereas Silver, Gold, and Platinum tiers unlock the secure PIN keypad. Contactless barcode scan modes and PDF badge generation are restricted to Gold and Platinum plans.
-                </p>
-            </div>
-            <div class="glass-panel p-5" >
-                <h4 class="fs-lg mb-2">What check-in and checkout kiosk modes are available?</h4>
-                <p class="fs-md text-secondary lh-base">
-                    We support three distinct checkout/check-in methods:
-                    1. <strong>Click List - Check in</strong>: Tap on names from an open roster dropdown.
-                    2. <strong>Secure pin - Check in</strong>: Enter a unique 4-digit PIN to clock in.
-                    3. <strong>barcode scan - Check in</strong>: Scan scannable badges via webcam/camera scanner for hands-free instant logging.
-                </p>
-            </div>
-            <div class="glass-panel p-5" >
-                <h4 class="fs-lg mb-2">How does the CSV spreadsheet roster import work?</h4>
-                <p class="fs-md text-secondary lh-base">
-                    The spreadsheet importer maps columns dynamically to user profiles. It checks for duplicates using fuzzy matching matching rules, warns you if you are exceeding your license user quotas, and lets you verify name matches before finalizing the onboarding.
-                </p>
-            </div>
-            <div class="glass-panel p-5" >
-                <h4 class="fs-lg mb-2">How do custom overrides work?</h4>
-                <p class="fs-md text-secondary lh-base">
-                    If a tenant requires more capacity than their standard plan permits (e.g. extra user seats or categories limits), the platform super-administrator can add individual overrides from the Organizations controller, storing only overridden parameters at the database level.
-                </p>
-            </div>
-            <div class="glass-panel p-5" >
-                <h4 class="fs-lg mb-2">What happens when a subscription payment fails?</h4>
-                <p class="fs-md text-secondary lh-base">
-                    The Stripe payment sandbox allows managers to simulate credit card transaction failures. If a renewal fails, the subscription changes to overdue, locking premium manager actions and blocking kiosk access screens until resolved.
-                </p>
-            </div>
-            <div class="glass-panel p-5" >
-                <h4 class="fs-lg mb-2">Can orgUsers check in outside schedule hours?</h4>
-                <p class="fs-md text-secondary lh-base">
-                    Managers can configure absolute time windows. If a user clocks in outside this period, their check-in transaction completes successfully but is flagged immediately in audit records and dashboard reports.
-                </p>
-            </div>
-            <div class="glass-panel p-5" >
-                <h4 class="fs-lg mb-2">How are active sessions left open prevented from staying active indefinitely?</h4>
-                <p class="fs-md text-secondary lh-base">
-                    The platform's background `SessionSweeperService` is automatically triggered on active kiosk traffic. Any open clock-in session exceeding the maximum allowed shift duration is automatically ended at the duration limit and marked with the "Auto End" method.
-                </p>
-            </div>
-            <div class="glass-panel p-5" >
-                <h4 class="fs-lg mb-2">What security measures protect the kiosk from unauthorized PIN guessing?</h4>
-                <p class="fs-md text-secondary lh-base">
-                    If a user enters an incorrect PIN 3 times in a row, the platform triggers an anti-brute force lockout. The user account is immediately disabled, blocking all further check-in attempts until a manager clears the lockout in the dashboard.
-                </p>
-            </div>
-        </div>
-    </section>
-
-    <script>
-    // ROI Calculator logic
-    const empInput = document.getElementById('roi-emp-input');
-    const wageInput = document.getElementById('roi-wage-input');
-    const timeInput = document.getElementById('roi-time-input');
-
-    const empLabel = document.getElementById('roi-emp-label');
-    const wageLabel = document.getElementById('roi-wage-label');
-    const timeLabel = document.getElementById('roi-time-label');
-
-    const hoursOutput = document.getElementById('roi-hours-output');
-    const savingsOutput = document.getElementById('roi-savings-output');
-    const costOutput = document.getElementById('roi-cost-output');
-
-    function calculateROI() {
-        if (!empInput) return;
-        const emp = parseInt(empInput.value);
-        const wage = parseInt(wageInput.value);
-        const time = parseFloat(timeInput.value);
-
-        empLabel.textContent = emp + " Users";
-        wageLabel.textContent = "$" + wage + " / hr";
-        timeLabel.textContent = time + " hrs";
-
-        const hoursSaved = Math.round(emp * time * 52);
-        const savings = Math.round(hoursSaved * wage);
-        
-        let planCost = 348;
-        if (emp <= 15) {
-            planCost = 108; // Basic: $9 * 12
-        } else if (emp > 100) {
-            planCost = 1068; // Gold: $89 * 12
-        }
-
-        hoursOutput.textContent = hoursSaved.toLocaleString() + " hrs";
-        savingsOutput.textContent = "$" + savings.toLocaleString();
-        costOutput.textContent = "$" + planCost + " / year";
-    }
-
-    if (empInput) {
-        empInput.addEventListener('input', calculateROI);
-        wageInput.addEventListener('input', calculateROI);
-        timeInput.addEventListener('input', calculateROI);
-        calculateROI();
-    }
-
+    </section>    <script>
     // Mock Live Dashboard Ticker logic
     let mockSeconds1 = 15135; // 04:12:15
     let mockSeconds2 = 6303;  // 01:45:03
@@ -1600,9 +902,6 @@
 
 
     document.addEventListener('DOMContentLoaded', () => {
-        window.addEventListener('scroll', checkScroll);
-        window.addEventListener('resize', checkScroll);
-        checkScroll(); // initial trigger
         startOnboardingCycle();
         window.setKioskMode('basic');
         startKioskAutoplay();

@@ -1,0 +1,141 @@
+{% extends 'home/layout.html.twig' %}
+
+{% block title %}Contact Us - CenterTime{% endblock %}
+
+{% block content %}
+<div class="container pricing-container my-8">
+    <div class="text-center mb-10">
+        <span class="badge bg-primary-glow text-primary fs-xs fw-700 px-3 py-1.5 mb-3" style="border-radius: 99px; text-transform: uppercase; letter-spacing: 0.05em;">Get In Touch</span>
+        <h1 class="fs-4xl fw-800">We'd Love to <span class="text-gradient">Hear From You</span></h1>
+        <p class="fs-lg text-secondary mt-3 max-w-600 mx-auto">
+            Have questions about plans, kiosk deployment, or custom enterprise requirements? Send us a message below.
+        </p>
+    </div>
+
+    <div class="max-w-600 mx-auto">
+        {% for type, messages in app.flashes %}
+            {% for message in messages %}
+                <div class="alert alert-{{ type }} mb-6">
+                    <span class="material-icons">
+                        {% if type == 'danger' %}error{% else %}check_circle{% endif %}
+                    </span>
+                    <span>{{ message|raw }}</span>
+                </div>
+            {% endfor %}
+        {% endfor %}
+
+        <form action="{{ path('app_contact') }}" method="post" class="glass-panel" id="contact-form" style="padding: 2.5rem;" novalidate>
+            <div class="form-group mb-4">
+                <label class="form-label" for="name">Full Name <span class="text-danger">*</span></label>
+                <input type="text" name="name" id="name" class="form-control" placeholder="John Smith" minlength="2" required>
+                <div class="invalid-feedback text-danger fs-xs mt-1" id="name-error" style="display: none;">Please enter your full name (at least 2 characters).</div>
+            </div>
+
+            <div class="form-group mb-4">
+                <label class="form-label" for="email">Email Address <span class="text-danger">*</span></label>
+                <input type="email" name="email" id="email" class="form-control" placeholder="john@example.com" required>
+                <div class="invalid-feedback text-danger fs-xs mt-1" id="email-error" style="display: none;">Please enter a valid email address (e.g., name@domain.com).</div>
+            </div>
+
+            <div class="form-group mb-4">
+                <label class="form-label" for="subject">Subject</label>
+                <input type="text" name="subject" id="subject" class="form-control" placeholder="Inquiry regarding Gold Plan & PIN Kiosks">
+            </div>
+
+            <div class="form-group mb-6">
+                <label class="form-label" for="message">Message <span class="text-danger">*</span></label>
+                <textarea name="message" id="message" class="form-control" rows="5" placeholder="How can we help your organization?" minlength="10" required></textarea>
+                <div class="invalid-feedback text-danger fs-xs mt-1" id="message-error" style="display: none;">Please enter a detailed message (at least 10 characters).</div>
+            </div>
+
+            {% if captcha_enabled %}
+                <div class="form-group mb-6 p-3 rounded-md border" style="background: rgba(255,255,255,0.02)">
+                    <div class="d-flex align-items-center justify-content-between mb-2">
+                        <label class="form-label m-0 d-flex align-items-center gap-2" for="captcha">
+                            <span class="material-icons text-primary fs-md">verified_user</span>
+                            <span>Verification <span class="text-danger">*</span></span>
+                        </label>
+                        <img src="{{ captcha_image }}" alt="Math Captcha" style="height: 38px; border-radius: 6px;">
+                    </div>
+                    <input type="number" name="captcha" id="captcha" class="form-control" required placeholder="Enter answer">
+                    <div class="invalid-feedback text-danger fs-xs mt-1" id="captcha-error" style="display: none;">Please solve the math captcha problem.</div>
+                </div>
+            {% endif %}
+
+            <button type="submit" class="btn btn-primary w-100 d-flex justify-content-center align-items-center gap-2">
+                <span class="material-icons">send</span> Send Message
+            </button>
+        </form>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('contact-form');
+    if (!form) return;
+
+    const nameInput = document.getElementById('name');
+    const emailInput = document.getElementById('email');
+    const messageInput = document.getElementById('message');
+    const captchaInput = document.getElementById('captcha');
+
+    function validateEmail(email) {
+        return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+    }
+
+    function toggleError(input, errorEl, isValid) {
+        if (!isValid) {
+            input.classList.add('is-invalid');
+            if (errorEl) errorEl.style.display = 'block';
+        } else {
+            input.classList.remove('is-invalid');
+            if (errorEl) errorEl.style.display = 'none';
+        }
+    }
+
+    nameInput.addEventListener('input', function() {
+        toggleError(nameInput, document.getElementById('name-error'), nameInput.value.trim().length >= 2);
+    });
+
+    emailInput.addEventListener('input', function() {
+        toggleError(emailInput, document.getElementById('email-error'), validateEmail(emailInput.value.trim()));
+    });
+
+    messageInput.addEventListener('input', function() {
+        toggleError(messageInput, document.getElementById('message-error'), messageInput.value.trim().length >= 10);
+    });
+
+    if (captchaInput) {
+        captchaInput.addEventListener('input', function() {
+            toggleError(captchaInput, document.getElementById('captcha-error'), captchaInput.value.trim() !== '');
+        });
+    }
+
+    form.addEventListener('submit', function(e) {
+        let valid = true;
+
+        const isNameValid = nameInput.value.trim().length >= 2;
+        toggleError(nameInput, document.getElementById('name-error'), isNameValid);
+        if (!isNameValid) valid = false;
+
+        const isEmailValid = validateEmail(emailInput.value.trim());
+        toggleError(emailInput, document.getElementById('email-error'), isEmailValid);
+        if (!isEmailValid) valid = false;
+
+        const isMsgValid = messageInput.value.trim().length >= 10;
+        toggleError(messageInput, document.getElementById('message-error'), isMsgValid);
+        if (!isMsgValid) valid = false;
+
+        if (captchaInput) {
+            const isCaptchaValid = captchaInput.value.trim() !== '';
+            toggleError(captchaInput, document.getElementById('captcha-error'), isCaptchaValid);
+            if (!isCaptchaValid) valid = false;
+        }
+
+        if (!valid) {
+            e.preventDefault();
+        }
+    });
+});
+</script>
+{% endblock %}

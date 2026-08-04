@@ -152,13 +152,14 @@ class CronController extends AbstractController
         $em->persist($log);
         $em->flush();
 
-        // 5. Clean up noisy empty cron logs older than 2 hours to avoid db clutter
-        $twoHoursAgo = new \DateTime('-2 hours');
+        // 5. Clean up noisy empty cron logs older than configured hours to avoid db clutter
+        $cronRetentionHours = (int)$configService->get('cron_empty_log_retention_hours', 2);
+        $cronCutoffDate = new \DateTime("-{$cronRetentionHours} hours");
         $oldCronLogs = $em->getRepository(AuditLog::class)->createQueryBuilder('l')
             ->where('l.action = :action')
             ->andWhere('l.createdAt < :cutoff')
             ->setParameter('action', 'SYSTEM_CRON_EXECUTION')
-            ->setParameter('cutoff', $twoHoursAgo)
+            ->setParameter('cutoff', $cronCutoffDate)
             ->getQuery()
             ->getResult();
 
@@ -184,5 +185,69 @@ class CronController extends AbstractController
         $em->flush();
 
         return new JsonResponse(['status' => 'success', 'results' => $results]);
+    }
+
+    #[Route('/cron/schema-update', name: 'app_cron_schema_update', methods: ['GET'])]
+    public function updateSchema(Request $request, EntityManagerInterface $em): JsonResponse
+    {
+        $token = $request->query->get('token');
+        $expectedToken = $this->getParameter('cron_secret_token');
+        if (!$expectedToken || $token !== $expectedToken) {
+            return new JsonResponse(['error' => 'Invalid or missing token'], Response::HTTP_UNAUTHORIZED);
+        }
+
+        $sqls = [];
+
+        try {
+            $schemaTool = new \Doctrine\ORM\Tools\SchemaTool($em);
+            $metadata = $em->getMetadataFactory()->getAllMetadata();
+            $doctrineSqls = $schemaTool->getUpdateSchemaSql($metadata);
+
+            if (!empty($doctrineSqls)) {
+                $schemaTool->updateSchema($metadata);
+                $sqls = array_merge($sqls, $doctrineSqls);
+            }
+        } catch (\Throwable $e) {
+            // Silently continue to raw SQL migrations
+        }
+
+        // Direct SQL safety check to guarantee stripe_price_id column exists on plans table
+        try {
+            $em->getConnection()->executeStatement("ALTER TABLE plans ADD COLUMN IF NOT EXISTS stripe_price_id VARCHAR(100) NULL");
+            $sqls[] = "ALTER TABLE plans ADD COLUMN IF NOT EXISTS stripe_price_id VARCHAR(100) NULL";
+        } catch (\Throwable $e) {
+            try {
+                $em->getConnection()->executeStatement("ALTER TABLE plans ADD stripe_price_id VARCHAR(100) NULL");
+                $sqls[] = "ALTER TABLE plans ADD stripe_price_id VARCHAR(100) NULL";
+            } catch (\Throwable $ex) {
+                // Column already exists
+            }
+        }
+
+        return new JsonResponse([
+            'status' => 'success',
+            'queries_executed' => $sqls
+        ]);
+    }
+
+    #[Route('/cron/clear-cache', name: 'app_cron_clear_cache', methods: ['GET'])]
+    public function clearCache(Request $request, \Symfony\Component\HttpKernel\KernelInterface $kernel): JsonResponse
+    {
+        $token = $request->query->get('token');
+        $expectedToken = $this->getParameter('cron_secret_token');
+        if (!$expectedToken || $token !== $expectedToken) {
+            return new JsonResponse(['error' => 'Invalid or missing token'], Response::HTTP_UNAUTHORIZED);
+        }
+
+        $cacheDir = $kernel->getCacheDir();
+        if (is_dir($cacheDir)) {
+            $filesystem = new \Symfony\Component\Filesystem\Filesystem();
+            $filesystem->remove($cacheDir);
+        }
+
+        return new JsonResponse([
+            'status' => 'success',
+            'message' => 'Symfony cache cleared successfully'
+        ]);
     }
 }

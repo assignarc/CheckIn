@@ -86,7 +86,7 @@ class TermsAndPrivacyPolicyTest extends WebTestCase
         $client->getCookieJar()->set(new \Symfony\Component\BrowserKit\Cookie($session->getName(), $session->getId()));
 
         $client->request('POST', '/signup', [
-            'org_name' => 'Policy Ok Org',
+            'org_name' => 'Policy Ok Org ' . uniqid(),
             'org_slug' => $slug,
             'org_street' => '123 Policy St',
             'org_city' => 'Policyville',
@@ -97,12 +97,13 @@ class TermsAndPrivacyPolicyTest extends WebTestCase
             'last_name' => 'ManagerOk',
             'email' => $email,
             'manager_phone' => '+15550198886',
+            'plan' => 'basic',
             'password' => 'SuperSecurePass123',
             'captcha_answer' => '6',
             'accept_policies' => '1' // Policy accepted!
         ]);
 
-        $this->assertResponseRedirects('/login');
+        $this->assertResponseRedirects('/manager/dashboard');
         
         // Let's verify that the manager's acceptedPoliciesAt is populated
         $manager = $em->getRepository(Manager::class)->findOneBy(['email' => $email]);

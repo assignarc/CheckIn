@@ -81,7 +81,7 @@ class StripeWebhookTest extends WebTestCase
 
         $em->clear();
         $updatedOrg = $em->getRepository(Organization::class)->find($org->getId());
-        $this->assertFalse($updatedOrg->isSubscriptionActive());
+        $this->assertSame('basic', strtolower($updatedOrg->getPlan()->getName()));
 
         // 2. Test invoice.payment_succeeded (should restore/activate subscription and record payment)
         $payloadSucceeded = json_encode([

@@ -2,12 +2,28 @@
 
 {% block body %}
 <header class="dashboard-header" style="z-index: 100;">
-    <a href="{{ path('app_home') }}" class="d-flex align-items-center gap-2" style="text-decoration: none; color: inherit;">
-        <img src="{{ asset('img/logo.png') }}?v=1.0.4" alt="CenterTime Logo" style="height: 44px; width: 44px; object-fit: contain;">
-        <h1 class="fs-2xl fw-800 m-0" style="letter-spacing: -0.02em; padding-left: 4px;">CenterTime</h1>
-    </a>
-    <div class="d-flex align-items-center gap-4">
-        <div class="theme-selector">
+    <div class="d-flex align-items-center gap-3">
+        <button type="button" class="btn btn-secondary d-md-none p-2" id="mobileNavToggle" onclick="toggleMobileNav(event)" aria-label="Toggle Navigation Menu" style="border: 1px solid var(--border-color); line-height: 1;">
+            <span class="material-icons fs-xl" id="mobileNavToggleIcon">menu</span>
+        </button>
+
+        <a href="{{ path('app_home') }}" class="d-flex align-items-center gap-2" style="text-decoration: none; color: inherit;">
+            <img src="{{ asset('img/logo.png') }}?v=1.0.4" alt="CenterTime Logo" style="height: 38px; width: 38px; object-fit: contain;">
+            <span class="fs-xl fw-800 m-0" style="letter-spacing: -0.02em; padding-left: 2px;">CenterTime</span>
+        </a>
+
+        <nav class="desktop-nav-links d-none d-md-flex align-items-center gap-4 ml-4">
+            <a href="{{ path('app_features') }}" class="nav-link fs-sm fw-600 text-secondary hover-text-primary" style="text-decoration: none;">Features</a>
+            <a href="{{ path('app_pricing') }}" class="nav-link fs-sm fw-600 text-secondary hover-text-primary" style="text-decoration: none;">Pricing</a>
+            <a href="{{ path('app_faq') }}" class="nav-link fs-sm fw-600 text-secondary hover-text-primary" style="text-decoration: none;">FAQ</a>
+            <a href="{{ path('app_demo') }}" class="nav-link fs-sm fw-600 text-secondary hover-text-primary" style="text-decoration: none;">Demo</a>
+            <a href="{{ path('app_about') }}" class="nav-link fs-sm fw-600 text-secondary hover-text-primary" style="text-decoration: none;">About Us</a>
+            <a href="{{ path('app_contact') }}" class="nav-link fs-sm fw-600 text-primary hover-text-primary" style="text-decoration: none;">Contact Us</a>
+        </nav>
+    </div>
+
+    <div class="d-flex align-items-center gap-3">
+        <div class="theme-selector d-inline-flex">
             <button type="button" class="theme-option" data-value="light" onclick="setTheme('light')" title="Light Mode">
                 <span class="material-icons">light_mode</span>
             </button>
@@ -18,6 +34,7 @@
                 <span class="material-icons">settings_brightness</span>
             </button>
         </div>
+
         {% if app.user %}
             <div class="header-actions-menu" id="headerActionsMenu">
                 <button type="button" class="header-actions-toggle" id="headerActionsToggle" onclick="toggleHeaderMenu()" aria-label="User menu">
@@ -105,27 +122,98 @@
                 </div>
             </div>
         {% else %}
-            <a href="{{ path('app_login') }}" class="btn btn-secondary fs-sm" >Login</a>
-            {% if new_signups_enabled is defined and new_signups_enabled %}
-                <a href="{{ path('app_signup') }}" class="btn btn-primary fs-sm" >Create your organization</a>
-            {% else %}
-                <button class="btn btn-primary fs-sm" disabled style="opacity: 0.6; cursor: not-allowed;">Signups Closed</button>
-            {% endif %}
+            <div class="d-none d-md-flex align-items-center gap-3">
+                <a href="{{ path('app_login') }}" class="btn btn-secondary fs-sm">Login</a>
+                {% if new_signups_enabled is defined and new_signups_enabled %}
+                    <a href="{{ path('app_signup') }}" class="btn btn-primary fs-sm">Create your organization</a>
+                {% else %}
+                    <button class="btn btn-primary fs-sm" disabled style="opacity: 0.6; cursor: not-allowed;">Signups Closed</button>
+                {% endif %}
+            </div>
         {% endif %}
     </div>
 </header>
+
+<!-- Mobile Navigation Drawer Overlay -->
+<div id="mobileNavDrawer" class="mobile-nav-drawer">
+    <nav class="d-flex flex-column gap-3 p-4">
+        <a href="{{ path('app_features') }}" class="nav-link fs-md fw-600 p-3 rounded-md border d-flex align-items-center justify-content-between" style="text-decoration: none;">
+            <span class="d-flex align-items-center gap-2"><span class="material-icons fs-md text-primary">auto_awesome</span> Features</span>
+            <span class="material-icons fs-sm text-muted">arrow_forward_ios</span>
+        </a>
+        <a href="{{ path('app_pricing') }}" class="nav-link fs-md fw-600 p-3 rounded-md border d-flex align-items-center justify-content-between" style="text-decoration: none;">
+            <span class="d-flex align-items-center gap-2"><span class="material-icons fs-md text-success">sell</span> Pricing &amp; Plans</span>
+            <span class="material-icons fs-sm text-muted">arrow_forward_ios</span>
+        </a>
+        <a href="{{ path('app_faq') }}" class="nav-link fs-md fw-600 p-3 rounded-md border d-flex align-items-center justify-content-between" style="text-decoration: none;">
+            <span class="d-flex align-items-center gap-2"><span class="material-icons fs-md text-warning">help_outline</span> FAQ</span>
+            <span class="material-icons fs-sm text-muted">arrow_forward_ios</span>
+        </a>
+        <a href="{{ path('app_demo') }}" class="nav-link fs-md fw-600 p-3 rounded-md border d-flex align-items-center justify-content-between" style="text-decoration: none;">
+            <span class="d-flex align-items-center gap-2"><span class="material-icons fs-md text-info">tablet_mac</span> Live Demo</span>
+            <span class="material-icons fs-sm text-muted">arrow_forward_ios</span>
+        </a>
+
+        <a href="{{ path('app_about') }}" class="nav-link fs-md fw-600 p-3 rounded-md border d-flex align-items-center justify-content-between" style="text-decoration: none;">
+            <span class="d-flex align-items-center gap-2"><span class="material-icons fs-md text-primary">info</span> About Us</span>
+            <span class="material-icons fs-sm text-muted">arrow_forward_ios</span>
+        </a>
+        <a href="{{ path('app_contact') }}" class="nav-link fs-md fw-600 p-3 rounded-md border d-flex align-items-center justify-content-between" style="text-decoration: none;">
+            <span class="d-flex align-items-center gap-2"><span class="material-icons fs-md text-success">mail</span> Contact Us</span>
+            <span class="material-icons fs-sm text-muted">arrow_forward_ios</span>
+        </a>
+
+        {% if not app.user %}
+            <div class="border-t pt-4 mt-2 d-flex flex-column gap-3">
+                <a href="{{ path('app_login') }}" class="btn btn-secondary fs-md w-100 text-center">Login</a>
+                {% if new_signups_enabled is defined and new_signups_enabled %}
+                    <a href="{{ path('app_signup') }}" class="btn btn-primary fs-md w-100 text-center">Create your organization</a>
+                {% endif %}
+            </div>
+        {% endif %}
+    </nav>
+</div>
 
 <main class="app-container d-flex flex-column home-main-container">
     {% block content %}{% endblock %}
 </main>
 
-<footer class="fs-sm text-center text-muted mt-auto p-8 border-t">
-    <div class="app-container">
-        <p>&copy; 2026 CenterTime. Powered by PHP Symfony and MySQL. All rights reserved.</p>
+<footer class="fs-sm text-muted mt-auto py-4 px-4 border-t" style="background: var(--bg-surface);">
+    <div class="app-container d-flex flex-column flex-md-row align-items-center justify-content-between gap-3 text-center text-md-left">
+        <div>
+            <div class="d-flex align-items-center justify-content-center justify-content-md-start gap-2 mb-0.5">
+                <img src="{{ asset('img/logo.png') }}?v=1.0.4" alt="CenterTime Logo" style="height: 20px; width: 20px; object-fit: contain;">
+                <span class="fw-800 text-primary fs-sm">CenterTime</span>
+            </div>
+            <p class="m-0 fs-xs text-muted">&copy; 2026 CenterTime. All rights reserved.</p>
+        </div>
+
+        <div class="d-flex align-items-center justify-content-center gap-4 flex-wrap">
+            <a href="{{ path('app_features') }}" class="text-secondary hover-text-primary text-decoration-none fs-xs fw-600">Features</a>
+            <a href="{{ path('app_pricing') }}" class="text-secondary hover-text-primary text-decoration-none fs-xs fw-600">Pricing</a>
+            <a href="{{ path('app_faq') }}" class="text-secondary hover-text-primary text-decoration-none fs-xs fw-600">FAQ</a>
+            <a href="{{ path('app_demo') }}" class="text-secondary hover-text-primary text-decoration-none fs-xs fw-600">Demo</a>
+            <a href="{{ path('app_about') }}" class="text-secondary hover-text-primary text-decoration-none fs-xs fw-600">About Us</a>
+            <a href="{{ path('app_contact') }}" class="text-primary hover-text-primary text-decoration-none fs-xs fw-700">Contact Us</a>
+        </div>
     </div>
 </footer>
 
 <script>
+    function toggleMobileNav(e) {
+        if (e && e.stopPropagation) {
+            e.stopPropagation();
+        }
+        const drawer = document.getElementById('mobileNavDrawer');
+        const icon = document.getElementById('mobileNavToggleIcon');
+        if (drawer) {
+            drawer.classList.toggle('open');
+            if (icon) {
+                icon.textContent = drawer.classList.contains('open') ? 'close' : 'menu';
+            }
+        }
+    }
+
     function toggleHeaderMenu() {
         const dropdown = document.getElementById('headerActionsDropdown');
         if (dropdown) {
@@ -133,12 +221,23 @@
         }
     }
 
+
+
     document.addEventListener('click', function(e) {
         const menu = document.getElementById('headerActionsMenu');
         const dropdown = document.getElementById('headerActionsDropdown');
         if (dropdown && dropdown.classList.contains('open') && (!menu || !menu.contains(e.target))) {
             dropdown.classList.remove('open');
         }
+
+        const navToggle = document.getElementById('mobileNavToggle');
+        const drawer = document.getElementById('mobileNavDrawer');
+        if (drawer && drawer.classList.contains('open') && navToggle && !navToggle.contains(e.target) && !drawer.contains(e.target)) {
+            drawer.classList.remove('open');
+            const icon = document.getElementById('mobileNavToggleIcon');
+            if (icon) icon.textContent = 'menu';
+        }
     });
 </script>
 {% endblock %}
+

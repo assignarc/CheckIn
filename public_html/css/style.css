@@ -295,7 +295,7 @@ a:hover {
     backdrop-filter: var(--glass-blur);
     position: sticky;
     top: 0;
-    z-index: 10;
+    z-index: 10000;
     gap: 0.75rem;
 }
 
@@ -625,7 +625,6 @@ input.form-control {
     padding: clamp(1.5rem, 5vw, 2rem);
     box-shadow: var(--shadow-lg);
     position: relative;
-    overflow: hidden;
 }
 
 .pin-display {
@@ -2488,6 +2487,361 @@ body.dark-mode .demo-segmented-btn.active {
     border-bottom-left-radius: 0 !important;
     white-space: nowrap;
 }
+
+/* Responsive Mobile Navigation & Layout Rules */
+.mobile-nav-drawer {
+    display: none !important;
+    position: fixed;
+    top: 56px;
+    left: 0;
+    right: 0;
+    background: var(--bg-elevated);
+    border-bottom: 1px solid var(--border-color);
+    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.5);
+    z-index: 9999;
+}
+.mobile-nav-drawer.open {
+    display: block !important;
+}
+
+@media (max-width: 768px) {
+    body {
+        overflow-x: hidden;
+        width: 100%;
+    }
+
+    h1, .fs-5xl { font-size: 1.75rem !important; line-height: 1.25 !important; word-wrap: break-word !important; }
+    h2, .fs-4xl { font-size: 1.5rem !important; line-height: 1.3 !important; word-wrap: break-word !important; }
+    h3, .fs-3xl { font-size: 1.3rem !important; line-height: 1.3 !important; word-wrap: break-word !important; }
+    .fs-2xl { font-size: 1.15rem !important; }
+    .fs-lg { font-size: 1rem !important; }
+
+    .hero-grid {
+        display: flex !important;
+        flex-direction: column !important;
+        gap: 2rem !important;
+        width: 100% !important;
+        max-width: 100% !important;
+    }
+    .grid-cols-5, .grid-cols-4, .grid-cols-3, .grid-cols-2 {
+        display: flex !important;
+        flex-direction: column !important;
+        gap: 1.25rem !important;
+        width: 100% !important;
+    }
+    .home-main-container {
+        padding: 1rem 0.75rem !important;
+        gap: 2rem !important;
+        width: 100% !important;
+    }
+    .glass-panel {
+        padding: 1rem !important;
+        max-width: 100% !important;
+        box-sizing: border-box !important;
+    }
+    .desktop-nav-links {
+        display: none !important;
+    }
+}
+
+/* Pricing Page Mobile Compliance & Responsiveness */
+.pricing-container {
+    max-width: 1100px;
+    margin: 1.5rem auto;
+    padding: 0 1rem;
+    box-sizing: border-box;
+    width: 100%;
+}
+
+.pricing-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 1.5rem;
+    width: 100%;
+}
+
+.pricing-card {
+    padding: 2rem;
+    border: 1px solid var(--border-color);
+    box-sizing: border-box;
+    width: 100%;
+}
+
+.pricing-card.popular-card {
+    border: 1px solid var(--primary);
+    box-shadow: var(--shadow-glow);
+}
+
+.badge-best-value {
+    top: -15px;
+    right: 1.5rem;
+    background: var(--primary);
+    padding: 0.35rem 1rem;
+    box-shadow: var(--shadow-glow);
+}
+
+.pricing-card-price-box {
+    margin: 1.5rem 0;
+}
+
+.pricing-card ul li {
+    align-items: flex-start !important;
+}
+
+.pricing-card ul li .material-icons {
+    flex-shrink: 0 !important;
+    margin-top: 0.15rem !important;
+    width: 24px;
+    height: 24px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Detailed Plan Comparison Table */
+.comparison-table-wrapper {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    width: 100%;
+    position: relative;
+    border-radius: var(--radius-md);
+    margin: 0;
+}
+
+.comparison-table {
+    width: 100%;
+    min-width: 700px;
+    border-collapse: collapse;
+    text-align: left;
+    table-layout: fixed;
+}
+
+.comparison-table th,
+.comparison-table td {
+    border-bottom: 1px solid var(--border-color);
+    box-sizing: border-box;
+    word-break: break-word;
+}
+
+.comparison-table .sticky-col {
+    position: sticky;
+    left: 0;
+    z-index: 5;
+    background: var(--bg-elevated);
+    border-right: 1px solid var(--border-color);
+    box-shadow: 2px 0 6px rgba(0, 0, 0, 0.2);
+    width: 32%;
+    min-width: 150px;
+}
+
+.comparison-table th.sticky-col {
+    z-index: 6;
+}
+
+.comparison-table .plan-col {
+    width: 17%;
+    min-width: 110px;
+    text-align: center;
+}
+
+@media (max-width: 768px) {
+    .pricing-container {
+        margin: 1rem auto !important;
+        padding: 0 0.75rem !important;
+    }
+
+    .pricing-grid {
+        display: flex !important;
+        flex-direction: column !important;
+        gap: 1.25rem !important;
+    }
+
+    .pricing-card {
+        padding: 1.25rem !important;
+        display: flex !important;
+    }
+
+    .comparison-table {
+        min-width: 580px !important;
+    }
+
+    .comparison-table th.p-5,
+    .comparison-table td.p-5 {
+        padding: 0.6rem 0.4rem !important;
+        font-size: 0.8rem !important;
+    }
+
+    .comparison-table .sticky-col {
+        width: 130px !important;
+        min-width: 130px !important;
+        font-size: 0.8rem !important;
+        padding: 0.6rem 0.5rem !important;
+    }
+
+    .comparison-table .plan-col {
+        width: 105px !important;
+        min-width: 105px !important;
+        padding: 0.6rem 0.35rem !important;
+        font-size: 0.8rem !important;
+    }
+
+    .comparison-table .plan-col .material-icons {
+        font-size: 1.15rem !important;
+    }
+}
+
+/* Tooltip styling for helper icons */
+.tooltip-container {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    margin-left: 4px;
+    vertical-align: middle;
+    cursor: help;
+}
+.tooltip-icon {
+    font-size: 0.95rem !important;
+    color: var(--text-muted);
+    transition: color var(--transition-fast);
+}
+.tooltip-icon:hover {
+    color: var(--primary);
+}
+.tooltip-text {
+    visibility: hidden;
+    width: 220px;
+    background-color: var(--bg-card);
+    color: var(--text-primary);
+    text-align: left;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    padding: 8px 12px;
+    position: absolute;
+    z-index: 100;
+    bottom: 125%;
+    left: 50%;
+    transform: translateX(-50%);
+    opacity: 0;
+    transition: opacity 0.2s ease, transform 0.2s ease;
+    box-shadow: var(--shadow-md);
+    font-size: 0.75rem;
+    font-weight: 400;
+    line-height: 1.4;
+    pointer-events: none;
+}
+.tooltip-text::after {
+    content: "";
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    margin-left: -5px;
+    border-width: 5px;
+    border-style: solid;
+    border-color: var(--border-color) transparent transparent transparent;
+}
+.tooltip-container:hover .tooltip-text {
+    visibility: visible;
+    opacity: 1;
+    transform: translateX(-50%) translateY(-4px);
+}
+
+/* Detailed Comparison Tables */
+.comparison-table-wrapper {
+    overflow-x: auto;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border-color);
+}
+.comparison-table {
+    border-collapse: collapse;
+    width: 100%;
+    margin: 0;
+}
+.comparison-table td, .comparison-table th {
+    padding: 1rem 1.25rem;
+    border-bottom: 1px solid var(--border-color);
+    vertical-align: middle;
+}
+.comparison-table th {
+    font-weight: 700;
+    background: var(--bg-subtle);
+}
+.comparison-table .sticky-col {
+    position: sticky;
+    left: 0;
+    background: var(--bg-elevated) !important;
+    border-right: 1px solid var(--border-color);
+    z-index: 2;
+    font-weight: 600;
+}
+
+/* Compliance Checklist */
+.compliance-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 1rem;
+    font-size: 0.9rem;
+}
+.compliance-table th, .compliance-table td {
+    border: 1px solid var(--border-color);
+    padding: 0.75rem 1rem;
+    text-align: left;
+    vertical-align: top;
+}
+.compliance-table th {
+    background-color: var(--bg-subtle);
+    color: var(--text-primary);
+    font-weight: 700;
+}
+.compliance-table td {
+    color: var(--text-secondary);
+}
+.compliance-table .req-col {
+    width: 30%;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+.compliance-table .chk-box {
+    display: inline-block;
+    width: 16px;
+    height: 16px;
+    border: 1px solid var(--text-muted);
+    border-radius: 3px;
+    margin-right: 8px;
+    vertical-align: middle;
+}
+
+@media (max-width: 768px) {
+    .pricing-container {
+        padding: 1rem 0.5rem;
+    }
+    .comparison-table {
+        min-width: 580px;
+    }
+    .comparison-table td, .comparison-table th {
+        padding: 0.75rem 0.5rem !important;
+        font-size: 0.8rem !important;
+    }
+    .comparison-table .sticky-col {
+        min-width: 130px !important;
+        width: 130px !important;
+    }
+    .plan-col {
+        min-width: 105px !important;
+        width: 105px !important;
+    }
+    .compliance-table-wrapper {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+    .compliance-table {
+        min-width: 600px;
+    }
+}
+
+
+
+
+
 
 
 

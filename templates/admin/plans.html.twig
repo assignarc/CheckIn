@@ -12,6 +12,7 @@
                 <tr>
                     <th>Plan Name</th>
                     <th>Price</th>
+                    <th>Stripe Price ID</th>
                     <th>Users</th>
                     <th>Managers</th>
                     <th>Custom Fields</th>
@@ -27,6 +28,13 @@
                     <tr>
                         <td class="fs-lg fw-700 text-white" style="text-transform:capitalize">{{ plan.name }}</td>
                         <td class="fw-600 text-primary">${{ plan.priceMonthly }}/mo</td>
+                        <td class="font-mono fs-xs text-secondary">
+                            {% if plan.stripePriceId %}
+                                <code>{{ plan.stripePriceId }}</code>
+                            {% else %}
+                                <span class="text-muted">--</span>
+                            {% endif %}
+                        </td>
                         <td>{{ plan.maxOrgUsers }}</td>
                         <td>{% if plan.maxManagers >= 9999 %}Unlimited{% else %}{{ plan.maxManagers }}{% endif %}</td>
                         <td>{{ plan.maxFields }}</td>
@@ -49,9 +57,9 @@
                     
                     <!-- Action drawer (Plan settings editor form) -->
                     <tr id="plan-edit-{{ plan.id }}" style="display: none; background:rgba(20,27,45,0.35)">
-                        <td colspan="10" class="p-6" style="2rem; border-left: 3px solid #8b5cf6">
+                        <td colspan="11" class="p-6" style="padding: 2rem; border-left: 3px solid #8b5cf6">
                             <h4 class="fs-md text-purple-300 d-flex align-items-center gap-1 mb-5">
-                                <span class="material-icons fs-lg">settings</span> Configure {{ plan.name|capitalize }} Default Limits
+                                <span class="material-icons fs-lg">settings</span> Configure {{ plan.name }} Default Limits
                             </h4>
                             <form method="post" class="d-flex flex-column gap-5">
                                 <input type="hidden" name="plan_id" value="{{ plan.id }}">
@@ -62,6 +70,10 @@
                                         <input type="number" name="price_monthly" class="form-control" value="{{ plan.priceMonthly }}" step="0.01" required>
                                     </div>
                                     <div class="form-group m-0">
+                                        <label class="form-label fs-sm">Stripe Price ID</label>
+                                        <input type="text" name="stripe_price_id" class="form-control font-mono" value="{{ plan.stripePriceId }}" placeholder="e.g. price_1TzStn...">
+                                    </div>
+                                    <div class="form-group m-0">
                                         <label class="form-label fs-sm">Max Users</label>
                                         <input type="number" name="max_orgUsers" class="form-control" value="{{ plan.maxOrgUsers }}" required>
                                     </div>
@@ -69,13 +81,13 @@
                                         <label class="form-label fs-sm">Max Managers</label>
                                         <input type="number" name="max_managers" class="form-control" value="{{ plan.maxManagers }}" required>
                                     </div>
+                                </div>
+
+                                <div class="grid-cols-4 gap-4">
                                     <div class="form-group m-0">
                                         <label class="form-label fs-sm">Custom Fields</label>
                                         <input type="number" name="max_fields" class="form-control" value="{{ plan.maxFields }}" required>
                                     </div>
-                                </div>
-
-                                <div class="grid-cols-4 gap-4">
                                     <div class="form-group m-0">
                                         <label class="form-label fs-sm">Max Categories</label>
                                         <input type="number" name="max_categories" class="form-control" value="{{ plan.maxCategories }}" required>
@@ -99,7 +111,7 @@
 
                                 <div class="d-flex justify-content-end gap-2">
                                     <button type="button" class="btn btn-secondary btn-sm" onclick="toggleDetails('plan-edit-{{ plan.id }}')">Cancel</button>
-                                    <button type="submit" class="btn btn-primary btn-sm" >
+                                    <button type="submit" class="btn btn-primary btn-sm">
                                         <span class="material-icons fs-md" style="vertical-align:middle">save</span> Save Plan Settings
                                     </button>
                                 </div>

@@ -22,9 +22,12 @@ class KioskController extends AbstractController
 {
     private PinService $pinService;
 
-    public function __construct(PinService $pinService)
+    private AppConfigService $configService;
+
+    public function __construct(PinService $pinService, AppConfigService $configService)
     {
         $this->pinService = $pinService;
+        $this->configService = $configService;
     }
 
     #[Route('/org/{slug}/kiosk-redirect/{semiPermanentToken}', name: 'app_kiosk_redirect')]
@@ -247,13 +250,14 @@ class KioskController extends AbstractController
             $session->setStartMethod($org->getAccessMode());
             $session->setDeviceInfo($request->headers->get('User-Agent'));
 
-            // Check check-in window against UTC (window boundaries stored in UTC)
-            $utc = new \DateTimeZone('UTC');
-            $nowUtc = new \DateTime('now', $utc);
+            // Check check-in window against organization's resolved local timezone
+            $orgTzStr = $this->configService->resolveOrganizationTimezone($org);
+            $orgTz = new \DateTimeZone($orgTzStr);
+            $nowLocal = new \DateTime('now', $orgTz);
             $session->setStartedAt(new \DateTime());
 
             $isOutOfWindow = false;
-            $nowTime = new \DateTime($nowUtc->format('H:i:s'));
+            $nowTime = new \DateTime($nowLocal->format('H:i:s'));
             
             if ($org->getCheckInWindowStart() && $org->getCheckInWindowEnd()) {
                 $winStart = new \DateTime($org->getCheckInWindowStart()->format('H:i:s'));
@@ -295,10 +299,10 @@ class KioskController extends AbstractController
             $durationSeconds = $now->getTimestamp() - $activeSession->getStartedAt()->getTimestamp();
             $activeSession->setDurationSeconds($durationSeconds);
 
-            // Check if checkout time is out of window — compare in UTC (window boundaries stored in UTC)
-            $utcTz = new \DateTimeZone('UTC');
-            $nowUtcTime = new \DateTime('now', $utcTz);
-            $nowLocalTime = new \DateTime($nowUtcTime->format('H:i:s'));
+            // Check if checkout time is out of window — compare in organization's local timezone
+            $orgTzStr = $this->configService->resolveOrganizationTimezone($org);
+            $orgTz = new \DateTimeZone($orgTzStr);
+            $nowLocalTime = new \DateTime((new \DateTime('now', $orgTz))->format('H:i:s'));
 
             if ($org->getCheckInWindowStart() && $org->getCheckInWindowEnd()) {
                 $winStart = new \DateTime($org->getCheckInWindowStart()->format('H:i:s'));

@@ -107,6 +107,13 @@ class Organization
     #[ORM\Column(type: "string", length: 255, nullable: true)]
     private ?string $stripeSubscriptionId = null;
 
+    #[ORM\ManyToOne(targetEntity: Plan::class)]
+    #[ORM\JoinColumn(name: "pending_plan_id", referencedColumnName: "id", nullable: true, onDelete: "SET NULL")]
+    private ?Plan $pendingPlan = null;
+
+    #[ORM\Column(type: "datetime", nullable: true)]
+    private ?\DateTimeInterface $pendingPlanEffectiveAt = null;
+
     #[ORM\Column(type: "datetime_immutable")]
     private \DateTimeImmutable $createdAt;
 
@@ -152,6 +159,28 @@ class Organization
     public function setStripeSubscriptionId(?string $stripeSubscriptionId): self
     {
         $this->stripeSubscriptionId = $stripeSubscriptionId;
+        return $this;
+    }
+
+    public function getPendingPlan(): ?Plan
+    {
+        return $this->pendingPlan;
+    }
+
+    public function setPendingPlan(?Plan $pendingPlan): self
+    {
+        $this->pendingPlan = $pendingPlan;
+        return $this;
+    }
+
+    public function getPendingPlanEffectiveAt(): ?\DateTimeInterface
+    {
+        return $this->pendingPlanEffectiveAt;
+    }
+
+    public function setPendingPlanEffectiveAt(?\DateTimeInterface $pendingPlanEffectiveAt): self
+    {
+        $this->pendingPlanEffectiveAt = $pendingPlanEffectiveAt;
         return $this;
     }
 

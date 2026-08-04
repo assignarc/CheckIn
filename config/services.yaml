@@ -13,6 +13,7 @@ parameters:
     stripe_public_key: '%env(string:STRIPE_PUBLIC_KEY)%'
     stripe_secret_key: '%env(string:STRIPE_SECRET_KEY)%'
     stripe_webhook_secret: '%env(string:STRIPE_WEBHOOK_SECRET)%'
+    admin_email: '%env(string:ADMIN_EMAIL)%'
 
 services:
     # default configuration for services in *this* file
@@ -24,6 +25,10 @@ services:
     # this creates a service per class whose id is the fully-qualified class name
     App\:
         resource: '../src/'
+        exclude:
+            - '../src/DependencyInjection/'
+            - '../src/Entity/'
+            - '../src/Kernel.php'
 
     # add more service definitions when explicit configuration is needed
     # please note that last definitions always *replace* previous ones

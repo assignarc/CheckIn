@@ -1,0 +1,74 @@
+{% extends 'home/layout.html.twig' %}
+
+{% block title %}About Us - CenterTime{% endblock %}
+
+{% block content %}
+<div class="container pricing-container my-8">
+    <div class="text-center mb-12">
+        <span class="badge bg-primary-glow text-primary fs-xs fw-700 px-3 py-1.5 mb-3" style="border-radius: 99px; text-transform: uppercase; letter-spacing: 0.05em;">Our Mission &amp; Story</span>
+        <h1 class="fs-4xl fw-800">Modern Time Tracking Built for <span class="text-gradient">Organizations</span></h1>
+        <p class="fs-lg text-secondary mt-3 max-w-700 mx-auto">
+            CenterTime delivers frictionless student check-ins, automated audit compliance, and real-time attendance management for schools, labs, and modern workforces.
+        </p>
+    </div>
+
+    <!-- AI & Human Need Mission Section -->
+    <div class="glass-panel p-8 mb-12 d-flex flex-column gap-4 reveal-scale" style="background: linear-gradient(135deg, rgba(99, 102, 241, 0.05) 0%, rgba(255, 255, 255, 0.02) 100%); border: 1px solid rgba(99, 102, 241, 0.2);">
+        <div class="d-flex align-items-center gap-3">
+            <div class="icon-48 rounded-full bg-primary-glow text-primary d-flex align-items-center justify-content-center">
+                <span class="material-icons fs-2xl">auto_awesome</span>
+            </div>
+            <h2 class="fs-2xl fw-800 m-0 text-gradient">Powered by Artificial Intelligence and human need</h2>
+        </div>
+        <p class="fs-md text-secondary lh-base m-0">
+            CenterTime was born from a fundamental human friction: time is our most finite resource, yet we continue to lock it behind legacy sheets, spreadsheets, and manual compliance checkers. 
+        </p>
+        <p class="fs-md text-secondary lh-base m-0">
+            By combining high-fidelity Artificial Intelligence with intuitive kiosk patterns, we automate the administrative overhead of time-clocking. AI streamlines student data ingestion, handles fuzzy mapping resolutions on complex roster sheets, highlights transaction anomalies in real-time, and frees managers to focus on what truly matters: human relationships and productive growth.
+        </p>
+    </div>
+
+    <!-- Features Overview Cards -->
+    <div class="grid-cols-3 gap-6 mb-16">
+        <div class="glass-panel p-6 d-flex flex-column gap-3">
+            <div class="icon-48 rounded-full bg-primary-glow text-primary d-flex align-items-center justify-content-center">
+                <span class="material-icons fs-2xl">verified_user</span>
+            </div>
+            <h3 class="fs-xl fw-700 m-0">PIN Kiosk Security</h3>
+            <p class="fs-md text-secondary m-0">
+                Prevent buddy check-ins with dedicated keypad terminals, QR code ID badge scanning, and instant verification.
+            </p>
+        </div>
+
+        <div class="glass-panel p-6 d-flex flex-column gap-3">
+            <div class="icon-48 rounded-full bg-primary-glow text-primary d-flex align-items-center justify-content-center">
+                <span class="material-icons fs-2xl">analytics</span>
+            </div>
+            <h3 class="fs-xl fw-700 m-0">Automated Audit Logs</h3>
+            <p class="fs-md text-secondary m-0">
+                Generate CSV and Excel exports instantly. Gain clear insights with custom shift durations, category filters, and retention policies.
+            </p>
+        </div>
+
+        <div class="glass-panel p-6 d-flex flex-column gap-3">
+            <div class="icon-48 rounded-full bg-primary-glow text-primary d-flex align-items-center justify-content-center">
+                <span class="material-icons fs-2xl">cloud_sync</span>
+            </div>
+            <h3 class="fs-xl fw-700 m-0">Enterprise Architecture</h3>
+            <p class="fs-md text-secondary m-0">
+                Empower administrators with multi-location isolation, custom user fields, and real-time dashboard analytics across departments.
+            </p>
+        </div>
+    </div>
+
+    <!-- Call to action block -->
+    <div class="glass-panel text-center p-8 mb-12" style="border: 1px solid var(--primary-glow);">
+        <h2 class="fs-2xl fw-800 mb-2">Ready to streamline your attendance tracking?</h2>
+        <p class="fs-md text-secondary mb-6 max-w-600 mx-auto">Get started free with CenterTime today or request live interactive demo credentials.</p>
+        <div class="d-flex justify-content-center gap-4 flex-wrap">
+            <a href="{{ path('app_signup') }}" class="btn btn-primary fs-md">Create Your Organization</a>
+            <a href="{{ path('app_contact') }}" class="btn btn-secondary fs-md">Contact Sales</a>
+        </div>
+    </div>
+</div>
+{% endblock %}

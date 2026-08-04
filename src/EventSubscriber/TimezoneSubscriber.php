@@ -26,15 +26,13 @@ class TimezoneSubscriber implements EventSubscriberInterface
 
     public function onKernelRequest(RequestEvent $event): void
     {
-        $timezone = $this->configService->get('display_timezone', 'America/Chicago');
-
+        $org = null;
         $user = $this->security->getUser();
         if ($user && method_exists($user, 'getOrganization')) {
             $org = $user->getOrganization();
-            if ($org && $org->getTimezone()) {
-                $timezone = $org->getTimezone();
-            }
         }
+
+        $timezone = $this->configService->resolveOrganizationTimezone($org);
 
         try {
             $this->twig->getExtension(\Twig\Extension\CoreExtension::class)->setTimezone($timezone);

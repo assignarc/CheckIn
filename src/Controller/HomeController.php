@@ -30,7 +30,7 @@ class HomeController extends AbstractController
     }
 
     #[Route('/signup', name: 'app_signup', methods: ['GET', 'POST'])]
-    public function signup(Request $request, EntityManagerInterface $entityManager, UserPasswordHasherInterface $passwordHasher, \App\Service\TokenGeneratorService $tokenGenerator, CaptchaService $captchaService, \App\Service\AppConfigService $configService, \App\Service\EmailService $emailService): Response
+    public function signup(Request $request, EntityManagerInterface $entityManager, UserPasswordHasherInterface $passwordHasher, \App\Service\TokenGeneratorService $tokenGenerator, CaptchaService $captchaService, \App\Service\AppConfigService $configService, \App\Service\EmailService $emailService, \Symfony\Bundle\SecurityBundle\Security $security): Response
     {
         if ($this->getUser()) {
             return $this->redirectToRoute('app_redirect_by_role');
@@ -228,7 +228,7 @@ class HomeController extends AbstractController
 
             $manager = null;
             $entityManager->wrapInTransaction(function() use ($request, $entityManager, $orgName, $orgSlug, $orgAddress, $orgPhone, $tokenGenerator, $plan, $plans, $email, $firstName, $lastName, $managerPhone, $passwordHasher, $password, &$manager) {
-                // Create Organization
+                // Create Organization (always starting with basic plan until Stripe checkout completes)
                 $org = new Organization();
                 $org->setName($orgName);
                 $org->setSlug($orgSlug);
@@ -237,17 +237,9 @@ class HomeController extends AbstractController
                 $org->setIsSubscriptionActive(true);
                 $org->setCheckInLinkToken($tokenGenerator->generateHumanReadableToken());
 
-                $planEntity = $entityManager->getRepository(\App\Entity\Plan::class)->findOneBy(['name' => $plan]);
-                if (!$planEntity) {
-                    $planEntity = $entityManager->getRepository(\App\Entity\Plan::class)->findOneBy(['name' => 'basic']);
-                }
-                $org->setPlan($planEntity);
-
-                if (!$planEntity->hasSecureKiosk()) {
-                    $org->setAccessMode('open');
-                } else {
-                    $org->setAccessMode('secure');
-                }
+                $basicPlan = $entityManager->getRepository(\App\Entity\Plan::class)->findOneBy(['name' => 'basic']);
+                $org->setPlan($basicPlan);
+                $org->setAccessMode('open');
 
                 $entityManager->persist($org);
 
@@ -273,19 +265,6 @@ class HomeController extends AbstractController
                 $category->setIsActive(true);
                 $entityManager->persist($category);
 
-                // If paid plan, record payment history record
-                if ($plan !== 'basic') {
-                    $payment = new PaymentHistory();
-                    $payment->setOrganization($org);
-                    $payment->setStripeInvoiceId('sub_' . bin2hex(random_bytes(8)));
-                    $payment->setAmount(number_format($planEntity->getPriceMonthly(), 2, '.', ''));
-                    $payment->setStatus('paid');
-                    $payment->setPaidAt(new \DateTime());
-                    $payment->setPeriodStart(new \DateTime());
-                    $payment->setPeriodEnd(new \DateTime('+1 month'));
-                    $entityManager->persist($payment);
-                }
-
                 // Log Tenant Signup Event
                 $log = new AuditLog();
                 $log->setOrganization($org);
@@ -294,7 +273,8 @@ class HomeController extends AbstractController
                 $log->setDetailsJson([
                     'organization' => $org->getName(),
                     'slug' => $org->getSlug(),
-                    'plan' => $planEntity->getName(),
+                    'requested_plan' => $plan,
+                    'initial_plan' => 'basic',
                     'email' => $manager->getEmail()
                 ]);
                 $log->setIpAddress($request->getClientIp());
@@ -311,10 +291,18 @@ class HomeController extends AbstractController
                 } catch (\Exception $e) {
                     // Ignore mailer failure during redirect to prevent blocking account creation
                 }
+
+                // Log manager in automatically
+                $security->login($manager);
             }
 
-            $this->addFlash('success', 'Your organization account has been successfully created! You can now log in.');
-            return $this->redirectToRoute('app_login');
+            if ($plan !== 'basic') {
+                // Paid plan selected — redirect to Stripe Checkout
+                return $this->redirectToRoute('app_stripe_checkout', ['planName' => $plan]);
+            }
+
+            $this->addFlash('success', 'Your organization account has been successfully created!');
+            return $this->redirectToRoute('app_manager_dashboard');
         }
 
         $captchaImage = $captchaService->generateImage($request, 'signup');
@@ -339,7 +327,7 @@ class HomeController extends AbstractController
     }
 
     #[Route('/request-demo', name: 'app_request_demo', methods: ['POST'])]
-    public function requestDemo(Request $request, EntityManagerInterface $em, CaptchaService $captchaService): Response
+    public function requestDemo(Request $request, EntityManagerInterface $em, CaptchaService $captchaService, \App\Service\EmailService $emailService): Response
     {
         $name = $request->request->get('name');
         $email = $request->request->get('email');
@@ -363,6 +351,9 @@ class HomeController extends AbstractController
             $em->persist($lead);
             $em->flush();
             
+            // Dispatch email notification to platform admin
+            $emailService->sendDemoLeadNotification($lead);
+
             // Unlock demo
             $request->getSession()->set('demo_unlocked', true);
             return $this->redirectToRoute('app_demo_access');
@@ -387,13 +378,84 @@ class HomeController extends AbstractController
         ]);
     }
 
-    #[Route('/plans/compare', name: 'app_plans_compare')]
-    public function comparePlans(EntityManagerInterface $em, \App\Service\AppConfigService $configService): Response
+    #[Route('/features', name: 'app_features')]
+    public function features(): Response
     {
-        $plans = $em->getRepository(\App\Entity\Plan::class)->findAll();
-        return $this->render('home/compare.html.twig', [
+        return $this->render('home/features.html.twig');
+    }
+
+    #[Route('/pricing', name: 'app_pricing')]
+    public function pricing(EntityManagerInterface $entityManager, \App\Service\AppConfigService $configService): Response
+    {
+        $plans = $entityManager->getRepository(\App\Entity\Plan::class)->findAll();
+        return $this->render('home/pricing.html.twig', [
             'plans' => $plans,
             'new_signups_enabled' => $configService->get('new_signups_enabled', true),
         ]);
     }
+
+
+    #[Route('/faq', name: 'app_faq')]
+    public function faq(): Response
+    {
+        return $this->render('home/faq.html.twig');
+    }
+
+    #[Route('/plans/compare', name: 'app_plans_compare')]
+    public function comparePlans(): Response
+    {
+        return $this->redirectToRoute('app_pricing', [], Response::HTTP_MOVED_PERMANENTLY);
+    }
+
+    #[Route('/about', name: 'app_about')]
+    public function about(): Response
+    {
+        return $this->render('home/about.html.twig');
+    }
+
+    #[Route('/contact', name: 'app_contact', methods: ['GET', 'POST'])]
+    public function contact(Request $request, EntityManagerInterface $em, CaptchaService $captchaService, \App\Service\EmailService $emailService): Response
+    {
+        $captchaEnabled = $captchaService->isEnabled('contact');
+        $captchaImage = $captchaEnabled ? $captchaService->generateImage($request, 'contact') : '';
+
+        if ($request->isMethod('POST')) {
+            $name = trim((string) $request->request->get('name'));
+            $email = trim((string) $request->request->get('email'));
+            $subject = trim((string) $request->request->get('subject'));
+            $messageContent = trim((string) $request->request->get('message'));
+            $captcha = $request->request->get('captcha');
+
+            if (empty($name) || strlen($name) < 2) {
+                $this->addFlash('danger', 'Please enter your full name (at least 2 characters).');
+            } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+                $this->addFlash('danger', 'Please enter a valid email address.');
+            } elseif (empty($messageContent) || strlen($messageContent) < 10) {
+                $this->addFlash('danger', 'Please enter a detailed message (at least 10 characters).');
+            } elseif ($captchaEnabled && !$captchaService->validate($request, 'contact', $captcha)) {
+                $this->addFlash('danger', 'Incorrect math captcha verification. Please try again.');
+            } else {
+                $contactMsg = new \App\Entity\ContactMessage();
+                $contactMsg->setName($name);
+                $contactMsg->setEmail($email);
+                $contactMsg->setSubject($subject);
+                $contactMsg->setMessage($messageContent);
+
+                $em->persist($contactMsg);
+                $em->flush();
+
+                // Dispatch notification email to platform admin
+                $emailService->sendContactNotification($contactMsg);
+
+                $this->addFlash('success', 'Thank you! Your message has been sent successfully. Our team will get back to you shortly.');
+                return $this->redirectToRoute('app_contact');
+            }
+        }
+
+        return $this->render('home/contact.html.twig', [
+            'captcha_enabled' => $captchaEnabled,
+            'captcha_image' => $captchaImage,
+        ]);
+    }
 }
+

@@ -125,11 +125,36 @@ class AdminController extends AbstractController
         
         $activeSubCount = 0;
         $activePaidUsersCount = 0;
+        $scheduledTransitions = [];
+        $scheduledDowngradesCount = 0;
+        $scheduledUpgradesCount = 0;
+
         foreach ($organizations as $o) {
             if ($o->isSubscriptionActive() && $o->getPlan()->getName() !== 'basic') {
                 $activeSubCount++;
                 // Add active employees in this tenant to total paid users
                 $activePaidUsersCount += $em->getRepository(OrgUser::class)->count(['organization' => $o, 'isActive' => true]);
+            }
+
+            if ($o->getPendingPlan()) {
+                $curPrice = (float)$o->getPlan()->getPriceMonthly();
+                $targetPrice = (float)$o->getPendingPlan()->getPriceMonthly();
+                
+                if ($o->getPendingPlan()->getName() === 'basic' || $targetPrice < $curPrice) {
+                    $type = ($o->getPendingPlan()->getName() === 'basic') ? 'Downgrade to Free' : 'Paid Tier Downgrade';
+                    $scheduledDowngradesCount++;
+                } else {
+                    $type = 'Paid Tier Upgrade';
+                    $scheduledUpgradesCount++;
+                }
+
+                $scheduledTransitions[] = [
+                    'org' => $o,
+                    'currentPlan' => $o->getPlan(),
+                    'pendingPlan' => $o->getPendingPlan(),
+                    'effectiveAt' => $o->getPendingPlanEffectiveAt(),
+                    'type' => $type,
+                ];
             }
         }
 
@@ -168,7 +193,7 @@ class AdminController extends AbstractController
         $logQb->select('l')
             ->from(AuditLog::class, 'l')
             ->where('l.action IN (:actions)')
-            ->setParameter('actions', ['TENANT_SIGNUP', 'STRIPE_CHECKOUT_COMPLETED', 'STRIPE_PAYMENT_SUCCESS', 'STRIPE_PAYMENT_FAILED', 'PLAN_UPGRADE'])
+            ->setParameter('actions', ['TENANT_SIGNUP', 'STRIPE_CHECKOUT_COMPLETED', 'STRIPE_PAYMENT_SUCCESS', 'STRIPE_PAYMENT_FAILED', 'PLAN_UPGRADE', 'STRIPE_SUBSCRIPTION_CANCEL_SCHEDULED', 'STRIPE_SUBSCRIPTION_CHANGE_SCHEDULED'])
             ->orderBy('l.createdAt', 'DESC')
             ->setMaxResults(50);
         $eventLogs = $logQb->getQuery()->getResult();
@@ -177,6 +202,10 @@ class AdminController extends AbstractController
             'totalRevenue' => number_format($totalRevenue, 2),
             'activeSubCount' => $activeSubCount,
             'activePaidUsersCount' => $activePaidUsersCount,
+            'scheduledDowngradesCount' => $scheduledDowngradesCount,
+            'scheduledUpgradesCount' => $scheduledUpgradesCount,
+            'scheduledTransitionsCount' => count($scheduledTransitions),
+            'scheduledTransitions' => $scheduledTransitions,
             'tenantOverview' => $tenantOverview,
             'globalPayments' => array_slice($allPayments, 0, 50),
             'eventLogs' => $eventLogs,
@@ -290,6 +319,8 @@ class AdminController extends AbstractController
                 $plan->setRetentionDays((int)$request->request->get('retention_days'));
                 $plan->setExportsEnabled($request->request->get('exports_enabled') === 'yes');
                 $plan->setPriceMonthly($request->request->get('price_monthly'));
+                $stripePriceId = trim((string)$request->request->get('stripe_price_id', '')) ?: null;
+                $plan->setStripePriceId($stripePriceId);
 
                 $em->flush();
 
@@ -303,7 +334,8 @@ class AdminController extends AbstractController
                     'session_limit_hours' => $plan->getSessionLimitHours(),
                     'retention_days' => $plan->getRetentionDays(),
                     'exports_enabled' => $plan->isExportsEnabled(),
-                    'price_monthly' => $plan->getPriceMonthly()
+                    'price_monthly' => $plan->getPriceMonthly(),
+                    'stripe_price_id' => $plan->getStripePriceId()
                 ], $request);
 
                 $this->addFlash('success', "Plan '" . ucfirst($plan->getName()) . "' settings updated successfully.");
@@ -460,10 +492,26 @@ class AdminController extends AbstractController
     public function demoLeads(EntityManagerInterface $em): Response
     {
         $leads = $em->getRepository(\App\Entity\DemoLead::class)->findBy([], ['createdAt' => 'DESC']);
+        $contactMessages = $em->getRepository(\App\Entity\ContactMessage::class)->findBy([], ['createdAt' => 'DESC']);
 
         return $this->render('admin/demo_leads.html.twig', [
             'leads' => $leads,
+            'contact_messages' => $contactMessages,
         ]);
+    }
+
+    #[Route('/contact-message/{id}/delete', name: 'app_admin_contact_message_delete', methods: ['POST'])]
+    public function deleteContactMessage(int $id, EntityManagerInterface $em): Response
+    {
+        $message = $em->getRepository(\App\Entity\ContactMessage::class)->find($id);
+
+        if ($message) {
+            $em->remove($message);
+            $em->flush();
+            $this->addFlash('success', 'Contact message deleted successfully.');
+        }
+
+        return $this->redirectToRoute('app_admin_demo_leads');
     }
 
     #[Route('/audit-logs', name: 'app_admin_audit_logs')]
@@ -568,6 +616,10 @@ class AdminController extends AbstractController
             $auditLogArchiveDays = (int)$request->request->get('audit_log_archive_days', 180);
             $configService->set('audit_log_archive_days', $auditLogArchiveDays);
 
+            // Empty cron log pruning retention hours
+            $cronEmptyLogRetentionHours = (int)$request->request->get('cron_empty_log_retention_hours', 2);
+            $configService->set('cron_empty_log_retention_hours', $cronEmptyLogRetentionHours);
+
             // Regulate request-triggered session sweeps using a seconds-based lock
             $sessionSweepThrottleSeconds = (int)$request->request->get('session_sweep_throttle_seconds', 60);
             $configService->set('session_sweep_throttle_seconds', $sessionSweepThrottleSeconds);
@@ -602,6 +654,7 @@ class AdminController extends AbstractController
                 'captcha_demo_enabled' => $captchaDemoEnabled,
                 'new_signups_enabled' => $newSignupsEnabled,
                 'audit_log_archive_days' => $auditLogArchiveDays,
+                'cron_empty_log_retention_hours' => $cronEmptyLogRetentionHours,
                 'audit_log_archive_schedule' => $auditLogArchiveSchedule,
                 'session_sweep_throttle_seconds' => $sessionSweepThrottleSeconds,
                 'demo_reset_history_days' => $demoResetHistoryDays,
@@ -622,6 +675,7 @@ class AdminController extends AbstractController
         $captchaDemoEnabled = $configService->get('captcha_demo_enabled', false);
         $newSignupsEnabled = $configService->get('new_signups_enabled', true);
         $auditLogArchiveDays = $configService->get('audit_log_archive_days', 180);
+        $cronEmptyLogRetentionHours = $configService->get('cron_empty_log_retention_hours', 2);
         $sessionSweepThrottleSeconds = $configService->get('session_sweep_throttle_seconds', 60);
         $demoResetHistoryDays = $configService->get('demo_reset_history_days', 150);
         $auditLogArchiveDir = $configService->get('audit_log_archive_dir', '/var/log/audit_archives');
@@ -643,6 +697,7 @@ class AdminController extends AbstractController
             'captchaDemoEnabled' => $captchaDemoEnabled,
             'newSignupsEnabled' => $newSignupsEnabled,
             'auditLogArchiveDays' => $auditLogArchiveDays,
+            'cronEmptyLogRetentionHours' => $cronEmptyLogRetentionHours,
             'auditLogArchiveSchedule' => $auditLogArchiveSchedule,
             'sessionSweepThrottleSeconds' => $sessionSweepThrottleSeconds,
             'demoResetHistoryDays' => $demoResetHistoryDays,
@@ -962,6 +1017,7 @@ class AdminController extends AbstractController
 
         // 1. Delete dependent child records first and flush
         foreach ($sessions as $s) {
+            $s->setCategory(null);
             $em->remove($s);
         }
         foreach ($auditLogs as $l) {

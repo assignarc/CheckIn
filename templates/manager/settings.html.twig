@@ -196,7 +196,7 @@
                         If a session exceeds this duration, the system will automatically end it to prevent runaway timesheet hours.
                     </span>
                     <span class="form-text">
-                        Plan max: {% if org.plan.name == 'gold' %}24 h{% elseif org.plan.name == 'silver' %}8 h{% else %}2 h (fixed){% endif %}
+                        Plan max: {{ org.plan.sessionLimitHours }} h{% if org.plan.name == 'basic' %} (fixed){% endif %}
                     </span>
                 </div>
 
@@ -285,7 +285,7 @@
                     <form action="{{ path('app_manager_rotate_token') }}" method="post"
                           class="confirm-form flex-1" data-confirm="Rotate the Kiosk link? This will immediately invalidate the current screen.">
                         <button type="submit" class="btn btn-danger d-flex align-items-center justify-content-center gap-1 w-100">
-                            <span class="material-icons">sync</span> Rotate Token
+                            <span class="material-icons">sync</span> Rotate Kiosk URL for better security
                         </button>
                     </form>
                 </div>

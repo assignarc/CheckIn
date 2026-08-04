@@ -186,6 +186,14 @@
                 </div>
 
                 <div class="form-group mb-5">
+                    <label class="form-label" for="cron_empty_log_retention_hours">Empty Cron Log Retention Duration (Hours)</label>
+                    <input type="number" class="form-control" name="cron_empty_log_retention_hours" id="cron_empty_log_retention_hours" value="{{ cronEmptyLogRetentionHours|default(2) }}" min="1">
+                    <span class="form-text d-block" style="margin-top: 0.35rem">
+                        Routine background cron execution logs that performed no actions will be pruned after this number of hours. Default is 2.
+                    </span>
+                </div>
+
+                <div class="form-group mb-5">
                     <label class="form-label" for="audit_log_archive_schedule">Audit Log Archival Schedule</label>
                     <select class="form-control" name="audit_log_archive_schedule" id="audit_log_archive_schedule">
                         <option value="first_of_month" {% if auditLogArchiveSchedule == 'first_of_month' %}selected{% endif %}>First Day of the Month</option>

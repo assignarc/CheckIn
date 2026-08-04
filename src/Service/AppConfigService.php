@@ -50,4 +50,18 @@ class AppConfigService
         // Invalidate cache
         $this->cache->delete('app_config_' . $key);
     }
+
+    public function resolveOrganizationTimezone(?\App\Entity\Organization $org = null): string
+    {
+        if ($org && $org->getTimezone() && trim($org->getTimezone()) !== '') {
+            return $org->getTimezone();
+        }
+
+        $globalTz = $this->get('global_timezone') ?? $this->get('display_timezone') ?? $this->get('default_timezone');
+        if ($globalTz && trim((string)$globalTz) !== '') {
+            return (string)$globalTz;
+        }
+
+        return 'UTC';
+    }
 }

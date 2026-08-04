@@ -1,0 +1,615 @@
+{% extends 'home/layout.html.twig' %}
+
+{% block title %}CenterTime - Platform Features & Capabilities{% endblock %}
+
+{% block stylesheets %}
+    {{ parent() }}
+    <style>
+        /* Onboarding Slide Animation Styles */
+        .onboarding-slide {
+            display: none;
+            opacity: 0;
+            transition: opacity 0.5s ease-in-out;
+        }
+        .onboarding-slide.active {
+            display: block;
+            opacity: 1;
+        }
+
+        .dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #888888 !important;
+            opacity: 0.55 !important;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            display: inline-block;
+            margin: 0 4px;
+            border: 1px solid rgba(0, 0, 0, 0.12);
+        }
+        .dot.active {
+            background: var(--primary) !important;
+            opacity: 1 !important;
+            transform: scale(1.25);
+            border-color: var(--primary-border);
+        }
+        .grid-cols-5 {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 1.5rem;
+        }
+        @media (max-width: 1200px) {
+            .grid-cols-5 {
+                grid-template-columns: repeat(3, 1fr);
+            }
+        }
+        @media (max-width: 768px) {
+            .grid-cols-5 {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+        @media (max-width: 480px) {
+            .grid-cols-5 {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+{% endblock %}
+
+{% block content %}
+    <!-- Key Platform Benefits Section -->
+    <section class="d-flex flex-column gap-12 mt-6 reveal-scale">
+        <div class="text-center">
+            <h1 class="fs-3xl">Engineered for <span class="text-gradient">Precision</span> & Control</h1>
+            <p class="fs-lg text-secondary mt-2 ml-auto mr-auto max-w-700">
+                CenterTime provides managers with high-fidelity control over shift logs, auditing, and compliance constraints.
+            </p>
+        </div>
+
+        <div class="grid-cols-3 gap-6 mb-6">
+            <div class="glass-panel p-6">
+                <span class="material-icons text-primary mb-4 fs-3xl">gavel</span>
+                <h4 class="fs-lg mb-2">Time Window Enforcement</h4>
+                <p class="fs-md text-secondary lh-base">
+                    Set specific windows for clocking in and out (including overnight shifts support) and automatically flag violations in manager dashboards.
+                </p>
+            </div>
+            <div class="glass-panel p-6">
+                <span class="material-icons text-success mb-4 fs-3xl">cloud_sync</span>
+                <h4 class="fs-lg mb-2">Onboarding & Fuzzy Matching</h4>
+                <p class="fs-md text-secondary lh-base">
+                    Upload existing rosters via CSV. Map custom columns and run fuzzy matching checks to prevent duplicates while merging updates.
+                </p>
+            </div>
+            <div class="glass-panel p-6">
+                <span class="material-icons text-warning mb-4 fs-3xl">security</span>
+                <h4 class="fs-lg mb-2">Anti-Brute Force Lockout</h4>
+                <p class="fs-md text-secondary lh-base">
+                    Protects the workplace kiosk by automatically locking student accounts after 3 incorrect PIN attempts. Managers can clear blocks in a click.
+                </p>
+            </div>
+        </div>
+        <div class="grid-cols-3 gap-6">
+            <div class="glass-panel p-6">
+                <span class="material-icons text-info mb-4 fs-3xl">category</span>
+                <h4 class="fs-lg mb-2">Custom Category Limits</h4>
+                <p class="fs-md text-secondary lh-base">
+                    Override organization-wide limits with custom max session durations per category, giving you granular control.
+                </p>
+            </div>
+            <div class="glass-panel p-6">
+                <span class="material-icons text-indigo mb-4 fs-3xl">payments</span>
+                <h4 class="fs-lg mb-2">Advanced Overtime Rules</h4>
+                <p class="fs-md text-secondary lh-base">
+                    Configure overtime multipliers and grace periods to accurately track and calculate shift overages.
+                </p>
+            </div>
+            <div class="glass-panel p-6">
+                <span class="material-icons text-danger mb-4 fs-3xl">verified_user</span>
+                <h4 class="fs-lg mb-2">Math Captcha Security</h4>
+                <p class="fs-md text-secondary lh-base">
+                    Built-in mathematical captchas on sensitive operations to prevent automated abuse and enhance platform security.
+                </p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Real-Time Event & Audit Stream Catalog -->
+    <section class="d-flex flex-column gap-12 mt-16 mb-12 reveal-scale">
+        <div class="text-center">
+            <h2 class="fs-3xl">Traceability & Audit: <span class="text-gradient">10 Core System Events</span></h2>
+            <p class="fs-lg text-secondary mt-2 ml-auto mr-auto max-w-700">
+                CenterTime logs every critical business mutation to ensure security, automated compliance, and absolute accountability.
+            </p>
+        </div>
+
+        <div class="grid-cols-5 gap-6">
+            <!-- Event 1 -->
+            <div class="glass-panel p-6 d-flex flex-column justify-content-between" style="border-top: 4px solid var(--primary); min-height: 250px;">
+                <div>
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <span class="material-icons text-primary fs-xl" style="font-size: 1.5rem;">login</span>
+                        <span class="fs-xs fw-600 text-muted">Attendance</span>
+                    </div>
+                    <h4 class="fs-md fw-700 mb-2">Student Check-In / Out</h4>
+                    <p class="fs-xs text-secondary lh-base mb-3">
+                        Fired when a student clocks in or out at the kiosk using their PIN or QR code.
+                    </p>
+                </div>
+                <div class="border-t pt-3">
+                    <span class="fs-xs text-success fw-600">Why it matters:</span>
+                    <p class="m-0 fs-xs text-secondary mt-1">Crucial for payroll accuracy, tracking labor hours, and calculating timesheets.</p>
+                </div>
+            </div>
+
+            <!-- Event 2 -->
+            <div class="glass-panel p-6 d-flex flex-column justify-content-between" style="border-top: 4px solid #10b981; min-height: 250px;">
+                <div>
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <span class="material-icons text-success fs-xl" style="font-size: 1.5rem;">cloud_upload</span>
+                        <span class="fs-xs fw-600 text-muted">Onboarding</span>
+                    </div>
+                    <h4 class="fs-md fw-700 mb-2">Bulk Student Import</h4>
+                    <p class="fs-xs text-secondary lh-base mb-3">
+                        Emitted when a manager imports multiple student records using the CSV Wizard.
+                    </p>
+                </div>
+                <div class="border-t pt-3">
+                    <span class="fs-xs text-success fw-600">Why it matters:</span>
+                    <p class="m-0 fs-xs text-secondary mt-1">Saves hours of data entry and audits newly added, updated, or skipped student counts.</p>
+                </div>
+            </div>
+
+            <!-- Event 3 -->
+            <div class="glass-panel p-6 d-flex flex-column justify-content-between" style="border-top: 4px solid #f59e0b; min-height: 250px;">
+                <div>
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <span class="material-icons text-warning fs-xl" style="font-size: 1.5rem;">lock_reset</span>
+                        <span class="fs-xs fw-600 text-muted">Security</span>
+                    </div>
+                    <h4 class="fs-md fw-700 mb-2">Manager Password Reset</h4>
+                    <p class="fs-xs text-secondary lh-base mb-3">
+                        Fired when a manager updates their password or when an admin overrides credentials.
+                    </p>
+                </div>
+                <div class="border-t pt-3">
+                    <span class="fs-xs text-success fw-600">Why it matters:</span>
+                    <p class="m-0 fs-xs text-secondary mt-1">Essential security audit checkpoint to satisfy SOC2 compliance and prevent credential fraud.</p>
+                </div>
+            </div>
+
+            <!-- Event 4 -->
+            <div class="glass-panel p-6 d-flex flex-column justify-content-between" style="border-top: 4px solid #ef4444; min-height: 250px;">
+                <div>
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <span class="material-icons text-danger fs-xl" style="font-size: 1.5rem;">vpn_key</span>
+                        <span class="fs-xs fw-600 text-muted">Credentials</span>
+                    </div>
+                    <h4 class="fs-md fw-700 mb-2">PIN Modification</h4>
+                    <p class="fs-xs text-secondary lh-base mb-3">
+                        Triggered when a student's check-in PIN is generated, updated, or reset.
+                    </p>
+                </div>
+                <div class="border-t pt-3">
+                    <span class="fs-xs text-success fw-600">Why it matters:</span>
+                    <p class="m-0 fs-xs text-secondary mt-1">Prevents "buddy punching" and ensures each student has a unique, authenticated PIN.</p>
+                </div>
+            </div>
+
+            <!-- Event 5 -->
+            <div class="glass-panel p-6 d-flex flex-column justify-content-between" style="border-top: 4px solid #8b5cf6; min-height: 250px;">
+                <div>
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <span class="material-icons text-indigo fs-xl" style="font-size: 1.5rem;">business</span>
+                        <span class="fs-xs fw-600 text-muted">Configuration</span>
+                    </div>
+                    <h4 class="fs-md fw-700 mb-2">Profile Modification</h4>
+                    <p class="fs-xs text-secondary lh-base mb-3">
+                        Logged when organization settings (branding, name, address) are updated.
+                    </p>
+                </div>
+                <div class="border-t pt-3">
+                    <span class="fs-xs text-success fw-600">Why it matters:</span>
+                    <p class="m-0 fs-xs text-secondary mt-1">Maintains organization profile integrity and logs CRM sync actions.</p>
+                </div>
+            </div>
+
+            <!-- Event 6 -->
+            <div class="glass-panel p-6 d-flex flex-column justify-content-between" style="border-top: 4px solid #ec4899; min-height: 250px;">
+                <div>
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <span class="material-icons text-pink fs-xl" style="font-size: 1.5rem;">credit_card</span>
+                        <span class="fs-xs fw-600 text-muted">Billing</span>
+                    </div>
+                    <h4 class="fs-md fw-700 mb-2">Subscription Change</h4>
+                    <p class="fs-xs text-secondary lh-base mb-3">
+                        Logged when the organization upgrades, downgrades, or modifies its plan limits.
+                    </p>
+                </div>
+                <div class="border-t pt-3">
+                    <span class="fs-xs text-success fw-600">Why it matters:</span>
+                    <p class="m-0 fs-xs text-secondary mt-1">Enables financial alignment and tracks limit/quota updates instantly.</p>
+                </div>
+            </div>
+
+            <!-- Event 7 -->
+            <div class="glass-panel p-6 d-flex flex-column justify-content-between" style="border-top: 4px solid #3b82f6; min-height: 250px;">
+                <div>
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <span class="material-icons text-blue fs-xl" style="font-size: 1.5rem;">timer</span>
+                        <span class="fs-xs fw-600 text-muted">Automation</span>
+                    </div>
+                    <h4 class="fs-md fw-700 mb-2">Auto-Termination</h4>
+                    <p class="fs-xs text-secondary lh-base mb-3">
+                        Fired when the system automatically ends a work session that exceeded its maximum duration.
+                    </p>
+                </div>
+                <div class="border-t pt-3">
+                    <span class="fs-xs text-success fw-600">Why it matters:</span>
+                    <p class="m-0 fs-xs text-secondary mt-1">Ensures data hygiene by preventing indefinitely open sessions.</p>
+                </div>
+            </div>
+
+            <!-- Event 8 -->
+            <div class="glass-panel p-6 d-flex flex-column justify-content-between" style="border-top: 4px solid #06b6d4; min-height: 250px;">
+                <div>
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <span class="material-icons text-cyan fs-xl" style="font-size: 1.5rem;">calculate</span>
+                        <span class="fs-xs fw-600 text-muted">Payroll Rules</span>
+                    </div>
+                    <h4 class="fs-md fw-700 mb-2">Overtime Rules Changed</h4>
+                    <p class="fs-xs text-secondary lh-base mb-3">
+                        Logged when overtime multipliers or grace period limits are adjusted.
+                    </p>
+                </div>
+                <div class="border-t pt-3">
+                    <span class="fs-xs text-success fw-600">Why it matters:</span>
+                    <p class="m-0 fs-xs text-secondary mt-1">Ensures compliance with labor regulations and tracks changes to cost multipliers.</p>
+                </div>
+            </div>
+
+            <!-- Event 9 -->
+            <div class="glass-panel p-6 d-flex flex-column justify-content-between" style="border-top: 4px solid #f97316; min-height: 250px;">
+                <div>
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <span class="material-icons text-orange fs-xl" style="font-size: 1.5rem;">toggle_on</span>
+                        <span class="fs-xs fw-600 text-muted">Licensing</span>
+                    </div>
+                    <h4 class="fs-md fw-700 mb-2">Status Activation Toggle</h4>
+                    <p class="fs-xs text-secondary lh-base mb-3">
+                        Triggered when a manager enables or disables a student's active status.
+                    </p>
+                </div>
+                <div class="border-t pt-3">
+                    <span class="fs-xs text-success fw-600">Why it matters:</span>
+                    <p class="m-0 fs-xs text-secondary mt-1">Ensures inactive students cannot check in and tracks active license quota utilization.</p>
+                </div>
+            </div>
+
+            <!-- Event 10 -->
+            <div class="glass-panel p-6 d-flex flex-column justify-content-between" style="border-top: 4px solid #14b8a6; min-height: 250px;">
+                <div>
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <span class="material-icons text-teal fs-xl" style="font-size: 1.5rem;">category</span>
+                        <span class="fs-xs fw-600 text-muted">Operations</span>
+                    </div>
+                    <h4 class="fs-md fw-700 mb-2">Category Limit Change</h4>
+                    <p class="fs-xs text-secondary lh-base mb-3">
+                        Emitted when max session duration limits are configured per specific work category.
+                    </p>
+                </div>
+                <div class="border-t pt-3">
+                    <span class="fs-xs text-success fw-600">Why it matters:</span>
+                    <p class="m-0 fs-xs text-secondary mt-1">Tracks adjustments made to granular department constraints.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Spreadsheet Onboarding Wizard Section -->
+    <section class="d-flex flex-column gap-12 mt-12 mb-12 reveal-left">
+        <div class="text-center">
+            <h2 class="fs-3xl">Streamlined <span class="text-gradient">Spreadsheet Onboarding</span></h2>
+            <p class="fs-lg text-secondary mt-2 ml-auto mr-auto max-w-700">
+                Move your students from legacy systems to CenterTime instantly using our high-fidelity CSV mapping tool.
+            </p>
+        </div>
+
+        <div class="grid-cols-2 gap-8 align-items-center">
+            <!-- Animated Onboarding Slide Cycler -->
+            <div class="glass-panel p-6" style="min-height: 380px; display: flex; flex-direction: column; justify-content: space-between;">
+                <div class="d-flex justify-content-between align-items-center mb-4 border-b" style="padding-bottom: 1.25rem !important;">
+                    <div class="d-flex align-items-center gap-2">
+                        <span class="material-icons text-primary" id="onboarding-step-icon">upload_file</span>
+                        <span class="fs-sm fw-700 text-indigo-200 text-uppercase tracking-wider" id="onboarding-step-title">Upload Roster CSV</span>
+                    </div>
+                    <span class="badge bg-primary-glow text-primary fs-xs fw-700" id="onboarding-step-badge">Step 1 of 5</span>
+                </div>
+
+                <!-- Slide 1: File Upload -->
+                <div class="onboarding-slide active" id="onboarding-slide-1">
+                    <div class="p-6 rounded-md border bg-input text-center d-flex flex-column align-items-center justify-content-center gap-3" style="min-height: 200px; border-style: dashed !important; border-width: 2px !important; border-color: rgba(99, 102, 241, 0.4) !important;">
+                        <span class="material-icons text-primary fs-3xl">cloud_upload</span>
+                        <div>
+                            <div class="fs-sm fw-600">roster_export_july.csv</div>
+                            <div class="fs-xs text-secondary mt-1">12.4 KB • Ready to map</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Slide 2: Column Mapping -->
+                <div class="onboarding-slide" id="onboarding-slide-2">
+                    <div class="d-flex flex-column gap-2" style="min-height: 200px;">
+                        <div class="d-flex align-items-center justify-content-between p-2 rounded-md bg-input border fs-xs">
+                            <span class="text-muted">first_name</span>
+                            <span class="material-icons fs-sm text-primary">arrow_forward</span>
+                            <span class="text-primary fw-600">First Name</span>
+                        </div>
+                        <div class="d-flex align-items-center justify-content-between p-2 rounded-md bg-input border fs-xs">
+                            <span class="text-muted">last_name</span>
+                            <span class="material-icons fs-sm text-primary">arrow_forward</span>
+                            <span class="text-primary fw-600">Last Name</span>
+                        </div>
+                        <div class="d-flex align-items-center justify-content-between p-2 rounded-md bg-input border fs-xs">
+                            <span class="text-muted">emp_id</span>
+                            <span class="material-icons fs-sm text-primary">arrow_forward</span>
+                            <span class="text-primary fw-600">Student ID</span>
+                        </div>
+                        <div class="d-flex align-items-center justify-content-between p-2 rounded-md bg-input border fs-xs">
+                            <span class="text-muted">dept</span>
+                            <span class="material-icons fs-sm text-primary">arrow_forward</span>
+                            <span class="text-primary fw-600">Department</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Slide 3: Validation -->
+                <div class="onboarding-slide" id="onboarding-slide-3">
+                    <div class="d-flex flex-column gap-2" style="min-height: 200px;">
+                        <div class="p-2 rounded-md border fs-xs d-flex align-items-center gap-2" style="background: rgba(16,185,129,0.08); border-color: rgba(16,185,129,0.3) !important;">
+                            <span class="material-icons text-success fs-sm">check_circle</span>
+                            <span>John Doe — <span class="text-success fw-600">Valid</span></span>
+                        </div>
+                        <div class="p-2 rounded-md border fs-xs d-flex align-items-center gap-2" style="background: rgba(16,185,129,0.08); border-color: rgba(16,185,129,0.3) !important;">
+                            <span class="material-icons text-success fs-sm">check_circle</span>
+                            <span>Jane Smith — <span class="text-success fw-600">Valid</span></span>
+                        </div>
+                        <div class="p-2 rounded-md border fs-xs d-flex align-items-center gap-2" style="background: rgba(245,158,11,0.08); border-color: rgba(245,158,11,0.3) !important;">
+                            <span class="material-icons text-warning fs-sm">warning</span>
+                            <span>Bob J. — <span class="text-warning fw-600">Duplicate PIN</span></span>
+                        </div>
+                        <div class="p-2 rounded-md border fs-xs d-flex align-items-center gap-2" style="background: rgba(16,185,129,0.08); border-color: rgba(16,185,129,0.3) !important;">
+                            <span class="material-icons text-success fs-sm">check_circle</span>
+                            <span>Sara M. — <span class="text-success fw-600">Valid</span></span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Slide 4: Quota Check -->
+                <div class="onboarding-slide" id="onboarding-slide-4">
+                    <div class="d-flex flex-column gap-3" style="min-height: 200px;">
+                        <div class="d-flex justify-content-between align-items-center fs-xs border-b" style="padding-bottom: 0.5rem;">
+                            <span class="text-secondary">Plan limit</span>
+                            <span class="fw-700">200 students</span>
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center fs-xs border-b" style="padding-bottom: 0.5rem;">
+                            <span class="text-secondary">Currently enrolled</span>
+                            <span class="fw-700">48 students</span>
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center fs-xs border-b" style="padding-bottom: 0.5rem;">
+                            <span class="text-secondary">Importing</span>
+                            <span class="fw-700 text-primary">87 students</span>
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center fs-xs">
+                            <span class="text-secondary">Remaining after import</span>
+                            <span class="fw-700 text-success">65 slots free</span>
+                        </div>
+                        <div class="p-2 rounded-md fs-xs text-center fw-600 text-success" style="background: rgba(16,185,129,0.1); border: 1px solid rgba(16,185,129,0.3);">✓ Within plan quota</div>
+                    </div>
+                </div>
+
+                <!-- Slide 5: Complete -->
+                <div class="onboarding-slide" id="onboarding-slide-5">
+                    <div class="p-6 rounded-md text-center d-flex flex-column align-items-center justify-content-center gap-3" style="min-height: 200px; background: rgba(16,185,129,0.07); border: 1px solid rgba(16,185,129,0.3);">
+                        <span class="material-icons text-success" style="font-size: 3rem;">done_all</span>
+                        <div>
+                            <div class="fs-md fw-800 text-success">87 Students Imported</div>
+                            <div class="fs-xs text-secondary mt-1">Onboarding complete • Ready for check-in</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Step dots -->
+                <div class="d-flex align-items-center justify-content-between mt-4" style="padding-top: 1rem; border-top: 1px solid var(--border-color);">
+                    <div class="d-flex gap-1" id="onboarding-dots">
+                        <div class="dot active" onclick="window.setOnboardingStep(1, true)"></div>
+                        <div class="dot" onclick="window.setOnboardingStep(2, true)"></div>
+                        <div class="dot" onclick="window.setOnboardingStep(3, true)"></div>
+                        <div class="dot" onclick="window.setOnboardingStep(4, true)"></div>
+                        <div class="dot" onclick="window.setOnboardingStep(5, true)"></div>
+                    </div>
+                    <span class="fs-xs text-muted" id="autoplay-indicator" style="letter-spacing: 0.05em;">AUTOPLAY</span>
+                </div>
+            </div>
+
+            <div class="d-flex flex-column gap-6">
+                <div>
+                    <h3 class="fs-2xl mb-2">Import, Reconcile, and Deploy in Minutes</h3>
+                    <p class="fs-md text-secondary lh-base">
+                        Managers can upload roster lists containing thousands of student records. Our onboarding wizard validates data integrity dynamically to keep you within plan parameters.
+                    </p>
+                </div>
+                <div class="d-flex flex-column gap-3">
+                    <div class="d-flex align-items-start gap-3">
+                        <span class="material-icons text-primary mt-1">tune</span>
+                        <div>
+                            <div class="fs-sm fw-600">Intelligent Column Mapping</div>
+                            <div class="fs-xs text-secondary mt-1">Fuzzy-match your CSV headers to CenterTime fields automatically.</div>
+                        </div>
+                    </div>
+                    <div class="d-flex align-items-start gap-3">
+                        <span class="material-icons text-primary mt-1">verified</span>
+                        <div>
+                            <div class="fs-sm fw-600">Live Validation & Quota Checks</div>
+                            <div class="fs-xs text-secondary mt-1">Duplicate PIN detection, plan limit enforcement, and data integrity checks run before import.</div>
+                        </div>
+                    </div>
+                    <div class="d-flex align-items-start gap-3">
+                        <span class="material-icons text-primary mt-1">bolt</span>
+                        <div>
+                            <div class="fs-sm fw-600">Instant Activation</div>
+                            <div class="fs-xs text-secondary mt-1">Imported students are immediately active for kiosk check-in with no additional setup.</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Avery QR Code Badge Print Layout Templates -->
+    <section class="d-flex flex-column gap-12 mt-12 mb-16 reveal-scale">
+        <div class="text-center">
+            <h2 class="fs-3xl">Avery® QR Code <span class="text-gradient">Print Layouts</span></h2>
+            <p class="fs-lg text-secondary mt-2 ml-auto mr-auto max-w-700">
+                Generate and print physical student ID sticker badges instantly using industry-standard Avery® label templates.
+            </p>
+        </div>
+
+        <div class="grid-cols-2 gap-8 align-items-stretch">
+            <div class="glass-panel p-8 d-flex flex-column gap-4">
+                <div>
+                    <h3 class="fs-xl mb-3">Supported Standard Dimensions</h3>
+                    <p class="fs-md text-secondary lh-base mb-4">
+                        CenterTime integrates directly with the most common sticker sheet alignments to make badge deployment instant. Managers can select from three layouts on print generation:
+                    </p>
+                </div>
+                <div class="d-flex flex-column gap-3">
+                    <div class="d-flex align-items-center gap-3 p-3 rounded-md" style="background: rgba(255,255,255,0.03); border: 1px solid var(--border-color);">
+                        <span class="material-icons text-primary fs-xl">grid_view</span>
+                        <div>
+                            <div class="fs-sm fw-600">Avery L7156 Layout (Small)</div>
+                            <div class="fs-xs text-secondary">45 labels per page • 64mm x 18.5mm dimensions</div>
+                        </div>
+                    </div>
+
+                    <div class="d-flex align-items-center gap-3 p-3 rounded-md" style="background: rgba(255,255,255,0.03); border: 1px solid var(--border-color);">
+                        <span class="material-icons text-success fs-xl">grid_view</span>
+                        <div>
+                            <div class="fs-sm fw-600">Avery 5160 Layout (Medium)</div>
+                            <div class="fs-xs text-secondary">30 labels per page • 2.625" x 1.0" dimensions</div>
+                        </div>
+                    </div>
+
+                    <div class="d-flex align-items-center gap-3 p-3 rounded-md" style="background: rgba(255,255,255,0.03); border: 1px solid var(--border-color);">
+                        <span class="material-icons text-warning fs-xl">grid_view</span>
+                        <div>
+                            <div class="fs-sm fw-600">Avery 6572 Layout (Large)</div>
+                            <div class="fs-xs text-secondary">15 labels per page • 2.625" x 2.0" dimensions</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="glass-panel p-8 d-flex flex-column justify-content-between">
+                <div>
+                    <h3 class="fs-xl mb-4">Advantages of QR Code Scanner Kiosks</h3>
+                    <div class="d-flex flex-column gap-4">
+                        <div class="d-flex align-items-start gap-3">
+                            <span class="material-icons text-success mt-0.5">check_circle</span>
+                            <div>
+                                <div class="fs-sm fw-600">Zero-Touch Quick Check-In</div>
+                                <div class="fs-xs text-secondary mt-0.5">Students simply hold their printed sticker badge in front of the kiosk webcam scanner to check in within 500ms.</div>
+                            </div>
+                        </div>
+                        <div class="d-flex align-items-start gap-3">
+                            <span class="material-icons text-success mt-0.5">check_circle</span>
+                            <div>
+                                <div class="fs-sm fw-600">Cost-Effective Attendance Badge</div>
+                                <div class="fs-xs text-secondary mt-0.5">No expensive scanning hardware needed. Prints directly on low-cost sticker sheets with standard office laser/inkjet printers.</div>
+                            </div>
+                        </div>
+                        <div class="d-flex align-items-start gap-3">
+                            <span class="material-icons text-success mt-0.5">check_circle</span>
+                            <div>
+                                <div class="fs-sm fw-600">Buddy-Punching Prevention</div>
+                                <div class="fs-xs text-secondary mt-0.5">Requires physical badge presence, preventing students from guessing PIN codes or performing proxy check-ins.</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="border-t pt-4 mt-6 text-center">
+                    <span class="fs-xs text-muted">Supports standard webcams and USB QR scanner devices.</span>
+                </div>
+            </div>
+        </div>
+    </section>
+{% endblock %}
+
+{% block javascripts %}
+    {{ parent() }}
+    <script>
+        // Onboarding Steps Cycler
+        const onboardingSteps = [
+            { title: "Upload Roster CSV", icon: "upload_file", badge: "Step 1 of 5" },
+            { title: "CSV Header Mapping", icon: "view_week", badge: "Step 2 of 5" },
+            { title: "Fuzzy Matching Checks", icon: "rule", badge: "Step 3 of 5" },
+            { title: "License Quota Check", icon: "verified", badge: "Step 4 of 5" },
+            { title: "Onboarding Complete", icon: "done_all", badge: "Step 5 of 5" }
+        ];
+
+        let currentOnboardingStep = 1;
+        let onboardingInterval = null;
+
+        window.setOnboardingStep = function(stepNum, manual = false) {
+            if (manual && onboardingInterval) {
+                clearInterval(onboardingInterval);
+                const indicator = document.getElementById('autoplay-indicator');
+                if (indicator) {
+                    indicator.textContent = "PAUSED";
+                    indicator.style.color = "var(--warning)";
+                }
+            }
+            currentOnboardingStep = stepNum;
+            
+            // Update slides
+            document.querySelectorAll('.onboarding-slide').forEach(slide => {
+                slide.classList.remove('active');
+            });
+            const activeSlide = document.getElementById(`onboarding-slide-${stepNum}`);
+            if (activeSlide) {
+                activeSlide.classList.add('active');
+            }
+
+            // Update dots
+            const dots = document.querySelectorAll('#onboarding-dots .dot');
+            dots.forEach((dot, idx) => {
+                if (idx === (stepNum - 1)) {
+                    dot.classList.add('active');
+                } else {
+                    dot.classList.remove('active');
+                }
+            });
+
+            // Update titles / badges
+            const info = onboardingSteps[stepNum - 1];
+            document.getElementById('onboarding-step-icon').textContent = info.icon;
+            document.getElementById('onboarding-step-title').textContent = info.title;
+            document.getElementById('onboarding-step-badge').textContent = info.badge;
+        };
+
+        function startOnboardingCycle() {
+            onboardingInterval = setInterval(() => {
+                let nextStep = currentOnboardingStep + 1;
+                if (nextStep > 5) {
+                    nextStep = 1;
+                }
+                window.setOnboardingStep(nextStep);
+            }, 3500);
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            startOnboardingCycle();
+        });
+    </script>
+{% endblock %}

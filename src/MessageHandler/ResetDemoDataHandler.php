@@ -53,10 +53,8 @@ class ResetDemoDataHandler
      */
     private \App\Service\SystemAuditLogger $auditLogger;
 
-    /**
-     * @var \App\Service\AppConfigService Handles platform configurations
-     */
     private \App\Service\AppConfigService $configService;
+    private \Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface $passwordHasher;
 
     public function __construct(
         EntityManagerInterface $em,
@@ -65,7 +63,8 @@ class ResetDemoDataHandler
         PinService $pinService,
         LicenseService $licenseService,
         \App\Service\SystemAuditLogger $auditLogger,
-        \App\Service\AppConfigService $configService
+        \App\Service\AppConfigService $configService,
+        \Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface $passwordHasher
     ) {
         $this->em = $em;
         $this->messageBus = $messageBus;
@@ -74,6 +73,7 @@ class ResetDemoDataHandler
         $this->licenseService = $licenseService;
         $this->auditLogger = $auditLogger;
         $this->configService = $configService;
+        $this->passwordHasher = $passwordHasher;
     }
 
     /**
@@ -146,13 +146,14 @@ class ResetDemoDataHandler
 
         $bMgrConf = $basicConf['manager'] ?? [];
         $bManager = new Manager();
-        $bManager->setEmail($bMgrConf['email'] ?? 'basic@platform.com');
+        $bManager->setEmail($bMgrConf['email'] ?? 'basic@centertime.us');
         $bManager->setFirstName($bMgrConf['first_name'] ?? 'Basic');
         $bManager->setLastName($bMgrConf['last_name'] ?? 'Manager');
         $bManager->setRole('ROLE_ORG_MANAGER');
         $bManager->setOrganization($bOrg);
         $bManager->setIsActive(true);
-        $bManager->setPasswordHash($bMgrConf['password'] ?? 'temp_hash_b');
+        $bPass = $_ENV['SEED_MANAGER_PASSWORD'] ?? ($_SERVER['SEED_MANAGER_PASSWORD'] ?? 'dummy123');
+        $bManager->setPasswordHash($this->passwordHasher->hashPassword($bManager, $bPass));
         $this->em->persist($bManager);
 
         $bCatConf = $basicConf['category'] ?? [];
@@ -184,13 +185,14 @@ class ResetDemoDataHandler
 
         $gMgrConf = $goldenConf['manager'] ?? [];
         $gManager = new Manager();
-        $gManager->setEmail($gMgrConf['email'] ?? 'golden@platform.com');
+        $gManager->setEmail($gMgrConf['email'] ?? 'golden@centertime.us');
         $gManager->setFirstName($gMgrConf['first_name'] ?? 'Golden');
         $gManager->setLastName($gMgrConf['last_name'] ?? 'Manager');
         $gManager->setRole('ROLE_ORG_MANAGER');
         $gManager->setOrganization($gOrg);
         $gManager->setIsActive(true);
-        $gManager->setPasswordHash($gMgrConf['password'] ?? 'temp_hash_g');
+        $gPass = $_ENV['SEED_MANAGER_PASSWORD'] ?? ($_SERVER['SEED_MANAGER_PASSWORD'] ?? 'dummy123');
+        $gManager->setPasswordHash($this->passwordHasher->hashPassword($gManager, $gPass));
         $this->em->persist($gManager);
 
         $gCatConf = $goldenConf['category'] ?? [];

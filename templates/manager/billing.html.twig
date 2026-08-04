@@ -14,12 +14,8 @@
             <div class="billing-header">
                 <div>
                     <h3 class="fs-xl m-0">Subscription Overview</h3>
-                    <p class="fs-sm text-secondary mt-1">
-                        {% if org.stripeCustomerId %}
-                            Stripe reference ID: <code class="text-break" style="word-break: break-all;">{{ org.stripeCustomerId }}</code>
-                        {% else %}
-                            Stripe reference ID: <code class="text-break" style="word-break: break-all;">cus_StripeMockTenant_{{ org.id }}</code>
-                        {% endif %}
+                    <p class="fs-sm text-secondary mt-1 m-0">
+                        Manage your active plan, view upcoming charges, or switch subscription tiers.
                     </p>
                 </div>
                 <div class="d-flex flex-column align-items-end gap-2 billing-header-actions">
@@ -29,19 +25,31 @@
                     </span>
                     {% if org.stripeCustomerId %}
                         <a href="{{ path('app_stripe_portal') }}" class="btn btn-xs btn-outline-primary d-flex align-items-center gap-1">
-                            <span class="material-icons" style="font-size:12px">open_in_new</span> Stripe Billing Portal
+                            <span class="material-icons" style="font-size:12px">open_in_new</span> Billing Portal
                         </a>
                     {% endif %}
                 </div>
             </div>
 
-            <div class="billing-stats-grid mb-8 pt-6 border-t">
+            {% if org.pendingPlan %}
+                <div class="mt-4 p-4 rounded-md d-flex align-items-center gap-3" style="background: rgba(245, 158, 11, 0.1); border: 1px solid rgba(245, 158, 11, 0.3);">
+                    <span class="material-icons text-warning fs-xl">schedule</span>
+                    <div>
+                        <strong class="text-warning">Plan Change Scheduled:</strong>
+                        <span class="fs-sm text-secondary">
+                            Currently active on <strong>{{ org.plan.name|upper }} Plan</strong>. Your account is scheduled to transition to the <strong>{{ org.pendingPlan.name|upper }} Plan</strong> on <strong>{{ org.pendingPlanEffectiveAt|date('M d, Y', org.timezone|default('UTC')) }}</strong>.
+                        </span>
+                    </div>
+                </div>
+            {% endif %}
+
+            <div class="billing-stats-grid mb-6 pt-6 border-t">
                 <div>
                     <div class="fs-sm text-uppercase text-muted">Subscription Status</div>
                     <div class="fs-lg fw-700 d-flex align-items-center gap-1 mt-1">
                         {% if org.isSubscriptionActive %}
                             <span class="material-icons fs-xl text-success">check_circle</span>
-                            <span class="text-success">Active & Paid</span>
+                            <span class="text-success">Active &amp; Paid</span>
                         {% else %}
                             <span class="material-icons fs-xl text-danger">error</span>
                             <span class="text-danger">Suspended</span>
@@ -51,8 +59,10 @@
                 <div>
                     <div class="fs-sm text-uppercase text-muted">Next Invoice Date</div>
                     <div class="fs-lg fw-700 text-white mt-1">
-                        {% if payments|length > 0 %}
-                            {{ payments[0].periodEnd|date("M d, Y") }}
+                        {% if org.pendingPlanEffectiveAt %}
+                            {{ org.pendingPlanEffectiveAt|date("M d, Y", org.timezone|default('UTC')) }}
+                        {% elseif payments|length > 0 and org.plan.name != 'basic' %}
+                            {{ payments[0].periodEnd|date("M d, Y", org.timezone|default('UTC')) }}
                         {% else %}
                             --
                         {% endif %}
@@ -61,8 +71,10 @@
                 <div>
                     <div class="fs-sm text-uppercase text-muted">Upcoming Bill</div>
                     <div class="fs-lg fw-700 text-purple-300 mt-1">
-                        {% if org.plan.name != 'basic' %}
-                            ${{ org.plan.priceMonthly|round }}
+                        {% if org.pendingPlan %}
+                            {% if org.pendingPlan.name != 'basic' %}${{ org.pendingPlan.priceMonthly|round }}<span class="fs-xs text-muted">/mo (Starting {{ org.pendingPlanEffectiveAt|date('M d', org.timezone|default('UTC')) }})</span>{% else %}$0 (Basic Plan){% endif %}
+                        {% elseif org.plan.name != 'basic' %}
+                            ${{ org.plan.priceMonthly|round }}<span class="fs-xs text-muted">/mo</span>
                         {% else %}
                             $0 (Free Plan)
                         {% endif %}
@@ -70,74 +82,165 @@
                 </div>
             </div>
 
-            <!-- Subscription Actions -->
-            <div class="text-uppercase text-muted d-flex align-items-center gap-1 pt-4 pb-3 fs-xs border-t tracking-wide fw-600">
-                <span class="material-icons fs-sm text-primary">card_membership</span> Available Subscription Plans
+            <!-- Toggle Plan Comparison Button -->
+            <div class="border-t pt-4">
+                <button type="button" class="btn btn-primary btn-sm d-inline-flex align-items-center gap-2" id="toggle-comparison-btn" onclick="togglePlanComparison()">
+                    <span class="material-icons fs-md">swap_horiz</span>
+                    <span id="comparison-btn-text">Change Subscription Plan</span>
+                </button>
             </div>
-            <div class="d-flex flex-column gap-3">
+        </div>
+
+        <!-- Collapsible Plan Comparison View (Populated from DB) -->
+        <div id="plan-comparison-section" class="glass-panel p-6 d-none">
+            <div class="d-flex align-items-center justify-content-between mb-6 pb-4 border-b">
+                <div>
+                    <h3 class="fs-xl m-0 d-flex align-items-center gap-2">
+                        <span class="material-icons text-primary">card_membership</span> Compare &amp; Choose Your Plan
+                    </h3>
+                    <p class="fs-sm text-secondary mt-1 m-0">Select a plan to upgrade or switch your organization's subscription tier.</p>
+                </div>
+                <button type="button" class="btn btn-xs btn-secondary" onclick="togglePlanComparison()">
+                    <span class="material-icons fs-sm">close</span> Close
+                </button>
+            </div>
+
+            <div class="grid-cols-2 gap-4">
                 {% for p in plans %}
                     {% set pName = p.name|lower %}
                     {% set isCurrent = (org.plan.name|lower == pName) %}
-                    {% if pName == 'basic' %}
-                        <form method="post" class="w-100 m-0">
-                            <input type="hidden" name="plan" value="basic">
-                            <input type="hidden" name="billing_action" value="downgrade">
-                            <button type="submit" class="btn btn-metal-basic btn-sm w-100 d-flex align-items-center justify-content-center py-2" {% if isCurrent %}disabled style="opacity: 0.6;"{% endif %}>
-                                {% if isCurrent %}Current Plan — Basic (Free){% else %}Downgrade to Basic (Free){% endif %}
-                            </button>
-                        </form>
-                    {% else %}
-                        <a href="{{ path('app_stripe_checkout', {planName: p.name}) }}" 
-                           class="btn btn-metal-{{ pName }} btn-sm w-100 d-flex align-items-center justify-content-center py-2"
-                           {% if isCurrent %}style="opacity: 0.6; pointer-events: none;"{% endif %}>
-                            {% if isCurrent %}Current Plan — {{ p.name|capitalize }} (${{ p.priceMonthly|round }}/mo){% else %}Upgrade to {{ p.name|capitalize }} (${{ p.priceMonthly|round }}/mo){% endif %}
-                        </a>
-                    {% endif %}
+                    <div class="p-5 rounded-md border d-flex flex-column justify-content-between" style="background: var(--bg-card); border-color: {% if isCurrent %}var(--primary){% else %}var(--border-color){% endif %};">
+                        <div>
+                            <div class="d-flex align-items-center justify-content-between mb-2">
+                                <h4 class="fs-lg fw-800 text-uppercase text-primary m-0">{{ p.name }}</h4>
+                                {% if isCurrent %}
+                                    <span class="badge badge-success fs-xs">Current Plan</span>
+                                {% endif %}
+                            </div>
+
+                            <div class="fs-2xl fw-800 mb-4">
+                                {% if p.priceMonthly == 0 %}
+                                    Free
+                                {% else %}
+                                    ${{ p.priceMonthly|round }}<span class="fs-xs text-muted">/mo</span>
+                                {% endif %}
+                            </div>
+
+                            <ul class="fs-xs text-secondary d-flex flex-column gap-2 mb-6" style="list-style: none; padding-left: 0;">
+                                <li class="d-flex align-items-center gap-2">
+                                    <span class="material-icons text-success fs-sm">check</span>
+                                    <span>Up to <strong>{{ p.maxOrgUsers|number_format }}</strong> active employees</span>
+                                </li>
+                                <li class="d-flex align-items-center gap-2">
+                                    <span class="material-icons text-success fs-sm">check</span>
+                                    <span>{% if p.maxManagers >= 9999 %}Unlimited{% else %}{{ p.maxManagers }}{% endif %} Manager seats</span>
+                                </li>
+                                <li class="d-flex align-items-center gap-2">
+                                    <span class="material-icons text-success fs-sm">check</span>
+                                    <span>{{ p.sessionLimitHours }}h max shift duration</span>
+                                </li>
+                                <li class="d-flex align-items-center gap-2">
+                                    <span class="material-icons text-success fs-sm">check</span>
+                                    <span>{{ p.retentionDays }} days log history retention</span>
+                                </li>
+                                <li class="d-flex align-items-center gap-2">
+                                    {% if p.hasSecureKiosk %}
+                                        <span class="material-icons text-success fs-sm">check</span>
+                                        <span>Secure PIN Keypad Kiosk</span>
+                                    {% else %}
+                                        <span class="material-icons text-warning fs-sm">info</span>
+                                        <span>Open Select Kiosk mode</span>
+                                    {% endif %}
+                                </li>
+                                <li class="d-flex align-items-center gap-2">
+                                    {% if p.exportsEnabled %}
+                                        <span class="material-icons text-success fs-sm">check</span>
+                                        <span>Excel / CSV Exports enabled</span>
+                                    {% else %}
+                                        <span class="material-icons text-secondary fs-sm" style="opacity:0.4">cancel</span>
+                                        <span class="text-muted">No spreadsheet data exports</span>
+                                    {% endif %}
+                                </li>
+                            </ul>
+                        </div>
+
+                        <div>
+                            {% if isCurrent %}
+                                <button type="button" class="btn btn-secondary btn-sm w-100" disabled style="opacity: 0.6;">Current Active Plan</button>
+                            {% elseif pName == 'basic' %}
+                                <form method="post" class="w-100 m-0" onsubmit="return confirm('Are you sure you want to cancel your paid subscription and downgrade to the Basic (Free) plan?');">
+                                    <input type="hidden" name="plan" value="basic">
+                                    <button type="submit" class="btn btn-secondary btn-sm w-100">Downgrade to Basic (Free)</button>
+                                </form>
+                            {% else %}
+                                <a href="{{ path('app_stripe_checkout', {planName: p.name}) }}" class="btn btn-primary btn-sm w-100 d-flex align-items-center justify-content-center gap-1">
+                                    <span>Select {{ p.name|capitalize }} (${{ p.priceMonthly|round }}/mo)</span>
+                                    <span class="material-icons fs-sm">arrow_forward</span>
+                                </a>
+                            {% endif %}
+                        </div>
+                    </div>
                 {% endfor %}
             </div>
         </div>
 
-        <!-- Invoices list -->
+        <!-- Invoices & Payment History list -->
         <div class="glass-panel p-6">
-            <h3 class="fs-lg mb-5">Payment History</h3>
+            <h3 class="fs-lg mb-5 d-flex align-items-center gap-2">
+                <span class="material-icons text-primary">receipt_long</span> Payment History &amp; Receipts
+            </h3>
             
             <div class="table-responsive">
                 <table class="table fs-sm">
                     <thead>
                         <tr>
-                            <th>Invoice ID</th>
+                            <th>Description / Note</th>
                             <th>Amount</th>
                             <th>Billing Period</th>
-                            <th>Paid At</th>
+                            <th>Date</th>
                             <th>Status</th>
-                            <th>Action</th>
+                            <th>Receipt</th>
                         </tr>
                     </thead>
                     <tbody>
                         {% for pay in payments %}
                             <tr>
-                                <td class="text-primary font-mono text-break" style="word-break: break-all;">{{ pay.stripeInvoiceId }}</td>
+                                <td class="fw-600 text-primary">
+                                    {{ pay.description|default(org.plan.name|capitalize ~ ' Subscription Payment') }}
+                                </td>
                                 <td class="fw-700 text-white">${{ pay.amount }}</td>
-                                <td>{{ pay.periodStart|date('M d, Y') }} - {{ pay.periodEnd|date('M d, Y') }}</td>
+                                <td>
+                                    {% if pay.periodStart and pay.periodEnd and pay.amount != '0.00' %}
+                                        {{ pay.periodStart|date('M d, Y') }} - {{ pay.periodEnd|date('M d, Y') }}
+                                    {% else %}
+                                        --
+                                    {% endif %}
+                                </td>
                                 <td>{{ pay.paidAt|date('M d, Y, h:i A') }}</td>
                                 <td>
-                                    <span class="badge badge-success">{{ pay.status }}</span>
+                                    {% if pay.status == 'paid' %}
+                                        <span class="badge badge-success">Paid</span>
+                                    {% elseif pay.status == 'cancelled' %}
+                                        <span class="badge badge-warning">Cancelled</span>
+                                    {% else %}
+                                        <span class="badge badge-danger">{{ pay.status|capitalize }}</span>
+                                    {% endif %}
                                 </td>
                                 <td>
-                                    {% if org.stripeCustomerId and not (pay.stripeInvoiceId starts with 'sub_') %}
-                                        <a href="{{ path('app_stripe_portal') }}" class="btn btn-xs btn-outline-secondary">
-                                            View Receipt
+                                    {% if org.stripeCustomerId and not (pay.stripeInvoiceId starts with 'cancel_') and not (pay.stripeInvoiceId starts with 'sub_') %}
+                                        <a href="{{ path('app_stripe_portal') }}" class="btn btn-xs btn-outline-secondary d-inline-flex align-items-center gap-1">
+                                            <span class="material-icons" style="font-size: 11px;">open_in_new</span> Receipt
                                         </a>
                                     {% else %}
-                                        <span class="text-muted fs-xs">Mock Record</span>
+                                        <span class="text-muted fs-xs">System Note</span>
                                     {% endif %}
                                 </td>
                             </tr>
                         {% else %}
                             <tr>
-                                <td colspan="5" class="text-center text-muted p-8" >
-                                    <span class="material-icons mb-0" style="font-size: 2.5rem; .5rem">receipt</span>
-                                    <p class="fs-sm">No payments registered. (Basic Free plan doesn't trigger invoices).</p>
+                                <td colspan="6" class="text-center text-muted p-8">
+                                    <span class="material-icons mb-2" style="font-size: 2.5rem; opacity: 0.4;">receipt</span>
+                                    <p class="fs-sm m-0">No payment history entries recorded yet.</p>
                                 </td>
                             </tr>
                         {% endfor %}
@@ -174,15 +277,27 @@
                 </form>
             {% endif %}
             
-            <div class="fs-xs text-muted mt-0 border-t" style="padding-top:1rem; .5rem">
-                <strong>Dunning Escalation workflow:</strong><br>
-                1. Stripe payment fails.<br>
-                2. Webhook triggers suspension.<br>
-                3. Features disable automatically.<br>
-                4. Organization metrics retain history but cannot check in/out.
+            <div class="fs-xs text-muted mt-2 border-t pt-4">
+                <strong>Billing Lifecycle:</strong><br>
+                • Paid plan signup → Redirect to Stripe Checkout<br>
+                • Payment completed → Webhook sets plan &amp; logs invoice<br>
+                • Downgrade → Cancels Stripe sub &amp; notifies manager
             </div>
         </div>
-    </div>
 
 </div>
+
+<script>
+    function togglePlanComparison() {
+        const section = document.getElementById('plan-comparison-section');
+        const btnText = document.getElementById('comparison-btn-text');
+        if (section.classList.contains('d-none')) {
+            section.classList.remove('d-none');
+            btnText.textContent = 'Hide Plan Options';
+        } else {
+            section.classList.add('d-none');
+            btnText.textContent = 'Change Subscription Plan';
+        }
+    }
+</script>
 {% endblock %}

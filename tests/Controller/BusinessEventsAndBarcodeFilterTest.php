@@ -133,7 +133,7 @@ class BusinessEventsAndBarcodeFilterTest extends WebTestCase
 
         // Restore org name to prevent test database contamination
         $testEm = static::getContainer()->get(EntityManagerInterface::class);
-        $testOrg = $testEm->getRepository(Organization::class)->find(1);
+        $testOrg = $testEm->getRepository(Organization::class)->findOneBy(['slug' => 'acme-corp']);
         if ($testOrg) {
             $testOrg->setName('Acme Corporation');
             $testEm->flush();

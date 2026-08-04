@@ -35,6 +35,8 @@ security:
         - { path: ^/manager, roles: ROLE_ORG_MANAGER }
         - { path: ^/login$, roles: PUBLIC_ACCESS }
         - { path: ^/signup$, roles: PUBLIC_ACCESS }
+        - { path: ^/cron/, roles: PUBLIC_ACCESS }
+        - { path: ^/webhooks/, roles: PUBLIC_ACCESS }
         - { path: ^/org/, roles: PUBLIC_ACCESS }
         - { path: ^/$, roles: PUBLIC_ACCESS }
 

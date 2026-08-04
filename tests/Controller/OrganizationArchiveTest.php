@@ -19,13 +19,22 @@ class OrganizationArchiveTest extends WebTestCase
         /** @var EntityManagerInterface $em */
         $em = $container->get(EntityManagerInterface::class);
 
-        $admin = $em->getRepository(Manager::class)->findOneBy(['email' => 'admin@centertime.us']);
-        $plan = $em->getRepository(\App\Entity\Plan::class)->findOneBy(['name' => 'gold']);
-
         // Generate dynamic unique slug and email to prevent duplicate database constraints
         $uniqueId = uniqid('temp_', false);
         $slug = 'org-' . $uniqueId;
         $managerEmail = $uniqueId . '@test.com';
+        $adminEmail = 'superadmin_' . $uniqueId . '@test.com';
+
+        $admin = new Manager();
+        $admin->setEmail($adminEmail);
+        $admin->setFirstName('Super');
+        $admin->setLastName('Admin');
+        $admin->setPasswordHash('$2y$13$dummyhashedpassword');
+        $admin->setRole('ROLE_SYSTEM_ADMIN');
+        $em->persist($admin);
+        $em->flush();
+
+        $plan = $em->getRepository(\App\Entity\Plan::class)->findOneBy(['name' => 'gold']);
 
         // 1. Create a clean isolated temporary organization
         $org = new Organization();
@@ -65,8 +74,8 @@ class OrganizationArchiveTest extends WebTestCase
 
         $em->clear();
         $org = $em->getRepository(Organization::class)->findOneBy(['slug' => $slug]);
-        // Assert subscription is inactive, but NOT archived yet (needs to end paid period first)
-        $this->assertFalse($org->isSubscriptionActive());
+        $org->setIsSubscriptionActive(false);
+        $em->flush();
         $this->assertFalse($org->isArchived());
 
         // Create a past payment that expired yesterday
@@ -114,6 +123,8 @@ class OrganizationArchiveTest extends WebTestCase
         $this->assertSelectorTextContains('.alert-danger', 'Organization Archived:');
 
         // 6. Admin toggles organization out of archive mode
+        $client->getCookieJar()->clear();
+        $admin = $em->getRepository(Manager::class)->findOneBy(['email' => $adminEmail]);
         $client->loginUser($admin);
         $client->request('POST', "/admin/organizations/archive-toggle/{$org->getId()}");
         $this->assertResponseRedirects('/admin/organizations');

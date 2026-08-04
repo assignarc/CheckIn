@@ -171,10 +171,28 @@ class ManagerController extends AbstractController
             // ── Org Profile ──────────────────────────────────────────────
             if ($section === 'org_profile') {
                 $orgName = trim($request->request->get('org_name', ''));
-                $newPhone = $request->request->get('org_phone') ?: null;
-                $newAddress = $request->request->get('org_address') ?: null;
-                $newTimezone = $request->request->get('org_timezone') ?: null;
+                $newPhone = trim((string)$request->request->get('org_phone', '')) ?: null;
+                $newAddress = trim((string)$request->request->get('org_address', '')) ?: null;
+                $newTimezone = trim((string)$request->request->get('org_timezone', '')) ?: null;
                 $logoFile = $request->files->get('org_logo');
+
+                // Data Validations
+                if (empty($orgName) || mb_strlen($orgName) > 100) {
+                    $this->addFlash('danger', 'Organization name is required and must be 100 characters or fewer.');
+                    return $this->redirectToRoute('app_manager_settings');
+                }
+                if ($newAddress && mb_strlen($newAddress) > 255) {
+                    $this->addFlash('danger', 'Organization address must be 255 characters or fewer.');
+                    return $this->redirectToRoute('app_manager_settings');
+                }
+                if ($newPhone && mb_strlen($newPhone) > 30) {
+                    $this->addFlash('danger', 'Phone number must be 30 characters or fewer.');
+                    return $this->redirectToRoute('app_manager_settings');
+                }
+                if ($newTimezone && !in_array($newTimezone, \DateTimeZone::listIdentifiers(), true)) {
+                    $this->addFlash('danger', 'Invalid timezone specified.');
+                    return $this->redirectToRoute('app_manager_settings');
+                }
 
                 $changedFields = [];
                 if ($orgName && $org->getName() !== $orgName) {
@@ -1814,54 +1832,170 @@ class ManagerController extends AbstractController
     }
 
     #[Route('/billing', name: 'app_manager_billing', methods: ['GET', 'POST'])]
-    public function billing(Request $request, EntityManagerInterface $em): Response
+    public function billing(Request $request, EntityManagerInterface $em, \App\Service\EmailService $emailService): Response
     {
         /** @var Manager $manager */
         $manager = $this->getUser();
         $org = $manager->getOrganization();
 
-        // Simulated billing transitions
+        if ($request->query->get('checkout_success')) {
+            $this->logAudit($em, $org, 'STRIPE_CHECKOUT_SUCCESS', [
+                'customer_id' => $org->getStripeCustomerId()
+            ], $request);
+            $this->addFlash('success', 'Subscription checkout completed successfully! Your organization status will update automatically.');
+        } elseif ($request->query->get('checkout_cancelled')) {
+            // Revert to basic plan if checkout was cancelled
+            $basicPlan = $em->getRepository(\App\Entity\Plan::class)->findOneBy(['name' => 'basic']);
+            if ($basicPlan) {
+                $org->setPlan($basicPlan);
+                $org->clearOverrides();
+                $org->setIsSubscriptionActive(true);
+                $em->flush();
+            }
+            $this->logAudit($em, $org, 'STRIPE_CHECKOUT_CANCELLED', [
+                'reverted_to' => 'basic'
+            ], $request);
+            $this->addFlash('warning', 'Payment setup could not be completed with Stripe. Your organization has been set up with the Basic (Free) plan.');
+        }
+
+        // Handle plan changes submitted via POST
         if ($request->isMethod('POST')) {
-            $newPlan = $request->request->get('plan');
-            $action = $request->request->get('billing_action'); // upgrade, downgrade, fail_payment, restore_payment
+            $targetPlanName = strtolower((string) $request->request->get('plan'));
+            $targetPlan = $em->getRepository(\App\Entity\Plan::class)->findOneBy(['name' => $targetPlanName]);
+            $currentPlan = $org->getPlan();
+            $stripeSecret = $this->getParameter('stripe_secret_key');
 
-            if ($action === 'fail_payment') {
-                $org->setIsSubscriptionActive(false);
-                $this->addFlash('danger', 'Simulated: Stripe renewal payment failed. Premium features have been locked.');
-            } elseif ($action === 'restore_payment') {
-                $org->setIsSubscriptionActive(true);
-                $this->addFlash('success', 'Simulated: Stripe payment processed. Subscription restored.');
-            } else {
-                $planEntity = $em->getRepository(\App\Entity\Plan::class)->findOneBy(['name' => $newPlan]);
-                if ($planEntity) {
-                    $org->setPlan($planEntity);
-                    $org->clearOverrides();
-                }
-                $org->setIsSubscriptionActive(true);
-
-                // Add payment record for simulated upgrade
-                $payment = new PaymentHistory();
-                $payment->setOrganization($org);
-                $payment->setStripeInvoiceId('sub_' . bin2hex(random_bytes(8)));
-                $payment->setAmount(number_format($planEntity ? $planEntity->getPriceMonthly() : 0.00, 2, '.', ''));
-                $payment->setStatus('paid');
-                $payment->setPaidAt(new \DateTime());
-                $payment->setPeriodStart(new \DateTime());
-                $payment->setPeriodEnd(new \DateTime('+1 month'));
-                $em->persist($payment);
-
-                if ($newPlan === 'basic') {
-                    $org->setAccessMode('open');
-                }
-
-                $this->addFlash('success', "Subscription successfully updated to plan: " . ucfirst($newPlan));
+            if (!$targetPlan || $targetPlan->getName() === $currentPlan->getName()) {
+                return $this->redirectToRoute('app_manager_billing');
             }
 
-            $org->setUpdatedAt(new \DateTimeImmutable());
-            $em->flush();
+            // Case 2: Paid -> Basic (Period-End Cancellation)
+            if ($targetPlan->getName() === 'basic') {
+                $periodEnd = new \DateTime('+1 month');
+                $scheduledAtPeriodEnd = false;
 
-            $this->logAudit($em, $org, 'PLAN_UPGRADE', ['plan' => $org->getPlan()->getName(), 'action' => $action], $request);
-            return $this->redirectToRoute('app_manager_billing');
+                if ($org->getStripeSubscriptionId() && !str_contains($stripeSecret, 'placeholder')) {
+                    try {
+                        \Stripe\Stripe::setApiKey($stripeSecret);
+                        $stripeSub = \Stripe\Subscription::retrieve($org->getStripeSubscriptionId());
+                        \Stripe\Subscription::update($org->getStripeSubscriptionId(), [
+                            'cancel_at_period_end' => true
+                        ]);
+                        if (isset($stripeSub->current_period_end)) {
+                            $periodEnd = (new \DateTime())->setTimestamp($stripeSub->current_period_end);
+                        }
+                        $scheduledAtPeriodEnd = true;
+                    } catch (\Throwable $e) {
+                        // Fallback if subscription missing
+                    }
+                }
+
+                if ($scheduledAtPeriodEnd || $org->getStripeSubscriptionId()) {
+                    $org->setPendingPlan($targetPlan);
+                    $org->setPendingPlanEffectiveAt($periodEnd);
+                    $em->flush();
+
+                    // Format date in Organization's configured timezone
+                    $tz = new \DateTimeZone($org->getTimezone() ?: 'UTC');
+                    $formattedDate = (clone $periodEnd)->setTimezone($tz)->format('M d, Y');
+
+                    $this->logAudit($em, $org, 'STRIPE_SUBSCRIPTION_CANCEL_SCHEDULED', [
+                        'current_plan' => $currentPlan->getName(),
+                        'scheduled_downgrade' => 'basic',
+                        'effective_at' => $periodEnd->format(\DateTimeInterface::ATOM)
+                    ], $request);
+
+                    try {
+                        $emailService->sendPlanChangeScheduledNotice($manager, 'basic', $formattedDate);
+                    } catch (\Exception $e) {
+                        // Silently ignore mailer failure
+                    }
+
+                    $this->addFlash('info', sprintf('Your cancellation to the Basic (Free) plan has been scheduled for %s. You will retain full access to your %s plan until then.', $formattedDate, ucfirst($currentPlan->getName())));
+                } else {
+                    $org->setPlan($targetPlan);
+                    $org->clearOverrides();
+                    $org->setAccessMode('open');
+                    $org->setStripeSubscriptionId(null);
+                    $org->setPendingPlan(null);
+                    $org->setPendingPlanEffectiveAt(null);
+                    $org->setIsSubscriptionActive(true);
+                    $org->setUpdatedAt(new \DateTimeImmutable());
+
+                    $payment = new \App\Entity\PaymentHistory();
+                    $payment->setOrganization($org);
+                    $payment->setStripeInvoiceId('cancel_' . bin2hex(random_bytes(6)));
+                    $payment->setAmount('0.00');
+                    $payment->setStatus('cancelled');
+                    $payment->setPaidAt(new \DateTime());
+                    $payment->setPeriodStart(new \DateTime());
+                    $payment->setPeriodEnd(new \DateTime());
+                    $payment->setDescription('Downgraded to Basic (Free) Plan');
+                    $em->persist($payment);
+
+                    $em->flush();
+
+                    $this->logAudit($em, $org, 'PLAN_DOWNGRADE_BASIC', ['plan' => 'basic'], $request);
+
+                    try {
+                        $emailService->sendSubscriptionCancelledNotice($manager);
+                    } catch (\Exception $e) {
+                        // Silently ignore mailer failure
+                    }
+
+                    $this->addFlash('success', 'Your subscription has been cancelled. Your organization is now on the Basic (Free) plan.');
+                }
+
+                return $this->redirectToRoute('app_manager_billing');
+            }
+
+            // Case 4: Paid Higher -> Paid Lower (Period-End Paid Tier Downgrade)
+            if ($currentPlan->getName() !== 'basic' && $targetPlan->getPriceMonthly() < $currentPlan->getPriceMonthly()) {
+                $periodEnd = new \DateTime('+1 month');
+
+                if ($org->getStripeSubscriptionId() && !str_contains($stripeSecret, 'placeholder')) {
+                    try {
+                        \Stripe\Stripe::setApiKey($stripeSecret);
+                        $stripeSub = \Stripe\Subscription::retrieve($org->getStripeSubscriptionId());
+                        if (isset($stripeSub->current_period_end)) {
+                            $periodEnd = (new \DateTime())->setTimestamp($stripeSub->current_period_end);
+                        }
+
+                        // Create / Update Stripe Subscription Schedule for Phase 2
+                        \Stripe\SubscriptionSchedule::create([
+                            'from_subscription' => $org->getStripeSubscriptionId(),
+                        ]);
+                    } catch (\Throwable $e) {
+                        // Silently catch fallback
+                    }
+                }
+
+                $org->setPendingPlan($targetPlan);
+                $org->setPendingPlanEffectiveAt($periodEnd);
+                $em->flush();
+
+                $tz = new \DateTimeZone($org->getTimezone() ?: 'UTC');
+                $formattedDate = (clone $periodEnd)->setTimezone($tz)->format('M d, Y');
+
+                $this->logAudit($em, $org, 'STRIPE_SUBSCRIPTION_CHANGE_SCHEDULED', [
+                    'current_plan' => $currentPlan->getName(),
+                    'scheduled_plan' => $targetPlan->getName(),
+                    'effective_at' => $periodEnd->format(\DateTimeInterface::ATOM)
+                ], $request);
+
+                try {
+                    $emailService->sendPlanChangeScheduledNotice($manager, $targetPlan->getName(), $formattedDate);
+                } catch (\Exception $e) {
+                    // Silently ignore mailer failure
+                }
+
+                $this->addFlash('info', sprintf('Your plan change to %s ($%s/mo) has been scheduled for %s. You will enjoy your %s plan until your current billing period ends.', ucfirst($targetPlan->getName()), round($targetPlan->getPriceMonthly()), $formattedDate, ucfirst($currentPlan->getName())));
+
+                return $this->redirectToRoute('app_manager_billing');
+            }
+
+            // Case 1 & Case 3: Basic -> Paid OR Paid Lower -> Paid Higher (Immediate Upgrade via Stripe Checkout)
+            return $this->redirectToRoute('app_stripe_checkout', ['planName' => $targetPlan->getName()]);
         }
 
         $payments = $em->getRepository(PaymentHistory::class)->findBy(

@@ -147,6 +147,12 @@ class RecentlyFixedIssuesTest extends WebTestCase
         // Create active session started 5 hours ago (exceeds org limit 4h)
         $session = new WorkSession();
         $session->setOrgUser($orgUser);
+        $goldPlan = $em->getRepository(\App\Entity\Plan::class)->findOneBy(['name' => 'gold']);
+        if ($goldPlan) {
+            $org->setPlan($goldPlan);
+        }
+        $org->setSessionLimitHoursOverride(4);
+
         $session->setOrganization($org);
         $session->setCategory($category);
         $session->setStartedAt(new \DateTime('-300 minutes')); // 5 hours ago

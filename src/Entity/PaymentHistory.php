@@ -38,10 +38,24 @@ class PaymentHistory
     #[ORM\Column(type: "datetime_immutable")]
     private \DateTimeImmutable $createdAt;
 
+    #[ORM\Column(type: "string", length: 255, nullable: true)]
+    private ?string $description = null;
+
     public function __construct()
     {
         $this->createdAt = new \DateTimeImmutable();
         $this->paidAt = new \DateTime();
+    }
+
+    public function getDescription(): ?string
+    {
+        return $this->description;
+    }
+
+    public function setDescription(?string $description): self
+    {
+        $this->description = $description;
+        return $this;
     }
 
     public function getId(): ?int

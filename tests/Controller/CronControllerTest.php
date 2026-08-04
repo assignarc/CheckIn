@@ -37,4 +37,20 @@ class CronControllerTest extends WebTestCase
         $this->assertNotNull($logSuccess);
         $this->assertArrayHasKey('sessions_swept_count', $logSuccess->getDetailsJson());
     }
+
+    public function testSchemaUpdateEndpointAuthorization(): void
+    {
+        $client = static::createClient();
+        $container = static::getContainer();
+
+        // 1. Request without valid token (401 Unauthorized)
+        $client->request('GET', '/cron/schema-update');
+        $this->assertResponseStatusCodeSame(401);
+
+        // 2. Request with valid secret token (200 OK)
+        $expectedToken = $container->getParameter('cron_secret_token');
+        $client->request('GET', '/cron/schema-update', ['token' => $expectedToken]);
+        $this->assertResponseIsSuccessful();
+        $this->assertStringContainsString('success', (string)$client->getResponse()->getContent());
+    }
 }

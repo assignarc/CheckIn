@@ -164,6 +164,7 @@ class SeedDataCommand extends Command
             $plan->setHasCustomSessionDurations($data['custom_duration']);
             $plan->setHasBarcodeFeatures($data['barcode_features'] ?? false);
             $plan->setHasClickList($data['click_list'] ?? true);
+            $plan->setStripePriceId($data['stripe_price_id'] ?? null);
             
             $this->entityManager->persist($plan);
             $plans[$name] = $plan;
@@ -180,16 +181,14 @@ class SeedDataCommand extends Command
             $adminUser->setEmail($adminEmail);
             $adminUser->setFirstName($adminData['first_name'] ?? 'System');
             $adminUser->setLastName($adminData['last_name'] ?? 'Administrator');
-            $adminUser->setRole('ROLE_PLATFORM_ADMIN');
             $adminUser->setIsActive(true);
-
-            $rawPass = $_ENV['SEED_ADMIN_PASSWORD'] ?? ($_SERVER['SEED_ADMIN_PASSWORD'] ?? 'AdminPass123!');
-            $hashed = $this->passwordHasher->hashPassword($adminUser, $rawPass);
-            $adminUser->setPasswordHash($hashed);
-
             $this->entityManager->persist($adminUser);
             $io->success("Created Super Admin user: {$adminEmail}");
         }
+        $rawPass = $_ENV['SEED_ADMIN_PASSWORD'] ?? ($_SERVER['SEED_ADMIN_PASSWORD'] ?? 'dummy123');
+        $hashed = $this->passwordHasher->hashPassword($adminUser, $rawPass);
+        $adminUser->setPasswordHash($hashed);
+        $adminUser->setRole('ROLE_SYSTEM_ADMIN');
 
         // 4. Seed Static Organizations and initial records
         $orgsData = $config['static_organizations'] ?? [];
@@ -218,7 +217,7 @@ class SeedDataCommand extends Command
                     $manager->setOrganization($org);
                     $manager->setIsActive(true);
 
-                    $mgrRawPass = $_ENV['SEED_MANAGER_PASSWORD'] ?? ($_SERVER['SEED_MANAGER_PASSWORD'] ?? 'ManagerPass123!');
+                    $mgrRawPass = $_ENV['SEED_MANAGER_PASSWORD'] ?? ($_SERVER['SEED_MANAGER_PASSWORD'] ?? 'dummy123');
                     $mgrHashed = $this->passwordHasher->hashPassword($manager, $mgrRawPass);
                     $manager->setPasswordHash($mgrHashed);
 
@@ -280,6 +279,7 @@ class SeedDataCommand extends Command
             'captcha_login_enabled' => false,
             'captcha_demo_enabled' => false,
             'audit_log_archive_days' => 180,
+            'cron_empty_log_retention_hours' => 2,
             'session_sweep_throttle_seconds' => 60,
             'demo_reset_history_days' => 150,
             'audit_log_archive_dir' => '/var/log/audit_archives',

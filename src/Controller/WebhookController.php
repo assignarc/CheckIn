@@ -61,6 +61,63 @@ class WebhookController extends AbstractController
                         $org->setStripeSubscriptionId($stripeSubId);
                         $org->setIsSubscriptionActive(true);
 
+                        // Ensure any other previous active subscriptions in Stripe for this customer are canceled
+                        if (!$isTestEnv && !$isPlaceholderSecret && $stripeSubId && $stripeSubId !== 'mock_sub_id') {
+                            try {
+                                $existingSubs = \Stripe\Subscription::all([
+                                    'customer' => $customerId,
+                                    'status' => 'active',
+                                ]);
+                                foreach ($existingSubs->data as $sub) {
+                                    if ($sub->id !== $stripeSubId) {
+                                        try {
+                                            $sub->cancel();
+
+                                            $log = new AuditLog();
+                                            $log->setOrganization($org);
+                                            $log->setAction('STRIPE_PREVIOUS_SUBSCRIPTION_CANCELED');
+                                            $log->setDetailsJson([
+                                                'canceled_subscription_id' => $sub->id,
+                                                'active_subscription_id' => $stripeSubId,
+                                                'reason' => 'Canceled previous duplicate subscription on checkout completion'
+                                            ]);
+                                            $log->setIpAddress($request->getClientIp());
+                                            $log->setUserAgent($request->headers->get('User-Agent'));
+                                            $em->persist($log);
+                                        } catch (\Throwable $e) {
+                                            // Silently ignore if already canceled
+                                        }
+                                    }
+                                }
+                            } catch (\Throwable $e) {
+                                // Silently ignore if lookup fails
+                            }
+                        }
+
+                        // Try resolving purchased plan from metadata or line items
+                        $purchasedPlanName = is_array($session->metadata) ? ($session->metadata['plan'] ?? null) : ($session->metadata->plan ?? null);
+                        if ($purchasedPlanName) {
+                            $purchasedPlan = $em->getRepository(\App\Entity\Plan::class)->findOneBy(['name' => $purchasedPlanName]);
+                            if ($purchasedPlan) {
+                                $org->setPlan($purchasedPlan);
+                                if ($purchasedPlan->hasSecureKiosk()) {
+                                    $org->setAccessMode('secure');
+                                }
+                            }
+                        }
+
+                        // Record PaymentHistory entry for new checkout completion
+                        $payment = new PaymentHistory();
+                        $payment->setOrganization($org);
+                        $payment->setStripeInvoiceId($session->invoice ?? ('sub_' . bin2hex(random_bytes(8))));
+                        $payment->setAmount(number_format(($session->amount_total ?? 0) / 100, 2, '.', ''));
+                        $payment->setStatus('paid');
+                        $payment->setPaidAt(new \DateTime());
+                        $payment->setPeriodStart(new \DateTime());
+                        $payment->setPeriodEnd(new \DateTime('+1 month'));
+                        $payment->setDescription(ucfirst($org->getPlan()->getName()) . ' Plan Subscription Activated');
+                        $em->persist($payment);
+
                         // Log Checkout Completion Event
                         $log = new AuditLog();
                         $log->setOrganization($org);
@@ -68,6 +125,7 @@ class WebhookController extends AbstractController
                         $log->setDetailsJson([
                             'stripe_customer_id' => $customerId,
                             'stripe_subscription_id' => $stripeSubId,
+                            'plan' => $org->getPlan()->getName(),
                         ]);
                         $log->setIpAddress($request->getClientIp());
                         $log->setUserAgent($request->headers->get('User-Agent'));
@@ -86,6 +144,13 @@ class WebhookController extends AbstractController
                 if ($customerId) {
                     $org = $em->getRepository(Organization::class)->findOneBy(['stripeCustomerId' => $customerId]);
                     if ($org) {
+                        // Apply pending lower paid plan if transition took effect at period end
+                        if ($org->getPendingPlan() && $org->getPendingPlan()->getName() !== 'basic') {
+                            $org->setPlan($org->getPendingPlan());
+                            $org->setPendingPlan(null);
+                            $org->setPendingPlanEffectiveAt(null);
+                        }
+
                         $payment = new PaymentHistory();
                         $payment->setOrganization($org);
                         $payment->setStripeInvoiceId($invoice->id ?? ('in_' . bin2hex(random_bytes(8))));
@@ -94,6 +159,7 @@ class WebhookController extends AbstractController
                         $payment->setPaidAt(new \DateTime());
                         $payment->setPeriodStart(new \DateTime());
                         $payment->setPeriodEnd(new \DateTime('+1 month'));
+                        $payment->setDescription(ucfirst($org->getPlan()->getName()) . ' Plan Subscription Renewal');
                         $em->persist($payment);
 
                         $org->setIsSubscriptionActive(true);
@@ -105,6 +171,7 @@ class WebhookController extends AbstractController
                         $log->setDetailsJson([
                             'invoice_id' => $invoice->id ?? '',
                             'amount' => $amountPaid,
+                            'plan' => $org->getPlan()->getName()
                         ]);
                         $log->setIpAddress($request->getClientIp());
                         $log->setUserAgent($request->headers->get('User-Agent'));
@@ -112,13 +179,13 @@ class WebhookController extends AbstractController
 
                         $em->flush();
 
-                        // Dispatch subscription renewal notice
+                        // Dispatch Email B: Plan Change / Renewal Notice
                         $manager = $em->getRepository(Manager::class)->findOneBy(['organization' => $org, 'role' => 'ROLE_ORG_MANAGER']);
                         if ($manager) {
                             try {
-                                $emailService->sendSubscriptionRenewalNotice($manager, $amountPaid, (new \DateTime('+1 month'))->format('M d, Y'));
+                                $emailService->sendPlanChangeAppliedNotice($manager, $org->getPlan()->getName());
                             } catch (\Exception $e) {
-                                // Silently log or ignore mailer issues during webhooks to prevent blocking Stripe webhook returns
+                                // Silently log or ignore mailer issues during webhooks
                             }
                         }
                     }
@@ -132,18 +199,40 @@ class WebhookController extends AbstractController
                 if ($customerId) {
                     $org = $em->getRepository(Organization::class)->findOneBy(['stripeCustomerId' => $customerId]);
                     if ($org) {
-                        $org->setIsSubscriptionActive(false);
+                        // Requirement 6: Update org to basic plan on monthly payment failure
+                        $basicPlan = $em->getRepository(\App\Entity\Plan::class)->findOneBy(['name' => 'basic']);
+                        if ($basicPlan) {
+                            $org->setPlan($basicPlan);
+                            $org->clearOverrides();
+                            $org->setAccessMode('open');
+                        }
+                        $org->setPendingPlan(null);
+                        $org->setPendingPlanEffectiveAt(null);
+                        $org->setIsSubscriptionActive(true);
 
-                        // Log Subscription Payment/Charge Failure Event
-                        $log = new AuditLog();
-                        $log->setOrganization($org);
-                        $log->setAction('STRIPE_PAYMENT_FAILED');
-                        $log->setDetailsJson([
+                        // Log Subscription Payment Failure Event
+                        $log1 = new AuditLog();
+                        $log1->setOrganization($org);
+                        $log1->setAction('STRIPE_PAYMENT_FAILED');
+                        $log1->setDetailsJson([
                             'invoice_id' => $invoice->id ?? '',
+                            'amount_due' => number_format(($invoice->amount_due ?? 0) / 100, 2, '.', '')
                         ]);
-                        $log->setIpAddress($request->getClientIp());
-                        $log->setUserAgent($request->headers->get('User-Agent'));
-                        $em->persist($log);
+                        $log1->setIpAddress($request->getClientIp());
+                        $log1->setUserAgent($request->headers->get('User-Agent'));
+                        $em->persist($log1);
+
+                        // Log Plan Downgrade to Basic Event
+                        $log2 = new AuditLog();
+                        $log2->setOrganization($org);
+                        $log2->setAction('STRIPE_PLAN_DOWNGRADED_BASIC');
+                        $log2->setDetailsJson([
+                            'reason' => 'Monthly subscription payment failed at Stripe',
+                            'new_plan' => 'basic'
+                        ]);
+                        $log2->setIpAddress($request->getClientIp());
+                        $log2->setUserAgent($request->headers->get('User-Agent'));
+                        $em->persist($log2);
 
                         $em->flush();
 
@@ -155,6 +244,101 @@ class WebhookController extends AbstractController
                             } catch (\Exception $e) {
                                 // Silently ignore mailer issues in webhook
                             }
+                        }
+                    }
+                }
+                break;
+
+            case 'customer.subscription.deleted':
+                $subscription = $event->data->object;
+                $customerId = $subscription->customer ?? null;
+
+                if ($customerId) {
+                    $org = $em->getRepository(Organization::class)->findOneBy(['stripeCustomerId' => $customerId]);
+                    if ($org) {
+                        $basicPlan = $em->getRepository(\App\Entity\Plan::class)->findOneBy(['name' => 'basic']);
+                        if ($basicPlan) {
+                            $org->setPlan($basicPlan);
+                            $org->clearOverrides();
+                            $org->setAccessMode('open');
+                        }
+                        $org->setPendingPlan(null);
+                        $org->setPendingPlanEffectiveAt(null);
+                        $org->setStripeSubscriptionId(null);
+                        $org->setIsSubscriptionActive(true);
+
+                        // Log Subscription Cancelled Event
+                        $log = new AuditLog();
+                        $log->setOrganization($org);
+                        $log->setAction('STRIPE_SUBSCRIPTION_CANCELLED');
+                        $log->setDetailsJson([
+                            'stripe_subscription_id' => $subscription->id ?? '',
+                            'reason' => 'Subscription cancelled at Stripe',
+                            'new_plan' => 'basic'
+                        ]);
+                        $log->setIpAddress($request->getClientIp());
+                        $log->setUserAgent($request->headers->get('User-Agent'));
+                        $em->persist($log);
+
+                        $em->flush();
+
+                        // Notify Manager of cancellation completion (Email B)
+                        $manager = $em->getRepository(Manager::class)->findOneBy(['organization' => $org, 'role' => 'ROLE_ORG_MANAGER']);
+                        if ($manager) {
+                            try {
+                                $emailService->sendPlanChangeAppliedNotice($manager, 'basic');
+                            } catch (\Exception $e) {
+                                // Silently ignore mailer failure
+                            }
+                        }
+                    }
+                }
+                break;
+
+            case 'customer.subscription.updated':
+                $subscription = $event->data->object;
+                $customerId = $subscription->customer ?? null;
+                $status = $subscription->status ?? '';
+
+                if ($customerId) {
+                    $org = $em->getRepository(Organization::class)->findOneBy(['stripeCustomerId' => $customerId]);
+                    if ($org) {
+                        if ($status === 'canceled' || $status === 'unpaid') {
+                            $basicPlan = $em->getRepository(\App\Entity\Plan::class)->findOneBy(['name' => 'basic']);
+                            if ($basicPlan) {
+                                $org->setPlan($basicPlan);
+                                $org->clearOverrides();
+                                $org->setAccessMode('open');
+                            }
+                            $org->setStripeSubscriptionId(null);
+                            $org->setIsSubscriptionActive(true);
+
+                            $log = new AuditLog();
+                            $log->setOrganization($org);
+                            $log->setAction('STRIPE_SUBSCRIPTION_CANCELLED');
+                            $log->setDetailsJson([
+                                'stripe_subscription_id' => $subscription->id ?? '',
+                                'status' => $status,
+                                'new_plan' => 'basic'
+                            ]);
+                            $log->setIpAddress($request->getClientIp());
+                            $log->setUserAgent($request->headers->get('User-Agent'));
+                            $em->persist($log);
+
+                            $em->flush();
+                        } elseif (!empty($subscription->cancel_at_period_end)) {
+                            $log = new AuditLog();
+                            $log->setOrganization($org);
+                            $log->setAction('STRIPE_SUBSCRIPTION_CANCEL_SCHEDULED');
+                            $log->setDetailsJson([
+                                'stripe_subscription_id' => $subscription->id ?? '',
+                                'cancel_at' => $subscription->cancel_at ?? null
+                            ]);
+                            $log->setIpAddress($request->getClientIp());
+                            $log->setUserAgent($request->headers->get('User-Agent'));
+                            $em->persist($log);
+
+                            $em->flush();
                         }
                     }
                 }

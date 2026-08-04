@@ -5,6 +5,7 @@ namespace App\Tests\Controller;
 use App\Entity\Category;
 use App\Entity\OrgUser;
 use App\Entity\Organization;
+use App\Entity\Plan;
 use App\Entity\WorkSession;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
@@ -21,10 +22,18 @@ class CategoryDurationAndAutoEndTest extends WebTestCase
         // Find Acme Corp (Gold plan)
         $org = $em->getRepository(Organization::class)->findOneBy(['slug' => 'acme-corp']);
         $this->assertNotNull($org);
+        $goldPlan = $em->getRepository(Plan::class)->findOneBy(['name' => 'gold']);
+        if ($goldPlan) {
+            $org->setPlan($goldPlan);
+            $em->flush();
+        }
 
         // Find an orgUser
         $orgUser = $em->getRepository(OrgUser::class)->findOneBy(['organization' => $org]);
         $this->assertNotNull($orgUser);
+
+        $org->setSessionLimitHoursOverride(4);
+        $em->flush();
 
         // 1. Create a category with 3 hours (180 mins) max duration & terminate = true
         $category = new Category();
