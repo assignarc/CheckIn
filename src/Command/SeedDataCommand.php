@@ -276,8 +276,9 @@ class SeedDataCommand extends Command
             'allowed_phone_countries' => ['us'],
             'max_import_records' => 100,
             'demo_rotation_hours' => 12,
-            'captcha_login_enabled' => false,
+            'captcha_login_enabled' => true,
             'captcha_demo_enabled' => false,
+            'pdf_poster_download_enabled' => false,
             'audit_log_archive_days' => 180,
             'cron_empty_log_retention_hours' => 2,
             'session_sweep_throttle_seconds' => 60,
@@ -292,6 +293,8 @@ class SeedDataCommand extends Command
                 $config->setSettingValue($val);
                 $this->entityManager->persist($config);
                 $io->text("Seeding default config: {$key} = " . json_encode($val));
+            } else if ($key === 'captcha_login_enabled') {
+                $existing->setSettingValue($val);
             }
         }
 

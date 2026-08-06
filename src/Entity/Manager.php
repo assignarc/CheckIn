@@ -6,10 +6,13 @@ use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface;
 use Symfony\Component\Security\Core\User\UserInterface;
 use Gedmo\Mapping\Annotation as Gedmo;
+use Symfony\Component\Validator\Constraints as Assert;
+use Symfony\Bridge\Doctrine\Validator\Constraints\UniqueEntity;
 
 #[ORM\Entity]
 #[ORM\Table(name: "managers")]
 #[Gedmo\SoftDeleteable(fieldName: 'deletedAt', timeAware: false)]
+#[UniqueEntity(fields: ['email'], message: 'An account with this email address already exists.')]
 class Manager implements UserInterface, PasswordAuthenticatedUserInterface
 {
     #[ORM\Id]
@@ -22,18 +25,27 @@ class Manager implements UserInterface, PasswordAuthenticatedUserInterface
     private ?Organization $organization = null;
 
     #[ORM\Column(type: "string", length: 255, unique: true)]
+    #[Assert\NotBlank(message: 'Email address is required.')]
+    #[Assert\Email(message: 'Please provide a valid email address.', mode: Assert\Email::VALIDATION_MODE_STRICT)]
+    #[Assert\Length(max: 255)]
     private string $email;
 
     #[ORM\Column(type: "string", length: 255)]
     private string $passwordHash;
 
     #[ORM\Column(type: "string", length: 100)]
+    #[Assert\NotBlank(message: 'First name is required.')]
+    #[Assert\Length(min: 1, max: 100)]
     private string $firstName;
 
     #[ORM\Column(type: "string", length: 100)]
+    #[Assert\NotBlank(message: 'Last name is required.')]
+    #[Assert\Length(min: 1, max: 100)]
     private string $lastName;
 
     #[ORM\Column(type: "string", length: 50)]
+    #[Assert\NotBlank]
+    #[Assert\Choice(choices: ['ROLE_SYSTEM_ADMIN', 'ROLE_ORG_MANAGER'], message: 'Invalid manager role specified.')]
     private string $role; // ROLE_SYSTEM_ADMIN or ROLE_ORG_MANAGER
 
     #[ORM\Column(type: "boolean", options: ["default" => true])]
@@ -43,6 +55,7 @@ class Manager implements UserInterface, PasswordAuthenticatedUserInterface
     private ?\DateTimeImmutable $deletedAt = null;
 
     #[ORM\Column(type: "string", length: 50, nullable: true)]
+    #[Assert\Length(max: 50)]
     private ?string $phone = null;
 
     #[ORM\Column(type: "datetime_immutable")]

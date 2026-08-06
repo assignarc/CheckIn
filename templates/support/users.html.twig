@@ -1,23 +1,74 @@
 {% extends 'support/layout.html.twig' %}
 
-{% block support_title %}Users &amp; Managers Help Guide{% endblock %}
+{% block support_title %}Users &amp; Bulk Roster Import Guide{% endblock %}
 
 {% block support_content %}
-<h2 class="fs-2xl fw-800 text-white mb-2">Users &amp; Managers Help Guide</h2>
+<h2 class="fs-2xl fw-800 text-white mb-2">Users &amp; Bulk Roster Import Guide</h2>
 <p class="fs-md text-secondary mb-6 lh-relaxed">
-    This section covers employee directory configuration, user profile editing, manager seat definitions, security lockouts, and the CSV spreadsheet import wizard.
+    Learn how to manage your employee directory, upload records in bulk using the CSV Import Wizard, configure manager permissions, and handle security lockouts.
 </p>
+
+<!-- ── Video Section 2: Import Records ── -->
+<div class="mb-8 p-6 glass-panel" style="border-radius: var(--radius-md); border: 1px solid rgba(255,255,255,0.12); background: rgba(0,0,0,0.25);">
+    <h3 class="fs-xl fw-700 text-white mb-3 d-flex align-items-center gap-2">
+        <span class="material-icons text-primary fs-xl">play_circle_filled</span>
+        Video Tutorial: Importing Student &amp; User Records
+    </h3>
+    <p class="fs-sm text-secondary mb-5 lh-relaxed">
+        Watch this video tutorial showing how to upload a CSV spreadsheet, map columns, resolve duplicate records, and generate employee check-in PINs.
+    </p>
+
+    <div class="video-embed-wrapper mb-4" style="position: relative; width: 100%; aspect-ratio: 16 / 9; min-height: 380px; border-radius: var(--radius-md); border: 1px solid rgba(255,255,255,0.12); box-shadow: var(--shadow-md); background: #000; overflow: hidden;">
+        <iframe 
+            src="https://www.youtube-nocookie.com/embed/bSwzQSQ-XuY?rel=0" 
+            title="Import Records Tutorial" 
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
+            allowfullscreen
+            style="width: 100%; height: 100%; border: 0; display: block;">
+        </iframe>
+    </div>
+</div>
+
+<h3 class="fs-lg fw-700 text-white mb-3">1. CSV Import Wizard Step-by-Step</h3>
+<p class="fs-sm text-secondary mb-4 lh-relaxed">
+    Instead of adding users individually, the CSV Import Wizard lets you upload large roster lists seamlessly:
+</p>
+
+<ol class="fs-sm text-secondary d-flex flex-column gap-4 pl-5 lh-relaxed mb-8">
+    <li>
+        <strong>Upload CSV File:</strong> Go to <em>Users &gt; Import CSV</em> in your manager console. Select any standard `.csv` spreadsheet file containing employee or student details.
+    </li>
+    <li>
+        <strong>Flexible Column Mapping:</strong> The wizard automatically parses your CSV headers. Map your spreadsheet's columns (e.g. `First Name`, `Last Name`, `Phone`, `Email`, `Unique Student ID`) to CenterTime's target fields. You do not need to rename your original CSV columns prior to uploading.
+    </li>
+    <li>
+        <strong>Intelligent Duplicate &amp; Conflict Matching:</strong> The import engine runs multi-stage matching logic to detect existing users:
+        <ul class="mt-2 d-flex flex-column gap-1 pl-4">
+            <li><em>Unique ID Match:</em> Matches exact student IDs or employee numbers.</li>
+            <li><em>Compound Match:</em> Matches First Name + Last Name combined with Email or Phone Number.</li>
+            <li><em>Conflict Resolution:</em> For detected duplicates, choose whether to <strong>Update Existing Record</strong>, <strong>Skip Duplicate</strong>, or <strong>Force Add as New User</strong>.</li>
+        </ul>
+    </li>
+    <li>
+        <strong>Automatic PIN Generation &amp; Status Assignment:</strong> New imported users are automatically allocated a unique 4-digit check-in PIN (e.g., `A102`). If your CSV includes pre-existing PINs or unique IDs, they are preserved.
+    </li>
+    <li>
+        <strong>Subscription Plan Capacity Validation:</strong> The wizard verifies your imported user count against your active plan's user quota (e.g. 15 for Basic, 50 for Silver, 250 for Gold). Any records exceeding your active quota are marked as pending until plan upgrading.
+    </li>
+</ol>
+
+<hr class="my-6" style="border: 0; border-top: 1px solid rgba(255,255,255,0.08)">
 
 <div class="support-split-view mb-8">
     <div>
-        <h3 class="fs-lg fw-700 text-white mb-3">1. Roster Management &amp; Filters</h3>
+        <h3 class="fs-lg fw-700 text-white mb-3">2. Employee Roster Management</h3>
         <p class="fs-sm text-secondary mb-4 lh-relaxed">
-            The employee directory lists all active and inactive staff members authorized to use the kiosk.
+            The User Management screen provides full oversight of your employee list:
         </p>
         <ul class="fs-sm text-secondary d-flex flex-column gap-2 pl-5 lh-relaxed mb-4">
-            <li><strong>Quick Search:</strong> Filter the user list by first name, last name, phone number, or email. The search is case-insensitive.</li>
-            <li><strong>Employee Status:</strong> Users can be toggled between <strong>Active</strong> (can check in/out) and <strong>Inactive</strong> (blocked from the kiosk).</li>
-            <li><strong>PIN Reset:</strong> Managers can trigger a secure, random PIN generation or manually set a specific 4-digit PIN for any user.</li>
+            <li><strong>Quick Search &amp; Filter:</strong> Instantly filter by name, phone number, email address, or unique ID.</li>
+            <li><strong>Active / Inactive Toggle:</strong> Deactivate staff members who leave without deleting their historical attendance data.</li>
+            <li><strong>PIN Reset &amp; Management:</strong> Managers can generate a new random PIN or set a specific 4-digit PIN for any user.</li>
         </ul>
     </div>
     <div class="glass-panel p-2 d-flex flex-column align-items-center" style="border-radius: var(--radius-sm); border: 1px solid rgba(255,255,255,0.08); background: rgba(0,0,0,0.2);">
@@ -28,46 +79,19 @@
 
 <hr class="my-6" style="border: 0; border-top: 1px solid rgba(255,255,255,0.08)">
 
-<h3 class="fs-lg fw-700 text-white mb-3">2. Manager Roles &amp; Authorization</h3>
-<p class="fs-sm text-secondary mb-4 lh-relaxed">
-    You can delegate administration duties by creating additional manager profiles. There are two roles available:
-</p>
+<h3 class="fs-lg fw-700 text-white mb-3">3. Manager Roles &amp; Security Lockouts</h3>
 <div class="d-flex flex-column gap-4 mb-6">
     <div class="p-4 rounded-sm bg-input border" style="border-left: 4px solid var(--primary) !important;">
-        <h4 class="fs-md fw-600 text-white mb-1">Full Administrator</h4>
+        <h4 class="fs-md fw-600 text-white mb-1">Full Administrator vs Supervisor</h4>
         <p class="fs-sm text-secondary m-0 lh-relaxed">
-            Has full access to the manager panel, including settings, billing/subscriptions, category editing, and adding/removing other managers.
+            Full Administrators can manage settings, billing, categories, and managers. Supervisors can view dashboards, look up user lists, force clock-out active users, and download reports without access to core billing or settings.
         </p>
     </div>
-    <div class="p-4 rounded-sm bg-input border" style="border-left: 4px solid var(--info) !important;">
-        <h4 class="fs-md fw-600 text-white mb-1">Supervisor</h4>
+    <div class="p-4 rounded-sm bg-input border" style="border-left: 4px solid var(--danger) !important;">
+        <h4 class="fs-md fw-600 text-white mb-1">Unlocking PIN Lockouts</h4>
         <p class="fs-sm text-secondary m-0 lh-relaxed">
-            Can view dashboards, look up user lists, clock out active users, and download reports. They are blocked from modifying organization settings, changing billing plans, or altering category parameters.
+            If an employee enters an invalid PIN three consecutive times, their account displays a red <strong>Blocked (PIN Lockout)</strong> status to prevent unauthorized access. Managers can click <em>Unlock Account</em> in the user options menu to restore access.
         </p>
     </div>
 </div>
-
-<hr class="my-6" style="border: 0; border-top: 1px solid rgba(255,255,255,0.08)">
-
-<h3 class="fs-lg fw-700 text-white mb-3">3. Managing PIN Lockouts</h3>
-<p class="fs-sm text-secondary mb-4 lh-relaxed">
-    If an employee inputs an incorrect PIN code three consecutive times on the kiosk keypad, the system automatically blocks their account to prevent brute-force attacks.
-</p>
-<ul class="fs-sm text-secondary d-flex flex-column gap-2 pl-5 lh-relaxed mb-6">
-    <li><strong>Visual Indicator:</strong> The status column next to the employee will show a red <strong>Blocked (PIN Lockout)</strong> status.</li>
-    <li><strong>Unlocking:</strong> Click the user options in the directory, and select <strong>Unlock Account</strong>. This resets their failed attempt counter, returning them to active status.</li>
-</ul>
-
-<hr class="my-6" style="border: 0; border-top: 1px solid rgba(255,255,255,0.08)">
-
-<h3 class="fs-lg fw-700 text-white mb-3">4. The CSV Import Wizard</h3>
-<p class="fs-sm text-secondary mb-4 lh-relaxed">
-    Instead of entering employees manually, you can upload your entire company roster in bulk using a CSV spreadsheet:
-</p>
-<ol class="fs-sm text-secondary d-flex flex-column gap-3 pl-5 lh-relaxed">
-    <li><strong>Upload file:</strong> Navigate to <em>Users &gt; Import CSV</em> and upload your `.csv` file.</li>
-    <li><strong>Column Mapping:</strong> Map your spreadsheet columns (e.g. `phone_num` or `first`) to CenterTime's standard fields. You do not need to alter your file's header names beforehand.</li>
-    <li><strong>Duplicate Resolution &amp; Fuzzy Matching:</strong> The wizard checks names, phone numbers, and email addresses against your existing database. If duplicates are detected, you will be prompted to overwrite the existing record, ignore/skip the duplicate, or force-add as a new user.</li>
-    <li><strong>License Quota Check:</strong> The system validates the import size against your active subscription plan. If you import more users than your plan's user quota, excess users are set to pending until your subscription is upgraded.</li>
-</ol>
 {% endblock %}

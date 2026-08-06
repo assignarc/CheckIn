@@ -154,6 +154,17 @@
                     </label>
                 </div>
 
+                <div class="form-group mb-5">
+                    <label class="fs-md d-flex align-items-center gap-3 cursor-pointer">
+                        <input type="hidden" name="pdf_poster_download_enabled" value="0">
+                        <input type="checkbox" name="pdf_poster_download_enabled" value="1" {% if pdfPosterDownloadEnabled %}checked{% endif %}>
+                        <span>Enable PDF Poster Download Button in Manager Console</span>
+                    </label>
+                    <span class="form-text d-block mt-2">
+                        Controls whether managers can download a printable PDF kiosk poster from their organization settings page. Default is disabled.
+                    </span>
+                </div>
+
                 <hr class="my-5" style="border: 0; border-top: 1px solid rgba(255,255,255,0.08)">
 
                 <div class="form-group mb-0">

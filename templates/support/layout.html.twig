@@ -7,15 +7,15 @@
     <!-- Sidebar Navigation -->
     <aside class="d-flex flex-column gap-3">
         <div class="glass-panel p-4 d-flex flex-column gap-2" style="border-radius: var(--radius-md);">
-            <div class="fs-xs text-uppercase text-muted fw-700 tracking-wider mb-2" style="padding-left: 0.5rem;">Topics</div>
+            <div class="fs-xs text-uppercase text-muted fw-700 tracking-wider mb-2" style="padding-left: 0.5rem;">Help Topics</div>
             <a href="{{ path('app_support_index') }}" class="sidebar-link {% if app.request.attributes.get('_route') == 'app_support_index' %}active{% endif %}" style="text-decoration: none; padding: 0.6rem 0.75rem; border-radius: var(--radius-sm); font-size: 0.875rem;">
-                <span class="material-icons fs-md align-middle mr-2">library_books</span> Overview Guide
+                <span class="material-icons fs-md align-middle mr-2">play_circle</span> Overview &amp; Setup <span class="badge badge-primary fs-xs ml-auto" style="font-size: 0.65rem; padding: 2px 6px;">Video</span>
+            </a>
+            <a href="{{ path('app_support_users') }}" class="sidebar-link {% if app.request.attributes.get('_route') == 'app_support_users' %}active{% endif %}" style="text-decoration: none; padding: 0.6rem 0.75rem; border-radius: var(--radius-sm); font-size: 0.875rem;">
+                <span class="material-icons fs-md align-middle mr-2">people</span> Roster &amp; Import <span class="badge badge-primary fs-xs ml-auto" style="font-size: 0.65rem; padding: 2px 6px;">Video</span>
             </a>
             <a href="{{ path('app_support_kiosk') }}" class="sidebar-link {% if app.request.attributes.get('_route') == 'app_support_kiosk' %}active{% endif %}" style="text-decoration: none; padding: 0.6rem 0.75rem; border-radius: var(--radius-sm); font-size: 0.875rem;">
                 <span class="material-icons fs-md align-middle mr-2">tablet_mac</span> Kiosk Deployment
-            </a>
-            <a href="{{ path('app_support_users') }}" class="sidebar-link {% if app.request.attributes.get('_route') == 'app_support_users' %}active{% endif %}" style="text-decoration: none; padding: 0.6rem 0.75rem; border-radius: var(--radius-sm); font-size: 0.875rem;">
-                <span class="material-icons fs-md align-middle mr-2">people</span> Users &amp; Managers
             </a>
             <a href="{{ path('app_support_reports') }}" class="sidebar-link {% if app.request.attributes.get('_route') == 'app_support_reports' %}active{% endif %}" style="text-decoration: none; padding: 0.6rem 0.75rem; border-radius: var(--radius-sm); font-size: 0.875rem;">
                 <span class="material-icons fs-md align-middle mr-2">bar_chart</span> Reports &amp; Filters

@@ -608,6 +608,10 @@ class AdminController extends AbstractController
             $captchaDemoEnabled = $request->request->get('captcha_demo_enabled') === '1';
             $configService->set('captcha_demo_enabled', $captchaDemoEnabled);
 
+            // Toggle PDF Poster Download functionality for managers
+            $pdfPosterDownloadEnabled = $request->request->get('pdf_poster_download_enabled') === '1';
+            $configService->set('pdf_poster_download_enabled', $pdfPosterDownloadEnabled);
+
             // Enable or disable new organization signups globally on the website
             $newSignupsEnabled = $request->request->get('new_signups_enabled') === '1';
             $configService->set('new_signups_enabled', $newSignupsEnabled);
@@ -673,6 +677,7 @@ class AdminController extends AbstractController
         $demoRotationHours = $configService->get('demo_rotation_hours', 12);
         $captchaLoginEnabled = $configService->get('captcha_login_enabled', false);
         $captchaDemoEnabled = $configService->get('captcha_demo_enabled', false);
+        $pdfPosterDownloadEnabled = $configService->get('pdf_poster_download_enabled', false);
         $newSignupsEnabled = $configService->get('new_signups_enabled', true);
         $auditLogArchiveDays = $configService->get('audit_log_archive_days', 180);
         $cronEmptyLogRetentionHours = $configService->get('cron_empty_log_retention_hours', 2);
@@ -695,6 +700,7 @@ class AdminController extends AbstractController
             'demoRotationHours' => $demoRotationHours,
             'captchaLoginEnabled' => $captchaLoginEnabled,
             'captchaDemoEnabled' => $captchaDemoEnabled,
+            'pdfPosterDownloadEnabled' => $pdfPosterDownloadEnabled,
             'newSignupsEnabled' => $newSignupsEnabled,
             'auditLogArchiveDays' => $auditLogArchiveDays,
             'cronEmptyLogRetentionHours' => $cronEmptyLogRetentionHours,

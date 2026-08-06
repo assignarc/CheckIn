@@ -159,7 +159,7 @@ class ManagerController extends AbstractController
     }
 
     #[Route('/settings', name: 'app_manager_settings', methods: ['GET', 'POST'])]
-    public function settings(Request $request, EntityManagerInterface $em, UserPasswordHasherInterface $passwordHasher): Response
+    public function settings(Request $request, EntityManagerInterface $em, UserPasswordHasherInterface $passwordHasher, \App\Service\AppConfigService $configService): Response
     {
         /** @var Manager $manager */
         $manager = $this->getUser();
@@ -280,6 +280,31 @@ class ManagerController extends AbstractController
                 $phone     = trim($request->request->get('phone', ''));
                 $password  = $request->request->get('password', '');
 
+                if ($firstName && (strlen($firstName) < 2 || strlen($firstName) > 50)) {
+                    $this->addFlash('danger', 'First name must be between 2 and 50 characters.');
+                    return $this->redirectToRoute('app_manager_settings');
+                }
+
+                if ($lastName && (strlen($lastName) < 2 || strlen($lastName) > 50)) {
+                    $this->addFlash('danger', 'Last name must be between 2 and 50 characters.');
+                    return $this->redirectToRoute('app_manager_settings');
+                }
+
+                if ($email && !filter_var($email, FILTER_VALIDATE_EMAIL)) {
+                    $this->addFlash('danger', 'Please enter a valid email address.');
+                    return $this->redirectToRoute('app_manager_settings');
+                }
+
+                if ($phone && strlen(preg_replace('/[^0-9\+]/', '', $phone)) < 7) {
+                    $this->addFlash('danger', 'Please enter a valid phone number.');
+                    return $this->redirectToRoute('app_manager_settings');
+                }
+
+                if ($password && strlen($password) < 8) {
+                    $this->addFlash('danger', 'Password must be at least 8 characters long.');
+                    return $this->redirectToRoute('app_manager_settings');
+                }
+
                 if ($firstName) $manager->setFirstName($firstName);
                 if ($lastName)  $manager->setLastName($lastName);
                 if ($email)     $manager->setEmail($email);
@@ -322,22 +347,17 @@ class ManagerController extends AbstractController
 
             $org->setAccessMode($accessMode);
             $org->setSessionLimitHoursOverride($sessionLimit);
-            $orgTzStr = $org->getTimezone() ?: 'America/Chicago';
-            $orgTz    = new \DateTimeZone($orgTzStr);
-            $utc      = new \DateTimeZone('UTC');
-
+            $utcTz = new \DateTimeZone('UTC');
             if ($windowStart) {
-                $winStartDt = \DateTime::createFromFormat('H:i', $windowStart, $orgTz);
-                $winStartDt->setTimezone($utc);
-                $org->setCheckInWindowStart($winStartDt);
+                $winStartDt = \DateTime::createFromFormat('!H:i', $windowStart, $utcTz);
+                $org->setCheckInWindowStart($winStartDt ?: null);
             } else {
                 $org->setCheckInWindowStart(null);
             }
 
             if ($windowEnd) {
-                $winEndDt = \DateTime::createFromFormat('H:i', $windowEnd, $orgTz);
-                $winEndDt->setTimezone($utc);
-                $org->setCheckInWindowEnd($winEndDt);
+                $winEndDt = \DateTime::createFromFormat('!H:i', $windowEnd, $utcTz);
+                $org->setCheckInWindowEnd($winEndDt ?: null);
             } else {
                 $org->setCheckInWindowEnd(null);
             }
@@ -364,8 +384,15 @@ class ManagerController extends AbstractController
             return $this->redirectToRoute('app_manager_settings');
         }
 
+        if (!$org->getSemiPermanentKioskToken()) {
+            $org->setSemiPermanentKioskToken(bin2hex(random_bytes(16)));
+            $em->flush();
+        }
+
+        $pdfPosterDownloadEnabled = (bool)$configService->get('pdf_poster_download_enabled', false);
         return $this->render('manager/settings.html.twig', [
             'org' => $org,
+            'pdfPosterDownloadEnabled' => $pdfPosterDownloadEnabled,
         ]);
     }
 
@@ -435,6 +462,19 @@ class ManagerController extends AbstractController
             }
         } catch (\Throwable $e) {
             $imgData = @file_get_contents($qrApiUrl);
+        }
+
+        if ((!$imgData || strlen($imgData) < 10) && $this->getParameter('kernel.environment') !== 'test') {
+            $fallbackUrl = 'https://chart.googleapis.com/chart?cht=qr&chs=360x360&chl=' . urlencode($kioskUrl);
+            try {
+                $client = \Symfony\Component\HttpClient\HttpClient::create(['timeout' => 5, 'verify_peer' => false]);
+                $response = $client->request('GET', $fallbackUrl);
+                if ($response->getStatusCode() === 200) {
+                    $imgData = $response->getContent();
+                }
+            } catch (\Throwable $e) {
+                $imgData = @file_get_contents($fallbackUrl);
+            }
         }
 
         if (!$imgData && $this->getParameter('kernel.environment') === 'test') {
@@ -656,7 +696,7 @@ class ManagerController extends AbstractController
             ->setParameter('org', $org);
 
         if ($searchQuery) {
-            $qb->andWhere('u.firstName LIKE :q OR u.lastName LIKE :q OR u.phone LIKE :q OR u.pin LIKE :q')
+            $qb->andWhere('u.firstName LIKE :q OR u.lastName LIKE :q OR u.email LIKE :q OR u.phone LIKE :q OR u.pin LIKE :q')
                ->setParameter('q', '%' . $searchQuery . '%');
         }
 
@@ -1608,7 +1648,7 @@ class ManagerController extends AbstractController
         $tempFile = tempnam(sys_get_temp_dir(), 'export');
         $fp = fopen($tempFile, 'w');
         foreach ($rows as $row) {
-            fputcsv($fp, $row);
+            fputcsv($fp, $row, ',', '"', '\\');
         }
         fclose($fp);
 

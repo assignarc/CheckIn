@@ -123,7 +123,8 @@
             </thead>
             <tbody>
                 {% for session in sessions %}
-                    <tr class="highlightable-session" data-duration="{{ session.durationSeconds|default(0) }}">
+                    {% set calcDuration = session.durationSeconds ? session.durationSeconds : ('now'|date('U') - session.startedAt.timestamp) %}
+                    <tr class="highlightable-session" data-duration="{{ calcDuration }}" data-start="{{ session.startedAt.timestamp }}" data-active="{{ session.endedAt ? 'false' : 'true' }}">
                         <td class="fw-600">{{ session.orgUser.firstName }} {{ session.orgUser.lastName }}</td>
                         <td>
                             <span class="d-inline-flex align-items-center gap-1">
@@ -138,28 +139,7 @@
                             {% if session.endedAt %}
                                 {{ session.endedAt|date('Y-m-d h:i A') }}
                             {% else %}
-                                {% if org.plan.name != 'basic' and session.category and session.category.maxSessionDurationMinutes is not null %}
-                                    {% set maxDurationSeconds = session.category.maxSessionDurationMinutes * 60 %}
-                                {% else %}
-                                    {% set maxDurationSeconds = org.sessionLimitHours * 3600 %}
-                                {% endif %}
-
-                                {% set shouldTerminate = false %}
-                                {% if org.plan.name == 'basic' %}
-                                    {% set shouldTerminate = true %}
-                                {% elseif session.category and session.category.terminateAtMaxDuration %}
-                                    {% set shouldTerminate = true %}
-                                {% endif %}
-
-                                <span class="badge badge-success ticking-timer fs-sm d-inline-flex align-items-center gap-2 tracking-wide" 
-                                      data-started="{{ session.startedAt|date('c') }}" 
-                                      data-max-duration="{{ maxDurationSeconds }}"
-                                      data-terminate="{{ shouldTerminate ? 'true' : 'false' }}"
-                                      style="font-family: monospace; padding: 0.35rem 0.6rem; text-transform: none;" 
-                                      title="Active Session">
-                                    <span class="ticking-dot"></span>
-                                    <span class="timer-text">00:00:00</span>
-                                </span>
+                                <span class="badge badge-success fs-xs">Active</span>
                             {% endif %}
                         </td>
                         <td>
@@ -168,7 +148,14 @@
                                 {% set mins = ((session.durationSeconds % 3600) / 60)|round(0, 'floor') %}
                                 {{ hours }}h {{ mins }}m
                             {% else %}
-                                --
+                                {% set elapsed = 'now'|date('U') - session.startedAt.timestamp %}
+                                {% set h = (elapsed / 3600)|round(0, 'floor') %}
+                                {% set m = ((elapsed % 3600) / 60)|round(0, 'floor') %}
+                                {% set s = elapsed % 60 %}
+                                {% set initial = '' %}
+                                {% if h > 0 %}{% set initial = initial ~ h ~ 'h ' %}{% endif %}
+                                {% set initial = initial ~ m ~ 'm ' ~ s ~ 's' %}
+                                <span class="session-timer fw-600 text-primary" data-start="{{ session.startedAt.timestamp }}">{{ initial }}</span>
                             {% endif %}
                         </td>
                         <td>
@@ -187,9 +174,9 @@
                         </td>
                         <td>
                             {% if not session.endedAt %}
-                                <form action="{{ path('app_manager_reports_force_end', {id: session.id}) }}" method="post" style="display:inline;">
-                                    <button type="button" class="btn btn-danger btn-sm force-end-btn px-2 py-1" title="Force End Session">
-                                        <span class="material-icons fs-sm">stop_circle</span> Stop
+                                <form action="{{ path('app_manager_reports_force_end', {id: session.id}) }}" method="post" class="confirm-form d-inline-block" data-confirm="Are you sure you want to check out {{ session.orgUser.firstName }} {{ session.orgUser.lastName }}?">
+                                    <button type="submit" class="btn btn-sm btn-outline-danger d-flex align-items-center gap-1">
+                                        <span class="material-icons fs-sm">logout</span> Check Out
                                     </button>
                                 </form>
                             {% else %}
@@ -217,66 +204,43 @@
 {{ parent() }}
 <script>
     document.addEventListener('DOMContentLoaded', function() {
-        // Ticking timer logic
-        function updateTickingTimers() {
-            document.querySelectorAll('.ticking-timer').forEach(timer => {
-                const startedStr = timer.getAttribute('data-started');
-                const started = new Date(startedStr).getTime();
-                const now = Date.now();
-                const diffMs = now - started;
-                if (diffMs < 0) {
-                    timer.querySelector('.timer-text').textContent = '00:00:00';
-                    return;
-                }
-                const diffSecs = Math.floor(diffMs / 1000);
-                const hrs = Math.floor(diffSecs / 3600);
-                const mins = Math.floor((diffSecs % 3600) / 60);
-                const secs = diffSecs % 60;
-                
-                const hrsStr = hrs.toString().padStart(2, '0');
-                const minsStr = mins.toString().padStart(2, '0');
-                const secsStr = secs.toString().padStart(2, '0');
-                
-                timer.querySelector('.timer-text').textContent = `${hrsStr}:${minsStr}:${secsStr}`;
+        // Live session timers
+        function updateTimers() {
+            const now = Math.floor(Date.now() / 1000);
+            document.querySelectorAll('.session-timer').forEach(el => {
+                const start = parseInt(el.getAttribute('data-start'));
+                if (isNaN(start)) return;
+                const diff = now - start;
+                if (diff < 0) { el.innerText = 'Just now'; return; }
+                const hours   = Math.floor(diff / 3600);
+                const minutes = Math.floor((diff % 3600) / 60);
+                const seconds = diff % 60;
+                let text = '';
+                if (hours > 0) text += hours + 'h ';
+                text += minutes + 'm ' + seconds + 's';
+                el.innerText = text;
             });
         }
-        updateTickingTimers();
-        setInterval(updateTickingTimers, 1000);
+        updateTimers();
+        setInterval(updateTimers, 1000);
 
-        document.querySelectorAll('.force-end-btn').forEach(btn => {
-            btn.addEventListener('click', function() {
-                const form = this.closest('form');
-                $.confirm({
-                    title: 'Force End Session?',
-                    content: 'Are you sure you want to forcefully end this session? This action cannot be undone.',
-                    type: 'red',
-                    theme: 'modern',
-                    buttons: {
-                        confirm: {
-                            text: 'Stop Session',
-                            btnClass: 'btn-red',
-                            action: function () {
-                                form.submit();
-                            }
-                        },
-                        cancel: function () {
-                            // do nothing
-                        }
-                    }
-                });
-            });
-        });
-        
         // Highlight logic
         const sessionElements = document.querySelectorAll('.highlightable-session');
         const clearBtn = document.getElementById('highlight-clear-btn');
         const customBtn = document.getElementById('highlight-custom-btn');
         const customInput = document.getElementById('custom-highlight-mins');
         
-        function applyHighlight(minSeconds) {
+        function applyHighlight(minSeconds, activeBtn) {
+            const now = Math.floor(Date.now() / 1000);
             sessionElements.forEach(el => {
-                const duration = parseInt(el.getAttribute('data-duration') || 0, 10);
-                if (duration > minSeconds) {
+                let duration = parseInt(el.getAttribute('data-duration') || 0, 10);
+                if (el.getAttribute('data-active') === 'true') {
+                    const start = parseInt(el.getAttribute('data-start') || 0, 10);
+                    if (start > 0) {
+                        duration = Math.max(0, now - start);
+                    }
+                }
+                if (duration >= minSeconds) {
                     el.classList.add('session-highlight');
                     el.classList.remove('session-dimmed');
                 } else {
@@ -284,31 +248,39 @@
                     el.classList.add('session-dimmed');
                 }
             });
-            clearBtn.style.display = 'inline-block';
+            
+            document.querySelectorAll('.highlight-filter-btn').forEach(b => b.classList.remove('active', 'btn-primary'));
+            if (activeBtn) activeBtn.classList.add('active', 'btn-primary');
+            if (clearBtn) clearBtn.style.display = 'inline-block';
         }
         
         function clearHighlight() {
             sessionElements.forEach(el => {
                 el.classList.remove('session-highlight', 'session-dimmed');
             });
-            clearBtn.style.display = 'none';
-            customInput.value = '';
+            document.querySelectorAll('.highlight-filter-btn').forEach(b => b.classList.remove('active', 'btn-primary'));
+            if (clearBtn) clearBtn.style.display = 'none';
+            if (customInput) customInput.value = '';
         }
         
         document.querySelectorAll('.highlight-filter-btn').forEach(btn => {
             btn.addEventListener('click', function() {
-                applyHighlight(parseInt(this.getAttribute('data-seconds'), 10));
+                applyHighlight(parseInt(this.getAttribute('data-seconds'), 10), this);
             });
         });
         
-        customBtn.addEventListener('click', function() {
-            const mins = parseInt(customInput.value, 10);
-            if (!isNaN(mins) && mins > 0) {
-                applyHighlight(mins * 60);
-            }
-        });
+        if (customBtn) {
+            customBtn.addEventListener('click', function() {
+                const mins = parseInt(customInput.value, 10);
+                if (!isNaN(mins) && mins > 0) {
+                    applyHighlight(mins * 60, this);
+                }
+            });
+        }
         
-        clearBtn.addEventListener('click', clearHighlight);
+        if (clearBtn) {
+            clearBtn.addEventListener('click', clearHighlight);
+        }
     });
 </script>
 {% endblock %}

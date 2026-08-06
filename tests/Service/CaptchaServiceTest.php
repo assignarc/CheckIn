@@ -19,17 +19,9 @@ class CaptchaServiceTest extends TestCase
         $this->service = new CaptchaService($this->configService);
     }
 
-    public function testIsEnabledForSignupAlwaysTrue(): void
+    public function testIsEnabledForSignupAndLoginAlwaysTrue(): void
     {
         $this->assertTrue($this->service->isEnabled('signup'));
-    }
-
-    public function testIsEnabledReadsConfig(): void
-    {
-        $this->configService->method('get')
-            ->with('captcha_login_enabled', false)
-            ->willReturn(true);
-
         $this->assertTrue($this->service->isEnabled('login'));
     }
 
@@ -51,12 +43,11 @@ class CaptchaServiceTest extends TestCase
 
         $request->setSession($session);
 
-        $question = $this->service->generateQuestion($request, 'login');
-        $this->assertNotEmpty($question);
-        $this->assertNotNull($storedValue);
+        // Test validating with the correct answer
+        $this->assertTrue($this->service->validate($request, 'login', (string)$storedValue));
 
-        // Disabling captcha context so validate passes automatically
+        // Testing disabled captcha context (e.g. demo) returns true
         $this->configService->method('get')->willReturn(false);
-        $this->assertTrue($this->service->validate($request, 'login', '123'));
+        $this->assertTrue($this->service->validate($request, 'demo', '123'));
     }
 }

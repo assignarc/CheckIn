@@ -4,10 +4,13 @@ namespace App\Entity;
 
 use Doctrine\ORM\Mapping as ORM;
 use Gedmo\Mapping\Annotation as Gedmo;
+use Symfony\Component\Validator\Constraints as Assert;
+use Symfony\Bridge\Doctrine\Validator\Constraints\UniqueEntity;
 
 #[ORM\Entity]
 #[ORM\Table(name: "organizations")]
 #[Gedmo\SoftDeleteable(fieldName: 'deletedAt', timeAware: false)]
+#[UniqueEntity(fields: ['slug'], message: 'An organization with this slug already exists.')]
 class Organization
 {
     #[ORM\Id]
@@ -16,22 +19,29 @@ class Organization
     private ?int $id = null;
 
     #[ORM\Column(type: "string", length: 255)]
+    #[Assert\NotBlank(message: 'Organization name is required.')]
+    #[Assert\Length(min: 2, max: 255)]
     private string $name;
 
     #[ORM\Column(type: "string", length: 255, unique: true)]
+    #[Assert\NotBlank]
+    #[Assert\Regex(pattern: '/^[a-z0-9]+(?:-[a-z0-9]+)*$/', message: 'Slug must contain lowercase alphanumeric characters and hyphens only.')]
     private string $slug;
 
     #[ORM\ManyToOne(targetEntity: Plan::class)]
     #[ORM\JoinColumn(name: "plan_id", referencedColumnName: "id", nullable: false)]
+    #[Assert\NotNull]
     private Plan $plan;
 
     #[ORM\Column(type: "string", length: 50)]
+    #[Assert\Choice(choices: ['open', 'secure'], message: 'Access mode must be open or secure.')]
     private string $accessMode = 'secure'; // open, secure
 
     #[ORM\Column(type: "string", length: 255)]
     private string $checkInLinkToken;
 
     #[ORM\Column(type: "integer")]
+    #[Assert\Range(min: 1, max: 168, notInRangeMessage: 'Token rotation interval must be between 1 and 168 hours.')]
     private int $kioskTokenRotationHours = 24;
 
     #[ORM\Column(type: "string", length: 255, nullable: true)]
@@ -47,6 +57,7 @@ class Organization
     private ?\DateTimeInterface $checkInWindowEnd = null;
 
     #[ORM\Column(type: "integer")]
+    #[Assert\Range(min: 0, max: 1440, notInRangeMessage: 'Grace minutes must be between 0 and 1440.')]
     private int $overtimeGraceMinutes = 0;
 
     #[ORM\Column(type: "decimal", precision: 4, scale: 2, options: ["default" => "1.50"])]
@@ -131,6 +142,9 @@ class Organization
 
     public function getSemiPermanentKioskToken(): ?string
     {
+        if (empty($this->semiPermanentKioskToken)) {
+            $this->semiPermanentKioskToken = bin2hex(random_bytes(16));
+        }
         return $this->semiPermanentKioskToken;
     }
 

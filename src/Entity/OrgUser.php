@@ -4,12 +4,15 @@ namespace App\Entity;
 
 use Doctrine\ORM\Mapping as ORM;
 use Gedmo\Mapping\Annotation as Gedmo;
+use Symfony\Component\Validator\Constraints as Assert;
+use Symfony\Bridge\Doctrine\Validator\Constraints\UniqueEntity;
 
 #[ORM\Entity]
 #[ORM\Table(name: "org_users")]
 #[ORM\UniqueConstraint(name: "uq_org_pin", columns: ["organization_id", "pin"])]
 #[ORM\UniqueConstraint(name: "uq_org_unique_hash", columns: ["organization_id", "unique_id_hash"])]
 #[Gedmo\SoftDeleteable(fieldName: 'deletedAt', timeAware: false)]
+#[UniqueEntity(fields: ['organization', 'pin'], message: 'This PIN is already in use by another user in your organization.', ignoreNull: true)]
 class OrgUser
 {
     #[ORM\Id]
@@ -19,24 +22,33 @@ class OrgUser
 
     #[ORM\ManyToOne(targetEntity: Organization::class)]
     #[ORM\JoinColumn(name: "organization_id", referencedColumnName: "id", nullable: false, onDelete: "CASCADE")]
+    #[Assert\NotNull(message: 'Organization is required.')]
     private Organization $organization;
 
     #[ORM\Column(type: "string", length: 255, nullable: true)]
+    #[Assert\Email(message: 'Invalid email address format.', mode: Assert\Email::VALIDATION_MODE_STRICT)]
+    #[Assert\Length(max: 255)]
     private ?string $email = null;
 
     #[ORM\Column(type: "string", length: 100)]
+    #[Assert\NotBlank(message: 'First name is required.')]
+    #[Assert\Length(min: 1, max: 100, minMessage: 'First name cannot be empty.')]
     private string $firstName;
 
     #[ORM\Column(type: "string", length: 100)]
+    #[Assert\NotBlank(message: 'Last name is required.')]
+    #[Assert\Length(min: 1, max: 100, minMessage: 'Last name cannot be empty.')]
     private string $lastName;
 
     #[ORM\Column(type: "string", length: 50, nullable: true)]
+    #[Assert\Length(max: 50)]
     private ?string $phone = null;
 
     #[ORM\Column(type: "string", length: 255)]
     private string $pinHash; // hashed 4-character PIN
 
     #[ORM\Column(type: "string", length: 10, nullable: true)]
+    #[Assert\Length(max: 10)]
     private ?string $pin = null;
 
     #[ORM\Column(type: "boolean", options: ["default" => true])]

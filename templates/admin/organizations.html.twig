@@ -69,7 +69,7 @@
                 {% for item in organizations %}
                     {% set org = item.org %}
                     <tr>
-                        <td class="fs-sm fw-600 text-white">{{ org.name }}</td>
+                        <td class="fs-sm fw-600" style="color: var(--text-primary);">{{ org.name }}</td>
                         <td class="hide-on-mobile"><code>{{ org.slug }}</code></td>
                         <td>
                             <span class="badge {% if org.plan.name == 'gold' %}badge-success{% elseif org.plan.name == 'silver' %}badge-info{% else %}badge-warning{% endif %}">

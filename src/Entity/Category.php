@@ -4,6 +4,7 @@ namespace App\Entity;
 
 use Doctrine\ORM\Mapping as ORM;
 use Gedmo\Mapping\Annotation as Gedmo;
+use Symfony\Component\Validator\Constraints as Assert;
 
 #[ORM\Entity]
 #[ORM\Table(name: "categories")]
@@ -16,15 +17,20 @@ class Category
 
     #[ORM\ManyToOne(targetEntity: Organization::class)]
     #[ORM\JoinColumn(name: "organization_id", referencedColumnName: "id", nullable: false, onDelete: "CASCADE")]
+    #[Assert\NotNull]
     private Organization $organization;
 
     #[ORM\Column(type: "string", length: 100)]
+    #[Assert\NotBlank(message: 'Category name is required.')]
+    #[Assert\Length(min: 1, max: 100)]
     private string $name;
 
     #[ORM\Column(type: "string", length: 50)]
+    #[Assert\Length(max: 50)]
     private string $icon = 'work'; // Default material icon name
 
     #[ORM\Column(type: "string", length: 50)]
+    #[Assert\Length(max: 50)]
     private string $color = '#6366f1';
     #[ORM\Column(type: "boolean", options: ["default" => false])]
     private bool $requiresLocation = false;
@@ -36,6 +42,7 @@ class Category
     private bool $isActive = true;
 
     #[ORM\Column(type: "integer", nullable: true)]
+    #[Assert\Range(min: 1, max: 1440, notInRangeMessage: 'Max session duration must be between 1 and 1440 minutes.')]
     private ?int $maxSessionDurationMinutes = null;
 
     #[ORM\Column(type: "boolean")]

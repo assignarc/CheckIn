@@ -26,7 +26,7 @@
             <tbody>
                 {% for plan in plans %}
                     <tr>
-                        <td class="fs-lg fw-700 text-white" style="text-transform:capitalize">{{ plan.name }}</td>
+                        <td class="fs-lg fw-700" style="text-transform:capitalize; color: var(--text-primary);">{{ plan.name }}</td>
                         <td class="fw-600 text-primary">${{ plan.priceMonthly }}/mo</td>
                         <td class="font-mono fs-xs text-secondary">
                             {% if plan.stripePriceId %}

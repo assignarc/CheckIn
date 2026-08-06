@@ -1,23 +1,66 @@
 {% extends 'support/layout.html.twig' %}
 
-{% block support_title %}Manager Overview Guide{% endblock %}
+{% block support_title %}Getting Started &amp; Organization Creation{% endblock %}
 
 {% block support_content %}
-<h2 class="fs-2xl fw-800 text-white mb-2">Manager Overview Guide</h2>
+<h2 class="fs-2xl fw-800 text-white mb-2">Getting Started &amp; Organization Creation</h2>
 <p class="fs-md text-secondary mb-6 lh-relaxed">
-    Welcome to the CenterTime Help Center. This guide outlines how to monitor, configure, and scale your organization's time-tracking operations.
+    Welcome to CenterTime. This guide walks you through setting up a new organization, initializing manager accounts, configuring workspace parameters, and deploying your check-in platform.
 </p>
+
+<!-- ── Video Section 1: Create Organization ── -->
+<div class="mb-8 p-6 glass-panel" style="border-radius: var(--radius-md); border: 1px solid rgba(255,255,255,0.12); background: rgba(0,0,0,0.25);">
+    <h3 class="fs-xl fw-700 text-white mb-3 d-flex align-items-center gap-2">
+        <span class="material-icons text-primary fs-xl">play_circle_filled</span>
+        Video Tutorial: Creating Your Organization
+    </h3>
+    <p class="fs-sm text-secondary mb-5 lh-relaxed">
+        Watch this step-by-step walkthrough demonstrating how to register a new organization account and set up your manager dashboard.
+    </p>
+
+    <div class="video-embed-wrapper mb-4" style="position: relative; width: 100%; aspect-ratio: 16 / 9; min-height: 380px; border-radius: var(--radius-md); border: 1px solid rgba(255,255,255,0.12); box-shadow: var(--shadow-md); background: #000; overflow: hidden;">
+        <iframe 
+            src="https://www.youtube-nocookie.com/embed/KSHArY3dKCA?rel=0" 
+            title="Create Organization Tutorial" 
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
+            allowfullscreen
+            style="width: 100%; height: 100%; border: 0; display: block;">
+        </iframe>
+    </div>
+</div>
+
+<h3 class="fs-lg fw-700 text-white mb-3">1. Registration &amp; Account Setup</h3>
+<p class="fs-sm text-secondary mb-4 lh-relaxed">
+    Setting up a new organization takes under two minutes. Follow these simple steps:
+</p>
+<ol class="fs-sm text-secondary d-flex flex-column gap-3 pl-5 lh-relaxed mb-8">
+    <li>
+        <strong>Navigate to Signup:</strong> Click <em>Start Free Trial</em> or navigate to the registration page (`/signup`).
+    </li>
+    <li>
+        <strong>Organization Profile:</strong> Enter your organization's legal name and physical address. A unique URL slug (e.g. `center-time.us/kiosk/your-org-slug`) will be automatically generated for your kiosk link.
+    </li>
+    <li>
+        <strong>Administrator Credentials:</strong> Provide the primary manager's first name, last name, email address, phone number, and a strong password. This account will serve as the initial Super Manager.
+    </li>
+    <li>
+        <strong>Plan Selection:</strong> Select your starting subscription tier (Free Basic, Silver, or Gold). You can upgrade or switch plans at any time from your billing settings.
+    </li>
+</ol>
+
+<hr class="my-6" style="border: 0; border-top: 1px solid rgba(255,255,255,0.08)">
 
 <div class="support-split-view mb-8">
     <div>
-        <h3 class="fs-lg fw-700 text-white mb-3">The Manager Dashboard</h3>
+        <h3 class="fs-lg fw-700 text-white mb-3">2. The Manager Dashboard Overview</h3>
         <p class="fs-sm text-secondary mb-4 lh-relaxed">
-            The dashboard is the central command center for your organization. As soon as you log in, you are presented with real-time analytics and live operation controls:
+            Upon registering, you are immediately routed to your live Manager Dashboard:
         </p>
         <ul class="fs-sm text-secondary d-flex flex-column gap-2 pl-5 lh-relaxed">
-            <li><strong>Active Sessions Count:</strong> Displays the number of students currently checked into your workplace in real-time.</li>
-            <li><strong>Total Sessions Today:</strong> Tracks the cumulative number of check-in and checkout events that have occurred since midnight.</li>
-            <li><strong>Active List Grid:</strong> Lists all currently clocked-in students, displaying their check-in category (e.g. Development, Design), start time, and active duration.</li>
+            <li><strong>Active Sessions Count:</strong> Real-time tally of all students or employees currently checked in.</li>
+            <li><strong>Total Sessions Today:</strong> Cumulative count of all check-in/out events processed since midnight.</li>
+            <li><strong>Live Activity Grid:</strong> Displays actively checked-in personnel, their check-in category (e.g., Development, Tutoring), start time, and running shift duration.</li>
+            <li><strong>Manual Clock-Out Control:</strong> Allows managers to manually end any active session with a single click.</li>
         </ul>
     </div>
     <div class="glass-panel p-2 d-flex flex-column align-items-center" style="border-radius: var(--radius-sm); border: 1px solid rgba(255,255,255,0.08); background: rgba(0,0,0,0.2);">
@@ -28,8 +71,23 @@
 
 <hr class="my-6" style="border: 0; border-top: 1px solid rgba(255,255,255,0.08)">
 
-<h3 class="fs-lg fw-700 text-white mb-4">Real-Time Indicators</h3>
-<p class="fs-sm text-secondary mb-0 lh-relaxed">
-    The dashboard utilizes automatic updates to display session durations and check-in statuses without manual page reloads. If a manager needs to manually clock out a student, they can click the <strong>Force Clock Out</strong> button directly from the active session list.
-</p>
+<h3 class="fs-lg fw-700 text-white mb-4">Next Steps for Setup</h3>
+<div class="d-grid gap-4" style="grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));">
+    <a href="{{ path('app_support_users') }}" class="p-4 rounded-sm bg-input border text-decoration-none d-block transition-all" style="border-left: 4px solid var(--primary) !important;">
+        <div class="fs-md fw-600 text-white mb-1 d-flex align-items-center gap-2">
+            <span class="material-icons text-primary fs-sm">upload_file</span> Bulk Roster Import &rarr;
+        </div>
+        <p class="fs-sm text-secondary m-0 lh-relaxed">
+            Import your student or employee records in bulk using our flexible CSV import wizard.
+        </p>
+    </a>
+    <a href="{{ path('app_support_kiosk') }}" class="p-4 rounded-sm bg-input border text-decoration-none d-block transition-all" style="border-left: 4px solid var(--info) !important;">
+        <div class="fs-md fw-600 text-white mb-1 d-flex align-items-center gap-2">
+            <span class="material-icons text-info fs-sm">tablet_mac</span> Deploy Kiosk Terminal &rarr;
+        </div>
+        <p class="fs-sm text-secondary m-0 lh-relaxed">
+            Launch your check-in kiosk terminal on tablets, touch monitors, or desktop screens.
+        </p>
+    </a>
+</div>
 {% endblock %}

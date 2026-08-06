@@ -10,11 +10,9 @@
     <!-- Middle: left vertical PIN · center QR code · right vertical system logo -->
     <div class="label-middle-row">
         <div class="label-pin-vertical">PIN: {{ user.pin }}</div>
-        {% if org.isBarcodeEnabled() %}
         <div class="label-code">
             <img src="https://api.qrserver.com/v1/create-qr-code/?size=100x100&data={{ user.pin }}" alt="QR Code">
         </div>
-        {% endif %}
         <!-- System logo: vertical on right side of QR code, same font size as PIN -->
         <div class="label-syslogo-vertical">⏰ CenterTime</div>
     </div>

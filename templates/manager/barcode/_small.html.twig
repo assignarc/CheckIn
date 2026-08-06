@@ -19,10 +19,8 @@
             <span style="font-size: inherit; font-family: Arial, sans-serif; color: #718096; letter-spacing: 0.02em;">CenterTime</span>
         </div>
     </div>
-    {% if org.isBarcodeEnabled() %}
     <div class="label-code">
         <!-- Renders QR code encoding the unique PIN -->
         <img src="https://api.qrserver.com/v1/create-qr-code/?size=100x100&data={{ user.pin }}" alt="QR Code">
     </div>
-    {% endif %}
 </div>

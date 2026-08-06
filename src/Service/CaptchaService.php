@@ -17,7 +17,8 @@ class CaptchaService
     public function isEnabled(string $context): bool
     {
         if ($context === 'login') {
-            return (bool)$this->configService->get('captcha_login_enabled', false);
+            // Login always requires captcha for security
+            return true;
         }
 
         if ($context === 'demo') {
@@ -62,6 +63,11 @@ class CaptchaService
     public function generateImage(Request $request, string $context): string
     {
         $question = $this->generateQuestion($request, $context);
+        return $this->generateImageFromQuestion($question);
+    }
+
+    public function generateImageFromQuestion(string $question): string
+    {
         $text = $question . " = ?";
 
         $width = 160;

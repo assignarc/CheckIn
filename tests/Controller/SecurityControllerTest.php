@@ -12,18 +12,32 @@ class SecurityControllerTest extends WebTestCase
         $crawler = $client->request('GET', '/login');
 
         $this->assertResponseIsSuccessful();
-        $this->assertSelectorTextContains('h2', 'Welcome Back');
+        $this->assertSelectorExists('#captcha_answer');
+        $this->assertSelectorExists('img[alt*="Math Captcha"]');
     }
 
-    public function testLoginWithInvalidCredentials(): void
+    public function testLoginPageRendersMathCaptcha(): void
     {
         $client = static::createClient();
+
         $crawler = $client->request('GET', '/login');
 
-        // Submit form with wrong credentials
+        $this->assertResponseIsSuccessful();
+        $this->assertSelectorExists('#captcha_answer');
+        $this->assertSelectorExists('img[alt*="Math Captcha"]');
+    }
+
+    public function testLoginCaptchaValidationFailure(): void
+    {
+        $client = static::createClient();
+
+        $crawler = $client->request('GET', '/login');
+
+        // Submit form with invalid captcha answer
         $form = $crawler->selectButton('Sign In')->form([
-            '_username' => 'nonexistent@company.com',
-            '_password' => 'wrongpassword',
+            '_username' => 'manager@acme.com',
+            '_password' => 'password123',
+            'captcha_answer' => '9999'
         ]);
         
         $client->submit($form);
@@ -31,5 +45,6 @@ class SecurityControllerTest extends WebTestCase
         
         $client->followRedirect();
         $this->assertSelectorExists('.alert-danger');
+        $this->assertSelectorTextContains('.alert-danger', 'Incorrect math captcha answer');
     }
 }

@@ -208,12 +208,12 @@
                     <div class="form-group">
                         <label class="form-label" for="window_start">Start Time</label>
                         <input type="time" name="window_start" id="window_start" class="form-control"
-                               value="{% if org.checkInWindowStart %}{{ org.checkInWindowStart|date('H:i', org.timezone ?: 'America/Chicago') }}{% endif %}">
+                               value="{% if org.checkInWindowStart %}{{ org.checkInWindowStart|date('H:i', 'UTC') }}{% endif %}">
                     </div>
                     <div class="form-group">
                         <label class="form-label" for="window_end">End Time</label>
                         <input type="time" name="window_end" id="window_end" class="form-control"
-                               value="{% if org.checkInWindowEnd %}{{ org.checkInWindowEnd|date('H:i', org.timezone ?: 'America/Chicago') }}{% endif %}">
+                               value="{% if org.checkInWindowEnd %}{{ org.checkInWindowEnd|date('H:i', 'UTC') }}{% endif %}">
                     </div>
                 </div>
                 <span class="form-text d-block mb-2 mt-n1">Leave blank for 24/7 access.</span>
@@ -332,21 +332,23 @@
 
                         <!-- QR Code -->
                         <div style="display: inline-block; padding: 1rem; background: #ffffff; border: 2.5px solid #6366f1; border-radius: 16px; box-shadow: 0 10px 30px rgba(99, 102, 241, 0.1); margin-bottom: 2rem;">
-                            <img src="https://api.qrserver.com/v1/create-qr-code/?size=180x180&data={{ url('app_kiosk_redirect', {slug: org.slug, semiPermanentToken: org.semiPermanentKioskToken})|url_encode }}&ecc=H&color=6366f1" alt="Permanent Kiosk QR Code" crossorigin="anonymous" style="width: 180px; height: 180px; display: block; border-radius: 8px;">
+                            <img id="kiosk-poster-qr-img" src="https://api.qrserver.com/v1/create-qr-code/?size=180x180&data={{ url('app_kiosk_redirect', {slug: org.slug, semiPermanentToken: org.semiPermanentKioskToken|default(org.checkInLinkToken|default('token'))})|url_encode }}&ecc=H&color=6366f1" alt="Permanent Kiosk QR Code" crossorigin="anonymous" style="width: 180px; height: 180px; display: block; border-radius: 8px;">
                         </div>
 
                         <!-- URL Footer -->
                         <div style="font-size: 11px; font-family: monospace; color: #64748b; word-break: break-all; max-width: 100%;">
-                            {{ url('app_kiosk_redirect', {slug: org.slug, semiPermanentToken: org.semiPermanentKioskToken}) }}
+                            {{ url('app_kiosk_redirect', {slug: org.slug, semiPermanentToken: org.semiPermanentKioskToken|default(org.checkInLinkToken|default('token'))}) }}
                         </div>
                     </div>
                 </div>
 
                 <!-- Action Button Controls -->
                 <div class="d-flex gap-4">
-                    <button type="button" id="btn-download-kiosk-pdf" onclick="downloadKioskPosterPdf()" class="btn btn-success d-flex align-items-center justify-content-center gap-1 flex-1">
-                        <span class="material-icons">download</span> Download PDF Poster
-                    </button>
+                    {% if pdfPosterDownloadEnabled|default(false) %}
+                        <button type="button" id="btn-download-kiosk-pdf" onclick="downloadKioskPosterPdf()" class="btn btn-success d-flex align-items-center justify-content-center gap-1 flex-1">
+                            <span class="material-icons">download</span> Download PDF Poster
+                        </button>
+                    {% endif %}
                     <form action="{{ path('app_manager_rotate_semi_permanent_token') }}" method="post"
                           class="confirm-form flex-1" data-confirm="Regenerate this permanent link? All previously printed QR codes for this organization will stop working.">
                         <button type="submit" class="btn btn-danger d-flex align-items-center justify-content-center gap-1 w-100">
@@ -405,72 +407,73 @@ async function downloadKioskPosterPdf() {
     const origHtml = btn ? btn.innerHTML : '';
     if (btn) { btn.disabled = true; btn.innerHTML = '<span class="material-icons">hourglass_top</span> Generating…'; }
 
-    let offscreen = null;
+    const qrImg = document.getElementById('kiosk-poster-qr-img');
+    const origQrSrc = qrImg ? qrImg.src : '';
+
     try {
-        // ── Step 1: Fetch QR code as base64 from server (no CORS issues) ──
-        const res  = await fetch('{{ path('app_manager_settings_kiosk_qr_data') }}');
-        if (!res.ok) throw new Error('Could not load QR code from server.');
-        const data = await res.json();
-        if (data.error) throw new Error(data.error);
+        // ── Step 1: Fetch QR base64 data from server API ──────────────────
+        let base64Qr = null;
+        try {
+            const res = await fetch('{{ path('app_manager_settings_kiosk_qr_data') }}');
+            if (res.ok) {
+                const data = await res.json();
+                if (data.qrDataUrl) {
+                    base64Qr = data.qrDataUrl;
+                }
+            }
+        } catch (err) {
+            console.warn('Backend QR fetch warning, using client fallback:', err);
+        }
 
-        // ── Step 2: Build an off-screen clone with inline styles ──────────
-        // html2canvas needs the element to be rendered (not display:none).
-        // We position it way off-screen but still "visible" in the DOM.
-        offscreen = document.createElement('div');
-        offscreen.style.cssText = [
-            'position:fixed', 'top:-9999px', 'left:-9999px',
-            'width:440px', 'background:#ffffff', 'color:#1e293b',
-            'border-radius:16px', 'padding:40px', 'text-align:center',
-            'font-family:Arial,sans-serif', 'z-index:-1',
-        ].join(';');
+        // Fallback: convert current loaded QR image to canvas data URL
+        if (!base64Qr && qrImg && qrImg.complete && qrImg.naturalWidth > 0) {
+            try {
+                const canvas = document.createElement('canvas');
+                canvas.width = qrImg.naturalWidth || 360;
+                canvas.height = qrImg.naturalHeight || 360;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(qrImg, 0, 0);
+                base64Qr = canvas.toDataURL('image/png');
+            } catch (canvasErr) {
+                console.warn('Canvas conversion fallback warning:', canvasErr);
+            }
+        }
 
-        offscreen.innerHTML = `
-            <div style="display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:24px;">
-                <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="#6366f1"><path d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67V7z"/></svg>
-                <span style="font-size:22px;font-weight:800;letter-spacing:-0.02em;color:#1e293b;">Time<span style="color:#6366f1;">Flow</span></span>
-            </div>
-            <h2 style="font-size:20px;font-weight:700;margin:0 0 8px;color:#0f172a;">Employee Check-In Kiosk</h2>
-            <p style="font-size:13px;color:#64748b;margin:0 0 32px;">Scan to check in or out of your shift</p>
-            <div style="display:inline-flex;align-items:center;gap:8px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:99px;padding:6px 16px;margin-bottom:32px;">
-                <span style="font-size:13px;font-weight:600;color:#334155;">${data.orgName}</span>
-            </div>
-            <br>
-            <div style="display:inline-block;padding:16px;background:#ffffff;border:2.5px solid #6366f1;border-radius:16px;box-shadow:0 10px 30px rgba(99,102,241,0.12);margin-bottom:28px;">
-                <img src="${data.qrDataUrl}" alt="QR Code" style="width:200px;height:200px;display:block;border-radius:8px;">
-            </div>
-            <div style="font-size:10px;font-family:monospace;color:#64748b;word-break:break-all;max-width:360px;margin:0 auto;">
-                ${data.kioskUrl}
-            </div>
-        `;
-        document.body.appendChild(offscreen);
+        // Swap QR image source to inline base64 data URL so html2canvas renders it without cross-origin issues
+        if (qrImg && base64Qr) {
+            qrImg.src = base64Qr;
+            if (qrImg.decode) {
+                await qrImg.decode().catch(() => {});
+            } else {
+                await new Promise(r => setTimeout(r, 200));
+            }
+        }
 
-        // Wait a tick for the browser to render the injected image
-        await new Promise(r => setTimeout(r, 300));
-
-        // ── Step 3: Capture with html2canvas ─────────────────────────────
-        const canvas = await html2canvas(offscreen, {
-            scale: 2,
-            useCORS: false,        // all images are inline data: URLs — no CORS needed
+        // ── Step 2: Capture visible poster container ──────────────────────
+        const captureArea = document.getElementById('poster-capture-area');
+        const canvas = await html2canvas(captureArea, {
+            scale: 3,
+            useCORS: true,
             allowTaint: true,
             backgroundColor: '#ffffff',
-            logging: false,
-            width:  offscreen.offsetWidth,
-            height: offscreen.offsetHeight,
+            logging: false
         });
 
-        // ── Step 4: Build PDF ─────────────────────────────────────────────
+        // ── Step 3: Build PDF document ────────────────────────────────────
         const { jsPDF } = window.jspdf;
         const mmW = 148; // A5 width (mm)
         const mmH = Math.ceil((canvas.height / canvas.width) * mmW);
         const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: [mmW, mmH] });
         pdf.addImage(canvas.toDataURL('image/png'), 'PNG', 0, 0, mmW, mmH);
-        pdf.save(`kiosk-poster-${data.orgSlug}.pdf`);
+        pdf.save('kiosk-poster-{{ org.slug }}.pdf');
 
     } catch (e) {
         console.error('PDF error:', e);
         alert('PDF generation failed: ' + (e.message || 'Unknown error'));
     } finally {
-        if (offscreen && offscreen.parentNode) offscreen.parentNode.removeChild(offscreen);
+        if (qrImg && origQrSrc) {
+            qrImg.src = origQrSrc;
+        }
         if (btn) { btn.disabled = false; btn.innerHTML = origHtml; }
     }
 }

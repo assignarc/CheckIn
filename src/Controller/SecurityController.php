@@ -23,12 +23,14 @@ class SecurityController extends AbstractController
         $lastUsername = $authenticationUtils->getLastUsername();
 
         $captchaEnabled = $captchaService->isEnabled('login');
-        $captchaImage = $captchaEnabled ? $captchaService->generateImage($request, 'login') : '';
+        $captchaQuestion = $captchaEnabled ? $captchaService->generateQuestion($request, 'login') : '';
+        $captchaImage = $captchaEnabled ? $captchaService->generateImageFromQuestion($captchaQuestion) : '';
 
         return $this->render('security/login.html.twig', [
             'last_username' => $lastUsername,
             'error' => $error,
             'captcha_enabled' => $captchaEnabled,
+            'captcha_question' => $captchaQuestion,
             'captcha_image' => $captchaImage,
         ]);
     }

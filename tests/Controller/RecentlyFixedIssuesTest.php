@@ -79,6 +79,10 @@ class RecentlyFixedIssuesTest extends WebTestCase
         // Assert sidebar and header elements are present, confirming layout extension
         $this->assertSelectorExists('.sidebar');
         $this->assertSelectorExists('.dashboard-header');
+
+        // Assert printable barcode container and barcode/QR code images are rendered
+        $this->assertSelectorExists('.avery-print-container');
+        $this->assertSelectorExists('.label-code img');
     }
 
     /**
