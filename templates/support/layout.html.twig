@@ -38,38 +38,4 @@
         {% block support_content %}{% endblock %}
     </article>
 </div>
-
-<style>
-    /* Support sidebar styling */
-    .sidebar-link {
-        color: var(--text-secondary);
-        display: flex;
-        align-items: center;
-        transition: all 0.2s ease;
-    }
-    .sidebar-link:hover {
-        background: var(--bg-hover);
-        color: var(--text-primary);
-    }
-    .sidebar-link.active {
-        background: var(--primary-glow) !important;
-        color: var(--primary) !important;
-        font-weight: 600;
-    }
-    .support-split-view {
-        display: grid;
-        grid-template-columns: 1fr 280px;
-        gap: 1.5rem;
-        align-items: start;
-    }
-    @media (max-width: 900px) {
-        .grid-cols-4 {
-            grid-template-columns: 1fr !important;
-            gap: 1.5rem !important;
-        }
-        .support-split-view {
-            grid-template-columns: 1fr !important;
-        }
-    }
-</style>
 {% endblock %}

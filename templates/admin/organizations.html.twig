@@ -4,46 +4,6 @@
 
 {% block stylesheets %}
     {{ parent() }}
-    <style>
-        .org-details-container {
-            display: grid;
-            grid-template-columns: 2fr 1fr 1fr;
-            gap: 2rem;
-        }
-        .org-details-right {
-            border-left: 1px solid rgba(255, 255, 255, 0.06);
-            padding-left: 2.5rem;
-        }
-        
-        @media (max-width: 1200px) {
-            .grid-cols-3 {
-                grid-template-columns: repeat(2, 1fr) !important;
-            }
-        }
-        
-        @media (max-width: 992px) {
-            .org-details-container {
-                grid-template-columns: 1fr;
-                gap: 1.5rem;
-            }
-            .org-details-right {
-                border-left: none !important;
-                padding-left: 0 !important;
-                border-top: 1px solid rgba(255, 255, 255, 0.06);
-                padding-top: 1.5rem;
-            }
-            .grid-cols-3 {
-                grid-template-columns: 1fr !important;
-            }
-        }
-
-        /* Responsive table helpers to adjust column layouts on mobile */
-        @media (max-width: 768px) {
-            .hide-on-mobile {
-                display: none !important;
-            }
-        }
-    </style>
 {% endblock %}
 
 {% block admin_content %}

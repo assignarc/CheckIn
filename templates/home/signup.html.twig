@@ -3,64 +3,7 @@
 {% block title %}Sign Up - Create Organization{% endblock %}
 
 {% block stylesheets %}
-    <style>
-        .plan-card {
-            background: var(--bg-card, rgba(255,255,255,0.03)) !important;
-            border: 2px solid var(--border-color) !important;
-            border-radius: var(--radius-md) !important;
-            padding: 2rem !important;
-            cursor: pointer;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
-            display: flex !important;
-            flex-direction: column !important;
-            align-items: center !important;
-            text-align: center !important;
-            position: relative;
-            overflow: hidden;
-            min-height: 400px;
-            font-size: 0.95rem !important;
-        }
-        .plan-card:hover {
-            transform: translateY(-4px) !important;
-            border-color: var(--primary) !important;
-            box-shadow: var(--shadow-glow) !important;
-            background: var(--bg-card-hover, rgba(255,255,255,0.06)) !important;
-        }
-        .plan-card.selected {
-            border-color: var(--primary) !important;
-            background: var(--primary-glow, rgba(99, 102, 241, 0.08)) !important;
-            box-shadow: 0 0 20px rgba(99, 102, 241, 0.25) !important;
-        }
-        /* Popular badge for Silver plan */
-        .plan-card.recommended {
-            border-color: #f59e0b !important;
-        }
-        .plan-card.recommended::before {
-            content: "POPULAR";
-            position: absolute;
-            top: 15px;
-            right: -30px;
-            background: #f59e0b;
-            color: #000;
-            font-size: 0.65rem;
-            font-weight: 700;
-            padding: 4px 30px;
-            transform: rotate(45deg);
-            letter-spacing: 0.05em;
-        }
-        .plan-selected-badge {
-            position: absolute;
-            top: 15px;
-            left: 15px;
-            color: var(--primary);
-            font-size: 1.5rem;
-            opacity: 0;
-            transition: opacity 0.2s ease;
-        }
-        .plan-card.selected .plan-selected-badge {
-            opacity: 1;
-        }
-    </style>
+    {{ parent() }}
 {% endblock %}
 
 {% block content %}

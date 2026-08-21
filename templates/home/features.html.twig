@@ -4,57 +4,6 @@
 
 {% block stylesheets %}
     {{ parent() }}
-    <style>
-        /* Onboarding Slide Animation Styles */
-        .onboarding-slide {
-            display: none;
-            opacity: 0;
-            transition: opacity 0.5s ease-in-out;
-        }
-        .onboarding-slide.active {
-            display: block;
-            opacity: 1;
-        }
-
-        .dot {
-            width: 12px;
-            height: 12px;
-            border-radius: 50%;
-            background: #888888 !important;
-            opacity: 0.55 !important;
-            cursor: pointer;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            display: inline-block;
-            margin: 0 4px;
-            border: 1px solid rgba(0, 0, 0, 0.12);
-        }
-        .dot.active {
-            background: var(--primary) !important;
-            opacity: 1 !important;
-            transform: scale(1.25);
-            border-color: var(--primary-border);
-        }
-        .grid-cols-5 {
-            display: grid;
-            grid-template-columns: repeat(5, 1fr);
-            gap: 1.5rem;
-        }
-        @media (max-width: 1200px) {
-            .grid-cols-5 {
-                grid-template-columns: repeat(3, 1fr);
-            }
-        }
-        @media (max-width: 768px) {
-            .grid-cols-5 {
-                grid-template-columns: repeat(2, 1fr);
-            }
-        }
-        @media (max-width: 480px) {
-            .grid-cols-5 {
-                grid-template-columns: 1fr;
-            }
-        }
-    </style>
 {% endblock %}
 
 {% block content %}
