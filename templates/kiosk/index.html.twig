@@ -4,149 +4,6 @@
 
 {% block stylesheets %}
     {{ parent() }}
-    <style>
-        .kiosk-panel {
-            transition: all 0.3s ease;
-        }
-        
-        /* High-visibility Light Mode Status Styles */
-        .kiosk-panel.status-checkin {
-            background-color: #bbf7d0 !important; /* Very bright, friendly green */
-            border-color: #15803d !important;
-            color: #14532d !important;
-            box-shadow: 0 0 25px rgba(22, 163, 74, 0.25) !important;
-        }
-        .kiosk-panel.status-checkout {
-            background-color: #bfdbfe !important; /* Very bright, friendly blue */
-            border-color: #1d4ed8 !important;
-            color: #1e3a8a !important;
-            box-shadow: 0 0 25px rgba(37, 99, 235, 0.25) !important;
-        }
-
-        /* Adjust all inner labels/paragraphs for high contrast */
-        .kiosk-panel.status-checkin *,
-        .kiosk-panel.status-checkout * {
-            color: currentColor !important;
-        }
-        
-        .kiosk-panel.status-checkin .text-muted,
-        .kiosk-panel.status-checkout .text-muted {
-            opacity: 0.85;
-        }
-
-        /* Dark Mode Overrides */
-        [data-theme="dark"] .kiosk-panel.status-checkin {
-            background-color: #064e3b !important; /* Rich emerald dark green */
-            border-color: #059669 !important;
-            color: #a7f3d0 !important;
-            box-shadow: 0 0 30px rgba(5, 150, 105, 0.35) !important;
-        }
-        [data-theme="dark"] .kiosk-panel.status-checkout {
-            background-color: #1e3a8a !important; /* Rich dark blue */
-            border-color: #3b82f6 !important;
-            color: #93c5fd !important;
-            box-shadow: 0 0 30px rgba(59, 130, 246, 0.35) !important;
-        }
-
-        /* Attention Grabbing Checkout Details Box */
-        .checkout-details-box {
-            background-color: #fef3c7 !important; /* Bright amber/yellow background */
-            border: 2.5px solid #d97706 !important; /* Thick orange border */
-            box-shadow: 0 4px 15px rgba(217, 119, 6, 0.25) !important;
-            border-radius: var(--radius-md);
-            padding: 1.5rem;
-            text-align: left;
-            margin-bottom: 2rem;
-            animation: pulse-border 2s infinite;
-        }
-        
-        .checkout-details-box .checkout-detail-label {
-            color: #b45309 !important; /* Deep amber label text */
-            font-weight: 700 !important;
-            font-size: 0.95rem;
-        }
-        
-        .checkout-details-box .checkout-detail-value {
-            color: #78350f !important; /* Dark brown/amber value text */
-            font-size: 1.15rem !important;
-            font-weight: 800 !important;
-        }
-
-        /* Dark Mode Overrides for Checkout Details Box */
-        [data-theme="dark"] .checkout-details-box {
-            background-color: #451a03 !important; /* Deep orange/brown dark warning color */
-            border: 2.5px solid #f97316 !important; /* Vivid orange border */
-            box-shadow: 0 4px 20px rgba(249, 115, 22, 0.4) !important;
-        }
-
-        [data-theme="dark"] .checkout-details-box .checkout-detail-label {
-            color: #fdba74 !important;
-        }
-
-        [data-theme="dark"] .checkout-details-box .checkout-detail-value {
-            color: #ffedd5 !important;
-        }
-
-        @keyframes pulse-border {
-            0% { border-color: rgba(217, 119, 6, 1); }
-            50% { border-color: rgba(217, 119, 6, 0.4); }
-            100% { border-color: rgba(217, 119, 6, 1); }
-        }
-        
-        [data-theme="dark"] @keyframes pulse-border {
-            0% { border-color: rgba(249, 115, 22, 1); }
-            50% { border-color: rgba(249, 115, 22, 0.4); }
-            100% { border-color: rgba(249, 115, 22, 1); }
-        }
-
-        /* Kiosk Popover description style */
-        .kiosk-popover-wrapper {
-            position: relative;
-            display: inline-block;
-        }
-        .kiosk-popover-content {
-            display: none;
-            position: absolute;
-            bottom: 125%;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 220px;
-            background-color: var(--bg-card);
-            border: 1px solid var(--border-color);
-            box-shadow: var(--shadow-lg);
-            border-radius: var(--radius-md);
-            padding: 0.75rem;
-            z-index: 1000;
-            text-align: left;
-        }
-        .kiosk-popover-content::after {
-            content: "";
-            position: absolute;
-            top: 100%;
-            left: 50%;
-            margin-left: -5px;
-            border-width: 5px;
-            border-style: solid;
-            border-color: var(--bg-card) transparent transparent transparent;
-        }
-        [data-theme="dark"] .kiosk-popover-content::after {
-            border-color: var(--bg-card) transparent transparent transparent;
-        }
-        .kiosk-popover-wrapper:hover .kiosk-popover-content {
-            display: block;
-        }
-        .popover-title {
-            font-weight: 700;
-            font-size: 0.85rem;
-            margin-bottom: 0.25rem;
-            color: var(--text-main);
-        }
-        .popover-body {
-            font-size: 0.75rem;
-            color: var(--text-secondary);
-            line-height: 1.3;
-        }
-    </style>
 {% endblock %}
 
 {% block body %}
@@ -178,6 +35,7 @@
                     <div class="position-relative flex-grow-1" style="flex: 1;">
                         <input type="text" id="orgUser-search" class="form-control" placeholder="Search user..." autocomplete="off" style="width: 100%;">
                         <span class="material-icons text-muted position-absolute search-icon-pos">search</span>
+                        <div id="orgUser-dropdown" class="autocomplete-dropdown" style="display: none;"></div>
                     </div>
                     {% if org.isBarcodeEnabled() %}
                         <button type="button" class="btn btn-secondary d-flex align-items-center justify-content-center" id="btn-start-scan" style="padding: 0 1.25rem; flex-shrink: 0;" onclick="startScanner()">
@@ -195,7 +53,6 @@
                         </div>
                     {% endif %}
                 </div>
-                <div id="orgUser-dropdown" class="autocomplete-dropdown" style="display: none;"></div>
             </div>
 
 

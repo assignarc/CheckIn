@@ -26,4 +26,25 @@ class KioskControllerTest extends WebTestCase
         $this->assertSelectorTextContains('h2', 'Acme Corporation');
         $this->assertSelectorTextContains('h3', 'Identify Yourself');
     }
+
+    public function testKioskDropdownStructureAndMultipleRosterSearch(): void
+    {
+        $client = static::createClient();
+        
+        $crawler = $client->request('GET', '/org/acme-corp/kiosk/acme-secret-token');
+        $this->assertResponseIsSuccessful();
+
+        // Verify search input container structure
+        $this->assertCount(1, $crawler->filter('#orgUser-search'));
+        
+        // Verify autocomplete dropdown is placed inside the position-relative container
+        $dropdownInRelativeContainer = $crawler->filter('.position-relative #orgUser-dropdown');
+        $this->assertCount(1, $dropdownInRelativeContainer);
+
+        // Verify JavaScript orgUsers roster array is rendered
+        $responseContent = $client->getResponse()->getContent();
+        $this->assertStringContainsString('const orgUsers = [', $responseContent);
+        $this->assertStringContainsString('id:', $responseContent);
+        $this->assertStringContainsString('name:', $responseContent);
+    }
 }

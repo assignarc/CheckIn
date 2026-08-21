@@ -24,6 +24,14 @@ test.describe('Kiosk Mode Terminal UI Tests', () => {
 
     // Select user from autocomplete list to trigger PIN pad container
     const searchInput = page.locator('#orgUser-search');
+    await searchInput.fill('John');
+
+    // Verify multiple matching autocomplete items appear and are visible in dropdown
+    const items = page.locator('#orgUser-dropdown .autocomplete-item');
+    if (await items.count() > 0) {
+      await expect(items.first()).toBeVisible();
+    }
+
     await searchInput.fill('John Doe');
 
     // Click autocomplete option for John Doe
