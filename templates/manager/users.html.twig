@@ -38,6 +38,9 @@
                     <a href="{{ path('app_manager_users_import') }}" class="btn btn-secondary btn-sm" style="display: inline-flex; align-items: center; justify-content: center; padding: 0 0.75rem; white-space: nowrap">
                         <span class="material-icons fs-md mr-1">cloud_upload</span> Import
                     </a>
+                    <a href="{{ path('app_manager_users_merge') }}" class="btn btn-secondary btn-sm" style="display: inline-flex; align-items: center; justify-content: center; padding: 0 0.75rem; white-space: nowrap" title="Merge two users">
+                        <span class="material-icons fs-md mr-1">call_merge</span> Merge Users
+                    </a>
                 </div>
             </div>
 
@@ -76,6 +79,7 @@
                                 </a>
                             </th>
                             <th>Metadata</th>
+                            <th>Notes</th>
                             <th>
                                 <a href="{{ path('app_manager_users', app.request.query.all|merge({sort: 'createdAt', direction: sortBy == 'createdAt' and sortDir == 'ASC' ? 'DESC' : 'ASC'})) }}" class="text-decoration-none text-dark d-inline-flex align-items-center gap-1">
                                     Added
@@ -114,7 +118,7 @@
                                 </td>
                                 <td>
                                     <div class="d-flex flex-column gap-1 fs-xs metadata-container"
-                                         data-has-custom="{% if emp.customFieldsJson|length > 0 %}true{% else %}false{% endif %}"
+                                         data-has-custom="{% if emp.customFieldsJson|length > 0 or emp.uniqueId or emp.uniqueIdHash %}true{% else %}false{% endif %}"
                                          data-has-email="{% if emp.email %}true{% else %}false{% endif %}"
                                          data-has-phone="{% if emp.phone %}true{% else %}false{% endif %}">
                                         
@@ -125,14 +129,48 @@
                                             <span class="text-secondary contact-info-field" style="display: none;"><strong>Phone:</strong> {{ emp.phone }}</span>
                                         {% endif %}
 
+                                        {% if emp.uniqueId %}
+                                            <span class="text-secondary"><strong>Unique ID:</strong> {{ emp.uniqueId }}</span>
+                                        {% elseif emp.uniqueIdHash %}
+                                            <span class="text-secondary"><strong>Unique ID:</strong> <span class="text-muted">Encrypted</span></span>
+                                        {% endif %}
+
                                         {% for key, val in emp.customFieldsJson %}
                                             <span class="text-secondary"><strong>{{ key }}:</strong> {{ val }}</span>
                                         {% endfor %}
                                         
-                                        {% if emp.customFieldsJson|length == 0 %}
+                                        {% if emp.customFieldsJson|length == 0 and not emp.uniqueId and not emp.uniqueIdHash %}
                                             <span class="text-muted metadata-none-placeholder">None</span>
                                         {% endif %}
                                     </div>
+                                </td>
+                                <td>
+                                    <details class="user-notes-details fs-xs">
+                                        <summary class="cursor-pointer fw-600 text-primary">
+                                            Notes ({{ emp.notes|length }})
+                                        </summary>
+                                        <div class="mt-2 d-flex flex-column gap-2" style="min-width: 220px; max-width: 300px;">
+                                            {% if emp.notes|length > 0 %}
+                                                <ul class="m-0 pl-3 d-flex flex-column gap-1" style="max-height: 150px; overflow-y: auto;">
+                                                    {% for noteItem in emp.notes %}
+                                                        <li>
+                                                            <span class="fw-600 {{ (noteItem.type|default('manager')) == 'system' ? 'text-danger' : 'text-primary' }}">
+                                                                [{{ noteItem.author|default('Manager') }} &bull; {{ noteItem.createdAt|default('') }}]
+                                                            </span>
+                                                            <span class="text-secondary">{{ noteItem.text }}</span>
+                                                        </li>
+                                                    {% endfor %}
+                                                </ul>
+                                            {% else %}
+                                                <span class="text-muted">No notes yet.</span>
+                                            {% endif %}
+                                            <form action="{{ path('app_manager_user_add_note', {id: emp.id}) }}" method="post" class="d-flex gap-1 m-0">
+                                                <label for="quick_note_{{ emp.id }}" class="d-none">Add note for {{ emp.firstName }}</label>
+                                                <input type="text" name="note" id="quick_note_{{ emp.id }}" class="form-control fs-xs" placeholder="Add note..." required style="padding: 0.25rem 0.5rem;">
+                                                <button type="submit" class="btn btn-primary btn-sm fs-xs" style="padding: 0.25rem 0.5rem;">Add</button>
+                                            </form>
+                                        </div>
+                                    </details>
                                 </td>
                                 <td>{{ emp.createdAt|date('M d, Y') }}</td>
                                 <td>
@@ -141,14 +179,27 @@
                                     {% else %}
                                         <span class="badge badge-danger">Inactive</span>
                                     {% endif %}
+                                    {% if emp.isMerged %}
+                                        <span class="badge badge-warning fs-xs">Merged</span>
+                                    {% endif %}
                                 </td>
                                 <td class="text-right">
                                     <div class="d-flex justify-content-end gap-1">
                                         <!-- Edit -->
-                                        <button class="btn btn-secondary btn-sm" title="Edit User" 
-                                            onclick="openEditUserModal({{ emp.id }}, '{{ emp.firstName|e('js') }}', '{{ emp.lastName|e('js') }}', '{{ emp.email|default('')|e('js') }}', '{{ emp.phone|default('')|e('js') }}', '{{ emp.pin|default('')|e('js') }}')">
+                                        <button class="btn btn-secondary btn-sm" title="Edit User"
+                                            data-user-notes="{{ emp.notes|json_encode|e('html_attr') }}"
+                                            data-unique-id="{{ emp.uniqueId|default('')|e('html_attr') }}"
+                                            data-has-encrypted-id="{{ emp.uniqueIdHash ? 'true' : 'false' }}"
+                                            onclick="openEditUserModal({{ emp.id }}, '{{ emp.firstName|e('js') }}', '{{ emp.lastName|e('js') }}', '{{ emp.email|default('')|e('js') }}', '{{ emp.phone|default('')|e('js') }}', '{{ emp.pin|default('')|e('js') }}', this)">
                                             <span class="material-icons fs-md">edit</span>
                                         </button>
+
+                                        <!-- Merge User -->
+                                        {% if not emp.isMerged %}
+                                            <a href="{{ path('app_manager_users_merge', {source_id: emp.id}) }}" class="btn btn-secondary btn-sm" title="Merge {{ emp.firstName }}'s timesheet into another user">
+                                                <span class="material-icons fs-md">call_merge</span>
+                                            </a>
+                                        {% endif %}
 
                                         <!-- Reset PIN -->
                                         <form action="{{ path('app_manager_user_reset_pin', {id: emp.id}) }}" method="post" class="confirm-form d-inline" data-confirm="Reset PIN for {{ emp.firstName }}? A new PIN will be auto-generated.">
@@ -213,6 +264,10 @@
                         <input type="tel" name="phone" id="phone" class="form-control" data-controller="intl-tel-input" data-intl-tel-input-allowed-countries-value="{{ app_config('allowed_phone_countries', ['us'])|json_encode|e('html_attr') }}" placeholder="+123456789">
                     </div>
                     <div class="form-group">
+                        <label class="form-label" for="add_unique_id">Unique Identifier <span class="fs-xs text-muted">(optional, stored in plaintext &amp; encrypted)</span></label>
+                        <input type="text" name="unique_id" id="add_unique_id" class="form-control" placeholder="e.g. STU-1001" autocorrect="off" autocapitalize="off" spellcheck="false">
+                    </div>
+                    <div class="form-group">
                         <label class="form-label" for="pin">Security PIN <span class="fs-xs text-muted">(optional, auto-generated if blank)</span></label>
 
                         <!-- PIN display -->
@@ -237,6 +292,11 @@
                             <button type="button" class="btn btn-secondary btn-sm py-2" onclick="appendPinDigit('0')" class="fs-md font-mono">0</button>
                             <button type="button" class="btn btn-danger btn-sm py-2 d-flex align-items-center justify-content-center" onclick="backspacePinDigit()" title="Backspace"><span class="material-icons fs-sm">backspace</span></button>
                         </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="add_user_note">Note <span class="fs-xs text-muted">(optional)</span></label>
+                        <textarea name="note" id="add_user_note" class="form-control" rows="2" placeholder="Optional profile note..."></textarea>
                     </div>
 
                     <button type="submit" class="btn btn-primary mt-0 w-100" >
@@ -268,6 +328,25 @@
                 <div class="form-group">
                     <label class="form-label" for="eu_phone">Phone</label>
                     <input type="tel" name="eu_phone" id="eu_phone" class="form-control" data-controller="intl-tel-input" data-intl-tel-input-allowed-countries-value="{{ app_config('allowed_phone_countries', ['us'])|json_encode|e('html_attr') }}" placeholder="Optional">
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="eu_unique_id">
+                        Unique Identifier
+                        <span id="eu_unique_id_status" class="fs-xs text-muted"></span>
+                    </label>
+                    <input type="text" name="unique_id" id="eu_unique_id" class="form-control" placeholder="Enter Unique ID (leave blank to keep existing)" autocorrect="off" autocapitalize="off" spellcheck="false">
+                </div>
+
+                <!-- Profile Notes History (Collapsed by default) & Add Note -->
+                <div class="form-group">
+                    <details id="eu-notes-details" class="mb-2 p-2 rounded-sm border">
+                        <summary class="fs-xs fw-600 text-primary cursor-pointer">
+                            Profile Notes History (<span id="eu-notes-count">0</span>)
+                        </summary>
+                        <ul id="eu-notes-list" class="fs-xs m-0 mt-2 pl-3 d-flex flex-column gap-1" style="max-height: 150px; overflow-y: auto;"></ul>
+                    </details>
+                    <label class="form-label" for="eu_note">Add New Note <span class="fs-xs text-muted">(older notes are retained)</span></label>
+                    <textarea name="note" id="eu_note" class="form-control" rows="2" placeholder="Append a new note to this user's history..."></textarea>
                 </div>
 
                 <!-- Edit PIN section -->
@@ -469,13 +548,61 @@
     let _editDigits = '';
     let _editOriginalPin = '';
 
-    function openEditUserModal(id, first, last, email, phone, currentPin) {
+    function openEditUserModal(id, first, last, email, phone, currentPin, btnEl) {
         const form = document.getElementById('editUserForm');
         form.action = `/manager/users/edit/${id}`;
         document.getElementById('eu_first').value  = first;
         document.getElementById('eu_last').value   = last;
         document.getElementById('eu_email').value  = email;
         document.getElementById('eu_phone').value  = phone;
+        const noteInput = document.getElementById('eu_note');
+        if (noteInput) noteInput.value = '';
+
+        const uniqueIdInput = document.getElementById('eu_unique_id');
+        const uniqueIdStatus = document.getElementById('eu_unique_id_status');
+        if (uniqueIdInput && uniqueIdStatus) {
+            const plainUniqueId = btnEl ? (btnEl.getAttribute('data-unique-id') || '') : '';
+            const hasEncrypted = btnEl ? (btnEl.getAttribute('data-has-encrypted-id') === 'true') : false;
+            uniqueIdInput.value = plainUniqueId;
+            if (plainUniqueId) {
+                uniqueIdStatus.textContent = '(Plaintext & Encrypted stored)';
+            } else if (hasEncrypted) {
+                uniqueIdStatus.textContent = '(Encrypted ID on file — enter value to set plaintext & update)';
+            } else {
+                uniqueIdStatus.textContent = '(Not set)';
+            }
+        }
+
+        const notesDetails = document.getElementById('eu-notes-details');
+        const notesCountEl = document.getElementById('eu-notes-count');
+        const notesListEl = document.getElementById('eu-notes-list');
+        if (notesDetails && notesCountEl && notesListEl) {
+            notesDetails.open = false;
+            notesListEl.textContent = '';
+            let parsedNotes = [];
+            try {
+                if (btnEl && btnEl.getAttribute('data-user-notes')) {
+                    parsedNotes = JSON.parse(btnEl.getAttribute('data-user-notes')) || [];
+                }
+            } catch (e) {}
+            notesCountEl.textContent = String(parsedNotes.length);
+            if (parsedNotes.length === 0) {
+                const li = document.createElement('li');
+                li.className = 'text-muted';
+                li.textContent = 'No notes recorded yet.';
+                notesListEl.appendChild(li);
+            } else {
+                parsedNotes.forEach(n => {
+                    const li = document.createElement('li');
+                    const header = document.createElement('strong');
+                    header.className = (n.type === 'system') ? 'text-danger' : 'text-primary';
+                    header.textContent = `[${n.author || 'Manager'} • ${n.createdAt || ''}] `;
+                    li.appendChild(header);
+                    li.appendChild(document.createTextNode(n.text || ''));
+                    notesListEl.appendChild(li);
+                });
+            }
+        }
 
         // Pre-fill PIN display (but don't set hidden — user must actively change)
         _editPrefix = '';

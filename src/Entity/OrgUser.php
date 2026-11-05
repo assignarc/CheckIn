@@ -55,6 +55,10 @@ class OrgUser
     private bool $isActive = true;
 
     #[ORM\Column(type: "string", length: 255, nullable: true)]
+    #[Assert\Length(max: 255)]
+    private ?string $uniqueId = null;
+
+    #[ORM\Column(type: "string", length: 255, nullable: true)]
     private ?string $uniqueIdHash = null;
 
     #[ORM\Column(type: "datetime_immutable", nullable: true)]
@@ -62,6 +66,9 @@ class OrgUser
 
     #[ORM\Column(type: "json")]
     private array $customFieldsJson = [];
+
+    #[ORM\Column(type: "json", nullable: true)]
+    private ?array $notes = [];
 
     #[ORM\Column(type: "datetime_immutable")]
     private \DateTimeImmutable $createdAt;
@@ -168,6 +175,18 @@ class OrgUser
         return $this;
     }
 
+    public function getUniqueId(): ?string
+    {
+        return $this->uniqueId;
+    }
+
+    public function setUniqueId(?string $uniqueId): self
+    {
+        $trimmed = $uniqueId !== null ? trim($uniqueId) : null;
+        $this->uniqueId = ($trimmed !== '' && $trimmed !== null) ? $trimmed : null;
+        return $this;
+    }
+
     public function getUniqueIdHash(): ?string
     {
         return $this->uniqueIdHash;
@@ -198,6 +217,48 @@ class OrgUser
     public function setCustomFieldsJson(array $customFieldsJson): self
     {
         $this->customFieldsJson = $customFieldsJson;
+        return $this;
+    }
+
+    public function getNotes(): array
+    {
+        return $this->notes ?? [];
+    }
+
+    public function setNotes(?array $notes): self
+    {
+        $this->notes = $notes ?? [];
+        return $this;
+    }
+
+    public function addNote(string $text, string $author = 'Manager', string $type = 'manager', ?\DateTimeInterface $createdAt = null): self
+    {
+        $trimmed = trim($text);
+        if ($trimmed === '') {
+            return $this;
+        }
+        $notes = $this->getNotes();
+        $notes[] = [
+            'text' => $trimmed,
+            'author' => $author,
+            'type' => $type,
+            'createdAt' => ($createdAt ?? new \DateTimeImmutable())->format('M d, Y h:i A'),
+        ];
+        $this->notes = $notes;
+        return $this;
+    }
+
+    public function isMerged(): bool
+    {
+        return str_ends_with(strtoupper(rtrim($this->lastName)), ' - MERGED');
+    }
+
+    public function markAsMerged(): self
+    {
+        $this->isActive = false;
+        if (!$this->isMerged()) {
+            $this->lastName = rtrim($this->lastName) . ' - MERGED';
+        }
         return $this;
     }
 

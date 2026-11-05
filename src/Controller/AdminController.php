@@ -523,7 +523,8 @@ class AdminController extends AbstractController
         $qb = $em->createQueryBuilder()
             ->select('a')
             ->from(\App\Entity\AuditLog::class, 'a')
-            ->orderBy('a.createdAt', 'DESC');
+            ->orderBy('a.createdAt', 'DESC')
+            ->addOrderBy('a.id', 'DESC');
             
         // Prevent SQL empty returns from stale filter parameters:
         // Validate if the selected organization ID exists in the database before appending it to query constraints

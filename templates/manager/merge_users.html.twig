@@ -1,0 +1,899 @@
+{% extends 'manager/layout.html.twig' %}
+
+{% block title %}Merge Users - CenterTime{% endblock %}
+{% block header_title %}Merge Users &amp; Timesheet Records{% endblock %}
+
+{% block stylesheets %}
+    {{ parent() }}
+    <style>
+        .merge-container {
+            max-width: 1120px;
+            margin: 0 auto;
+        }
+        .merge-fieldset {
+            border: 0;
+            padding: 0;
+            margin: 0;
+            min-width: 0;
+        }
+        .merge-grid {
+            display: grid;
+            grid-template-columns: 1fr auto 1fr;
+            gap: 1.25rem;
+            align-items: stretch;
+        }
+        @media (max-width: 900px) {
+            .merge-grid {
+                grid-template-columns: 1fr;
+            }
+            .merge-arrow-col {
+                transform: rotate(90deg);
+                margin: 0.5rem auto;
+            }
+        }
+        .profile-card {
+            border-radius: var(--radius-md, 12px);
+            padding: 1.5rem;
+            border: 1px solid var(--border-color, rgba(255, 255, 255, 0.1));
+            background: var(--bg-card, rgba(255, 255, 255, 0.03));
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+        .profile-card.source-card {
+            border-top: 4px solid var(--danger, #ef4444);
+        }
+        .profile-card.target-card {
+            border-top: 4px solid var(--success, #10b981);
+        }
+        .profile-field-list {
+            display: grid;
+            grid-template-columns: 120px 1fr;
+            gap: 0.5rem 0.75rem;
+            font-size: 0.875rem;
+            margin: 0;
+        }
+        .profile-field-list dt {
+            color: var(--text-muted, #94a3b8);
+            font-weight: 500;
+        }
+        .profile-field-list dd {
+            margin: 0;
+            font-weight: 600;
+            word-break: break-word;
+        }
+        .timesheet-stat-box {
+            padding: 1rem;
+            border-radius: var(--radius-sm, 8px);
+            background: rgba(99, 102, 241, 0.07);
+            border: 1px solid rgba(99, 102, 241, 0.2);
+        }
+        .warning-box {
+            padding: 1.1rem 1.25rem;
+            border-radius: var(--radius-sm, 8px);
+            border: 1px solid rgba(239, 68, 68, 0.35);
+            background: rgba(239, 68, 68, 0.06);
+            margin-block-end: 1rem;
+        }
+        .warning-checkbox-row {
+            display: flex;
+            align-items: flex-start;
+            gap: 0.75rem;
+            cursor: pointer;
+        }
+        .warning-checkbox-row input[type="checkbox"] {
+            width: 1.25rem;
+            height: 1.25rem;
+            margin-top: 0.15rem;
+            accent-color: var(--danger, #ef4444);
+            flex-shrink: 0;
+            cursor: pointer;
+        }
+        .error-msg {
+            display: none;
+            color: var(--danger, #d93025);
+            font-size: 0.85rem;
+            margin-top: 0.35rem;
+        }
+        select:user-invalid,
+        select.user-invalid-fallback {
+            border-color: var(--danger, #d93025);
+        }
+        select:user-invalid + .error-msg,
+        select.user-invalid-fallback + .error-msg {
+            display: block;
+        }
+        dialog:modal {
+            overscroll-behavior: contain;
+            max-width: 540px;
+            width: 92%;
+            border-radius: var(--radius-md, 12px);
+            border: 1px solid var(--border-color, rgba(255, 255, 255, 0.15));
+            background: var(--bg-surface, #1e293b);
+            color: var(--text-primary, #f8fafc);
+            padding: 1.75rem;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+        }
+        dialog::backdrop {
+            overflow: hidden;
+            overscroll-behavior: contain;
+            background-color: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(2px);
+        }
+    </style>
+{% endblock %}
+
+{% block manager_content %}
+{% set sourceUser = selectedSourceId ? (usersData[selectedSourceId] ?? null) : null %}
+{% set targetUser = selectedTargetId ? (usersData[selectedTargetId] ?? null) : null %}
+
+<div class="merge-container" data-turbo="false">
+    <!-- Top Action Bar -->
+    <div class="d-flex align-items-center justify-content-between flex-wrap gap-3 mb-4">
+        <div>
+            <p class="fs-sm text-secondary m-0">
+                Consolidate duplicate user accounts in <strong>{{ app.user.organization.name }}</strong> by transferring timesheet records (check-ins &amp; check-outs) and deactivating the duplicate source account.
+            </p>
+        </div>
+        <a href="{{ path('app_manager_users') }}" class="btn btn-secondary btn-sm d-inline-flex align-items-center gap-1">
+            <span class="material-icons fs-md">arrow_back</span> Back to Directory
+        </a>
+    </div>
+
+    <!-- Irreversible Action Banner -->
+    <div class="alert alert-danger mb-6 d-flex align-items-start gap-3" role="region" aria-label="Irreversible action notice">
+        <span class="material-icons fs-xl" style="margin-top: 2px;">warning_amber</span>
+        <div>
+            <strong class="d-block fs-md mb-1">Irreversible Action — Read Carefully Before Merging</strong>
+            <span class="fs-sm">
+                Merging two users moves <strong>only the timesheet data</strong> (all historical check-ins, check-outs, and active sessions) from the <strong>Merge From (Source)</strong> user to the <strong>Merge Into (Target)</strong> user, and immediately marks the <strong>Merge From</strong> user as <strong>Inactive</strong>. Profile fields on the target user are preserved as-is. Once merged, timesheet entries cannot be automatically separated back to the original user.
+            </span>
+        </div>
+    </div>
+
+    <form method="POST" action="{{ path('app_manager_users_merge') }}" id="merge-users-form">
+        <input type="hidden" name="_token" value="{{ csrf_token('merge_users') }}">
+
+        <!-- Step 1: Select Users -->
+        <fieldset class="glass-panel mb-6 merge-fieldset">
+            <legend class="fs-md fw-600 d-flex align-items-center gap-2 mb-4 p-0">
+                <span class="material-icons text-primary">call_merge</span> 1. Select Users to Merge
+            </legend>
+
+            <div class="merge-grid">
+                <!-- Source User Select -->
+                <div class="form-group m-0">
+                    <label class="form-label fw-600" for="source_user_id">
+                        Merge From (Source User — Will Be Marked Inactive) <span class="text-danger">*</span>
+                    </label>
+                    <select
+                        name="source_user_id"
+                        id="source_user_id"
+                        class="form-control"
+                        required
+                        aria-describedby="source-user-help"
+                        aria-errormessage="source-user-error"
+                    >
+                        <option value="" disabled {% if not selectedSourceId %}selected{% endif %}>Select user to merge from...</option>
+                        {% for emp in orgUsers %}
+                            {% set uData = usersData[emp.id] %}
+                            <option value="{{ emp.id }}" {% if uData.isMerged %}disabled{% elseif selectedSourceId == emp.id %}selected{% endif %}>
+                                {{ emp.firstName }} {{ emp.lastName }} {% if uData.isMerged %}(Already Merged — Unavailable){% else %}(PIN: {{ emp.pin ?: '—' }} | {{ uData.totalSessions }} timesheet item{{ uData.totalSessions == 1 ? '' : 's' }} | {{ emp.isActive ? 'Active' : 'Inactive' }}){% endif %}
+                            </option>
+                        {% endfor %}
+                    </select>
+                    <div id="source-user-error" class="error-msg">Please select a source user to merge from.</div>
+                    <span id="source-user-help" class="form-text fs-xs text-muted d-block mt-1">
+                        All timesheet items from this user will be moved out, and this user will be marked <strong>Inactive</strong>.
+                    </span>
+                </div>
+
+                <!-- Swap Button -->
+                <div class="d-flex align-items-center justify-content-center merge-arrow-col" style="padding-top: 0.75rem;">
+                    <button type="button" id="swap-users-btn" class="btn btn-secondary btn-sm d-inline-flex align-items-center gap-1" title="Swap Merge From and Merge Into users" aria-label="Swap Merge From and Merge Into users">
+                        <span class="material-icons fs-md">swap_horiz</span> Swap
+                    </button>
+                </div>
+
+                <!-- Target User Select -->
+                <div class="form-group m-0">
+                    <label class="form-label fw-600" for="target_user_id">
+                        Merge Into (Target User — Kept Profile &amp; Receives Timesheets) <span class="text-danger">*</span>
+                    </label>
+                    <select
+                        name="target_user_id"
+                        id="target_user_id"
+                        class="form-control"
+                        required
+                        aria-describedby="target-user-help"
+                        aria-errormessage="target-user-error"
+                    >
+                        <option value="" disabled {% if not selectedTargetId %}selected{% endif %}>Select target user to merge into...</option>
+                        {% for emp in orgUsers %}
+                            {% set uData = usersData[emp.id] %}
+                            <option value="{{ emp.id }}" {% if uData.isMerged %}disabled{% elseif selectedTargetId == emp.id %}selected{% endif %}>
+                                {{ emp.firstName }} {{ emp.lastName }} {% if uData.isMerged %}(Already Merged — Unavailable){% else %}(PIN: {{ emp.pin ?: '—' }} | {{ uData.totalSessions }} timesheet item{{ uData.totalSessions == 1 ? '' : 's' }} | {{ emp.isActive ? 'Active' : 'Inactive' }}){% endif %}
+                            </option>
+                        {% endfor %}
+                    </select>
+                    <div id="target-user-error" class="error-msg">Please select a different target user to merge into.</div>
+                    <span id="target-user-help" class="form-text fs-xs text-muted d-block mt-1">
+                        This user keeps their existing profile fields and receives all timesheet items from the source user.
+                    </span>
+                </div>
+            </div>
+
+            <!-- Same-User Validation Alert -->
+            <div id="same-user-alert" class="alert alert-danger mt-4 mb-0 d-none" role="alert" aria-live="polite">
+                <span class="material-icons">error</span>
+                <span><strong>Invalid Selection:</strong> "Merge From" and "Merge Into" cannot be the same user. Please choose two different users.</span>
+            </div>
+        </fieldset>
+
+        <!-- Step 2: Side-by-Side Profile Comparison & Timesheet Transfer Breakdown -->
+        <div class="glass-panel mb-6" id="comparison-section">
+            <h3 class="fs-md fw-600 d-flex align-items-center gap-2 mb-4">
+                <span class="material-icons text-primary">compare_arrows</span> 2. Profile Fields &amp; Timesheet Comparison
+            </h3>
+
+            <div class="merge-grid">
+                <!-- Left: Source User Profile Card -->
+                <div class="profile-card source-card" id="source-profile-card">
+                    <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 pb-2 border-b">
+                        <div>
+                            <span class="fs-xs text-muted text-uppercase fw-700 d-block">Merge From (Source User)</span>
+                            <h4 class="fs-lg fw-700 m-0" id="source-card-name">
+                                {{ sourceUser ? sourceUser.fullName : 'Select a Source User' }}
+                            </h4>
+                        </div>
+                        <span class="badge badge-danger" id="source-card-outcome-badge">
+                            Will Become Inactive
+                        </span>
+                    </div>
+
+                    <dl class="profile-field-list">
+                        <dt>Current Status</dt>
+                        <dd id="source-field-status">
+                            {% if sourceUser %}
+                                <span class="badge {{ sourceUser.isActive ? 'badge-success' : 'badge-danger' }}">{{ sourceUser.isActive ? 'Active' : 'Inactive' }}</span>
+                            {% else %}—{% endif %}
+                        </dd>
+                        <dt>Security PIN</dt>
+                        <dd id="source-field-pin">{{ sourceUser ? (sourceUser.pin ?: '—') : '—' }}</dd>
+                        <dt>Unique ID</dt>
+                        <dd id="source-field-unique-id">
+                            {% if sourceUser %}
+                                {{ sourceUser.uniqueId ?: (sourceUser.hasEncryptedId ? 'Encrypted (legacy)' : 'None') }}
+                            {% else %}—{% endif %}
+                        </dd>
+                        <dt>Email Address</dt>
+                        <dd id="source-field-email">{{ sourceUser ? (sourceUser.email ?: 'None') : '—' }}</dd>
+                        <dt>Phone Number</dt>
+                        <dd id="source-field-phone">{{ sourceUser ? (sourceUser.phone ?: 'None') : '—' }}</dd>
+                        <dt>Added On</dt>
+                        <dd id="source-field-created">{{ sourceUser ? sourceUser.createdAt : '—' }}</dd>
+                        <dt>Custom Fields</dt>
+                        <dd id="source-field-custom">
+                            {% if sourceUser and sourceUser.customFields|length > 0 %}
+                                {% for k, v in sourceUser.customFields %}
+                                    <div><strong>{{ k }}:</strong> {{ v }}</div>
+                                {% endfor %}
+                            {% elseif sourceUser %}
+                                <span class="text-muted">None</span>
+                            {% else %}—{% endif %}
+                        </dd>
+                        <dt>Profile Notes</dt>
+                        <dd id="source-field-notes">
+                            <details id="source-notes-details" class="fs-xs">
+                                <summary class="cursor-pointer text-primary fw-600" id="source-notes-summary">
+                                    View Notes ({{ sourceUser ? sourceUser.notes|length : 0 }})
+                                </summary>
+                                <ul id="source-notes-list" class="m-0 mt-1 pl-3 d-flex flex-column gap-1">
+                                    {% if sourceUser and sourceUser.notes|length > 0 %}
+                                        {% for noteItem in sourceUser.notes %}
+                                            <li>
+                                                <strong class="{{ (noteItem.type|default('manager')) == 'system' ? 'text-danger' : 'text-primary' }}">
+                                                    [{{ noteItem.author|default('Manager') }} &bull; {{ noteItem.createdAt|default('') }}]
+                                                </strong>
+                                                {{ noteItem.text }}
+                                            </li>
+                                        {% endfor %}
+                                    {% else %}
+                                        <li class="text-muted">No notes recorded.</li>
+                                    {% endif %}
+                                </ul>
+                            </details>
+                        </dd>
+                    </dl>
+
+                    <div class="timesheet-stat-box mt-auto">
+                        <div class="d-flex align-items-center justify-content-between mb-1">
+                            <span class="fs-xs fw-700 text-uppercase text-secondary">Timesheet Items to Move</span>
+                            <span class="badge badge-warning fs-sm fw-700" id="source-sessions-badge">
+                                {{ sourceUser ? sourceUser.totalSessions : 0 }} item{{ (sourceUser and sourceUser.totalSessions == 1) ? '' : 's' }}
+                            </span>
+                        </div>
+                        <div class="fs-xs text-secondary" id="source-sessions-detail">
+                            {% if sourceUser %}
+                                {{ sourceUser.completedSessions }} completed check-out(s), {{ sourceUser.activeSessions }} active check-in(s) ({{ sourceUser.totalHoursFormatted }} logged)
+                            {% else %}
+                                Select a source user to view timesheet items to move.
+                            {% endif %}
+                        </div>
+                        <div class="fs-xs text-danger mt-2 fw-600">
+                            After merge: 0 timesheet items remaining &bull; Marked Inactive
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Center Transfer Indicator -->
+                <div class="d-flex flex-column align-items-center justify-content-center text-center px-2 merge-arrow-col">
+                    <div class="badge badge-primary p-2 mb-2 d-inline-flex align-items-center gap-1" style="font-size: 0.85rem;">
+                        <span class="material-icons fs-md">east</span>
+                    </div>
+                    <div class="fs-xs fw-700 text-primary" id="transfer-count-label">
+                        {% if sourceUser %}
+                            Moving {{ sourceUser.totalSessions }} Timesheet Item{{ sourceUser.totalSessions == 1 ? '' : 's' }}
+                        {% else %}
+                            Timesheets Only
+                        {% endif %}
+                    </div>
+                    <div class="fs-xs text-muted mt-1" style="max-width: 120px;">
+                        Profile fields are NOT overwritten
+                    </div>
+                </div>
+
+                <!-- Right: Target User Profile Card -->
+                <div class="profile-card target-card" id="target-profile-card">
+                    <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 pb-2 border-b">
+                        <div>
+                            <span class="fs-xs text-muted text-uppercase fw-700 d-block">Merge Into (Target User)</span>
+                            <h4 class="fs-lg fw-700 m-0" id="target-card-name">
+                                {{ targetUser ? targetUser.fullName : 'Select a Target User' }}
+                            </h4>
+                        </div>
+                        <span class="badge badge-success" id="target-card-outcome-badge">
+                            Retained Profile
+                        </span>
+                    </div>
+
+                    <dl class="profile-field-list">
+                        <dt>Current Status</dt>
+                        <dd id="target-field-status">
+                            {% if targetUser %}
+                                <span class="badge {{ targetUser.isActive ? 'badge-success' : 'badge-danger' }}">{{ targetUser.isActive ? 'Active' : 'Inactive' }}</span>
+                            {% else %}—{% endif %}
+                        </dd>
+                        <dt>Security PIN</dt>
+                        <dd id="target-field-pin">{{ targetUser ? (targetUser.pin ?: '—') : '—' }}</dd>
+                        <dt>Unique ID</dt>
+                        <dd id="target-field-unique-id">
+                            {% if targetUser %}
+                                {{ targetUser.uniqueId ?: (targetUser.hasEncryptedId ? 'Encrypted (legacy)' : 'None') }}
+                            {% else %}—{% endif %}
+                        </dd>
+                        <dt>Email Address</dt>
+                        <dd id="target-field-email">{{ targetUser ? (targetUser.email ?: 'None') : '—' }}</dd>
+                        <dt>Phone Number</dt>
+                        <dd id="target-field-phone">{{ targetUser ? (targetUser.phone ?: 'None') : '—' }}</dd>
+                        <dt>Added On</dt>
+                        <dd id="target-field-created">{{ targetUser ? targetUser.createdAt : '—' }}</dd>
+                        <dt>Custom Fields</dt>
+                        <dd id="target-field-custom">
+                            {% if targetUser and targetUser.customFields|length > 0 %}
+                                {% for k, v in targetUser.customFields %}
+                                    <div><strong>{{ k }}:</strong> {{ v }}</div>
+                                {% endfor %}
+                            {% elseif targetUser %}
+                                <span class="text-muted">None</span>
+                            {% else %}—{% endif %}
+                        </dd>
+                        <dt>Profile Notes</dt>
+                        <dd id="target-field-notes">
+                            <details id="target-notes-details" class="fs-xs">
+                                <summary class="cursor-pointer text-primary fw-600" id="target-notes-summary">
+                                    View Notes ({{ targetUser ? targetUser.notes|length : 0 }})
+                                </summary>
+                                <ul id="target-notes-list" class="m-0 mt-1 pl-3 d-flex flex-column gap-1">
+                                    {% if targetUser and targetUser.notes|length > 0 %}
+                                        {% for noteItem in targetUser.notes %}
+                                            <li>
+                                                <strong class="{{ (noteItem.type|default('manager')) == 'system' ? 'text-danger' : 'text-primary' }}">
+                                                    [{{ noteItem.author|default('Manager') }} &bull; {{ noteItem.createdAt|default('') }}]
+                                                </strong>
+                                                {{ noteItem.text }}
+                                            </li>
+                                        {% endfor %}
+                                    {% else %}
+                                        <li class="text-muted">No notes recorded.</li>
+                                    {% endif %}
+                                </ul>
+                            </details>
+                        </dd>
+                    </dl>
+
+                    <div class="timesheet-stat-box mt-auto">
+                        <div class="d-flex align-items-center justify-content-between mb-1">
+                            <span class="fs-xs fw-700 text-uppercase text-secondary">Existing Timesheet Items</span>
+                            <span class="badge badge-info fs-sm fw-700" id="target-sessions-badge">
+                                {{ targetUser ? targetUser.totalSessions : 0 }} item{{ (targetUser and targetUser.totalSessions == 1) ? '' : 's' }}
+                            </span>
+                        </div>
+                        <div class="fs-xs text-secondary" id="target-sessions-detail">
+                            {% if targetUser %}
+                                {{ targetUser.completedSessions }} completed check-out(s), {{ targetUser.activeSessions }} active check-in(s) ({{ targetUser.totalHoursFormatted }} logged)
+                            {% else %}
+                                Select a target user to view existing timesheet items.
+                            {% endif %}
+                        </div>
+                        <div class="fs-xs text-success mt-2 fw-600" id="target-sessions-after-note">
+                            {% if sourceUser and targetUser %}
+                                After merge: {{ targetUser.totalSessions + sourceUser.totalSessions }} total timesheet items ({{ targetUser.totalSessions }} existing + {{ sourceUser.totalSessions }} moved)
+                            {% else %}
+                                Receives all timesheet items from the Merge From user
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Step 3: Resulting Target Entity Preview -->
+        <div class="glass-panel mb-6" id="target-preview-section">
+            <h3 class="fs-md fw-600 d-flex align-items-center gap-2 mb-3">
+                <span class="material-icons text-success">verified_user</span> 3. Resulting Target Entity Preview (After Merge)
+            </h3>
+            <p class="fs-sm text-secondary mb-4">
+                Below is the exact state of the <strong>Target Entity</strong> and the <strong>Merged From User</strong> once the merge completes:
+            </p>
+
+            <div class="grid-cols-2 gap-4">
+                <div class="p-4 rounded-sm border" style="background: rgba(16, 185, 129, 0.05); border-color: rgba(16, 185, 129, 0.25);">
+                    <div class="d-flex align-items-center justify-content-between mb-2">
+                        <span class="fs-xs fw-700 text-uppercase text-success">Final Target User (Kept)</span>
+                        <span class="badge badge-success" id="preview-target-status">
+                            {{ targetUser ? (targetUser.isActive ? 'Active' : 'Inactive') : 'Target Status Kept' }}
+                        </span>
+                    </div>
+                    <div class="fs-md fw-700 mb-2" id="preview-target-name">
+                        {{ targetUser ? targetUser.fullName : '— Select Target User —' }}
+                    </div>
+                    <div class="fs-xs text-secondary mb-3" id="preview-target-profile-summary">
+                        {% if targetUser %}
+                            <strong>PIN:</strong> {{ targetUser.pin ?: '—' }} &bull;
+                            <strong>Email:</strong> {{ targetUser.email ?: 'None' }} &bull;
+                            <strong>Phone:</strong> {{ targetUser.phone ?: 'None' }}
+                        {% else %}
+                            All profile fields (Name, PIN, Email, Phone, Custom Fields) remain strictly those of the Target User.
+                        {% endif %}
+                    </div>
+                    <div class="p-3 rounded-sm" style="background: rgba(16, 185, 129, 0.1);">
+                        <div class="fs-xs text-secondary">Combined Timesheet Items (Check-Ins &amp; Check-Outs):</div>
+                        <div class="fs-lg fw-700 text-success mt-1" id="preview-timesheet-equation">
+                            {% if sourceUser and targetUser %}
+                                {{ targetUser.totalSessions }} existing + {{ sourceUser.totalSessions }} moved from {{ sourceUser.fullName }} = {{ targetUser.totalSessions + sourceUser.totalSessions }} total timesheet item(s)
+                            {% else %}
+                                Select both users above to preview combined timesheet item count
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                <div class="p-4 rounded-sm border" style="background: rgba(239, 68, 68, 0.05); border-color: rgba(239, 68, 68, 0.25);">
+                    <div class="d-flex align-items-center justify-content-between mb-2">
+                        <span class="fs-xs fw-700 text-uppercase text-danger">Merged From User Outcome</span>
+                        <span class="badge badge-danger">Marked Inactive</span>
+                    </div>
+                    <div class="fs-md fw-700 mb-2" id="preview-source-name">
+                        {{ sourceUser ? sourceUser.fullName : '— Select Source User —' }}
+                    </div>
+                    <ul class="fs-xs text-secondary m-0 pl-4" style="line-height: 1.6;">
+                        <li id="preview-source-bullet-1">
+                            {% if sourceUser and targetUser %}
+                                All <strong>{{ sourceUser.totalSessions }}</strong> timesheet item(s) moved from <strong>{{ sourceUser.fullName }}</strong> &rarr; <strong>{{ targetUser.fullName }}</strong>.
+                            {% else %}
+                                All timesheet items (check-ins and check-outs) moved to Target User.
+                            {% endif %}
+                        </li>
+                        <li>Remaining timesheet items on this user: <strong>0</strong>.</li>
+                        <li id="preview-source-lastname-bullet">
+                            Last name updated to: <strong id="preview-source-merged-lastname">{{ sourceUser ? (sourceUser.lastName ~ ' - MERGED') : 'LastName - MERGED' }}</strong> (added once; cannot be selected for future merges).
+                        </li>
+                        <li>Account status changed to <strong>Inactive</strong> (cannot check in at kiosks).</li>
+                        <li>A <strong>System Note</strong> recording this merge will be appended to <strong>both</strong> users' notes history.</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- Step 4: Two Sets of Warning Acceptances -->
+        <fieldset class="glass-panel mb-6 merge-fieldset">
+            <legend class="fs-md fw-600 d-flex align-items-center gap-2 mb-3 p-0 text-danger">
+                <span class="material-icons text-danger">gpp_maybe</span> 4. Required Warning Acceptances (2 of 2 Required)
+            </legend>
+            <p class="fs-sm text-secondary mb-4">
+                Because merging users permanently combines timesheet history and deactivates the source user, you must explicitly accept both warnings below before proceeding:
+            </p>
+
+            <!-- Warning Acceptance 1 -->
+            <div class="warning-box">
+                <label class="warning-checkbox-row" for="confirm_warning_1">
+                    <input
+                        type="checkbox"
+                        name="confirm_warning_1"
+                        id="confirm_warning_1"
+                        value="1"
+                        required
+                    >
+                    <span class="fs-sm">
+                        <strong class="d-block text-danger mb-1">Warning Acceptance #1 — Timesheet-Only Merge &amp; Source User Deactivation</strong>
+                        I understand that merging <strong id="warn1-source-name">{{ sourceUser ? sourceUser.fullName : 'the selected Source User' }}</strong> into <strong id="warn1-target-name">{{ targetUser ? targetUser.fullName : 'the selected Target User' }}</strong> will transfer <strong>only timesheet data</strong> (<strong id="warn1-count">{{ sourceUser ? sourceUser.totalSessions : 0 }}</strong> check-in/check-out record(s)) to the target user, will <strong>not</strong> overwrite any profile fields on the target user, and will immediately mark <strong id="warn1-source-name-2">{{ sourceUser ? sourceUser.fullName : 'the Source User' }}</strong> as <strong>Inactive</strong>.
+                    </span>
+                </label>
+            </div>
+
+            <!-- Warning Acceptance 2 -->
+            <div class="warning-box mb-0">
+                <label class="warning-checkbox-row" for="confirm_warning_2">
+                    <input
+                        type="checkbox"
+                        name="confirm_warning_2"
+                        id="confirm_warning_2"
+                        value="1"
+                        required
+                    >
+                    <span class="fs-sm">
+                        <strong class="d-block text-danger mb-1">Warning Acceptance #2 — Permanent &amp; Irreversible Action</strong>
+                        I understand that this action is <strong>permanent and irreversible</strong>. Once the timesheet records are merged into <strong id="warn2-target-name">{{ targetUser ? targetUser.fullName : 'the Target User' }}</strong>, they cannot be unmerged or separated back to <strong id="warn2-source-name">{{ sourceUser ? sourceUser.fullName : 'the Source User' }}</strong>.
+                    </span>
+                </label>
+            </div>
+
+            <div class="d-flex align-items-center justify-content-between flex-wrap gap-3 mt-6 pt-4 border-t">
+                <a href="{{ path('app_manager_users') }}" class="btn btn-secondary">
+                    Cancel
+                </a>
+                <button type="submit" id="merge-submit-btn" class="btn btn-danger d-inline-flex align-items-center gap-2">
+                    <span class="material-icons fs-md">call_merge</span>
+                    <span>Merge Users &amp; Deactivate Source</span>
+                </button>
+            </div>
+        </fieldset>
+    </form>
+</div>
+
+<!-- Native Modal Dialog for Final Verification -->
+<dialog id="merge-confirm-dialog" closedby="any" aria-labelledby="merge-confirm-title">
+    <h3 id="merge-confirm-title" class="fs-lg fw-700 d-flex align-items-center gap-2 text-danger m-0 mb-3">
+        <span class="material-icons">warning</span> Final Confirmation: Irreversible User Merge
+    </h3>
+    <p class="fs-sm text-secondary mb-3">
+        You are about to permanently execute the following merge operation:
+    </p>
+    <div class="p-3 rounded-sm border mb-4 fs-sm" style="background: rgba(239, 68, 68, 0.08); border-color: rgba(239, 68, 68, 0.3);">
+        <div class="mb-1"><strong>Merge From (Deactivated):</strong> <span id="modal-source-name">—</span></div>
+        <div class="mb-1"><strong>Merge Into (Retained Profile):</strong> <span id="modal-target-name">—</span></div>
+        <div class="mb-1"><strong>Timesheet Items Moved:</strong> <span id="modal-moved-count">0</span> item(s) (<span id="modal-source-name-short">—</span> &rarr; <span id="modal-target-name-short">—</span>)</div>
+        <div><strong>Target Total After Merge:</strong> <span id="modal-final-total">0</span> timesheet item(s)</div>
+    </div>
+    <p class="fs-xs text-danger fw-600 mb-4">
+        This action cannot be undone. Are you sure you want to proceed?
+    </p>
+    <form method="dialog" class="d-flex justify-content-end gap-2 m-0">
+        <button type="submit" value="cancel" class="btn btn-secondary btn-sm" autofocus>Cancel &amp; Review</button>
+        <button type="submit" value="confirm" id="modal-confirm-execute-btn" class="btn btn-danger btn-sm d-inline-flex align-items-center gap-1">
+            <span class="material-icons fs-sm">check_circle</span> Yes, Permanently Merge Users
+        </button>
+    </form>
+</dialog>
+
+<script>
+(function() {
+    const USERS_DATA = {{ usersData|json_encode|raw }};
+    const form = document.getElementById('merge-users-form');
+    const sourceSelect = document.getElementById('source_user_id');
+    const targetSelect = document.getElementById('target_user_id');
+    const swapBtn = document.getElementById('swap-users-btn');
+    const sameUserAlert = document.getElementById('same-user-alert');
+    const confirmDialog = document.getElementById('merge-confirm-dialog');
+    const submitBtn = document.getElementById('merge-submit-btn');
+
+    let confirmedViaDialog = false;
+
+    function renderCustomFields(container, customFields) {
+        container.textContent = '';
+        const keys = customFields ? Object.keys(customFields) : [];
+        if (keys.length === 0) {
+            const noneSpan = document.createElement('span');
+            noneSpan.className = 'text-muted';
+            noneSpan.textContent = 'None';
+            container.appendChild(noneSpan);
+            return;
+        }
+        keys.forEach((k) => {
+            const row = document.createElement('div');
+            const strong = document.createElement('strong');
+            strong.textContent = k + ': ';
+            row.appendChild(strong);
+            row.appendChild(document.createTextNode(String(customFields[k] ?? '')));
+            container.appendChild(row);
+        });
+    }
+
+    function renderStatusBadge(container, isActive) {
+        container.textContent = '';
+        const badge = document.createElement('span');
+        badge.className = 'badge ' + (isActive ? 'badge-success' : 'badge-danger');
+        badge.textContent = isActive ? 'Active' : 'Inactive';
+        container.appendChild(badge);
+    }
+
+    function renderNotesDisclosure(detailsId, summaryId, listId, notes) {
+        const detailsEl = document.getElementById(detailsId);
+        const summaryEl = document.getElementById(summaryId);
+        const listEl = document.getElementById(listId);
+        if (!detailsEl || !summaryEl || !listEl) return;
+
+        // Always start collapsed when switching users
+        detailsEl.open = false;
+        const arr = Array.isArray(notes) ? notes : [];
+        summaryEl.textContent = `View Notes (${arr.length})`;
+        listEl.textContent = '';
+
+        if (arr.length === 0) {
+            const li = document.createElement('li');
+            li.className = 'text-muted';
+            li.textContent = 'No notes recorded.';
+            listEl.appendChild(li);
+            return;
+        }
+
+        arr.forEach((n) => {
+            const li = document.createElement('li');
+            const strong = document.createElement('strong');
+            strong.className = n.type === 'system' ? 'text-danger' : 'text-primary';
+            strong.textContent = `[${n.author || 'Manager'} • ${n.createdAt || ''}] `;
+            li.appendChild(strong);
+            li.appendChild(document.createTextNode(String(n.text ?? '')));
+            listEl.appendChild(li);
+        });
+    }
+
+    function updateComparisonUI() {
+        const sId = sourceSelect.value;
+        const tId = targetSelect.value;
+        const sUser = sId && USERS_DATA[sId] ? USERS_DATA[sId] : null;
+        const tUser = tId && USERS_DATA[tId] ? USERS_DATA[tId] : null;
+
+        // Check same-user selection
+        if (sId && tId && sId === tId) {
+            sameUserAlert.classList.remove('d-none');
+            targetSelect.setCustomValidity('Source and Target users must be different.');
+        } else {
+            sameUserAlert.classList.add('d-none');
+            targetSelect.setCustomValidity('');
+        }
+
+        // Populate Source Card
+        document.getElementById('source-card-name').textContent = sUser ? sUser.fullName : 'Select a Source User';
+        if (sUser) {
+            renderStatusBadge(document.getElementById('source-field-status'), sUser.isActive);
+            document.getElementById('source-field-pin').textContent = sUser.pin || '—';
+            document.getElementById('source-field-unique-id').textContent = sUser.uniqueId ? sUser.uniqueId : (sUser.hasEncryptedId ? 'Encrypted (legacy)' : 'None');
+            document.getElementById('source-field-email').textContent = sUser.email || 'None';
+            document.getElementById('source-field-phone').textContent = sUser.phone || 'None';
+            document.getElementById('source-field-created').textContent = sUser.createdAt;
+            renderCustomFields(document.getElementById('source-field-custom'), sUser.customFields);
+            renderNotesDisclosure('source-notes-details', 'source-notes-summary', 'source-notes-list', sUser.notes);
+            document.getElementById('source-sessions-badge').textContent =
+                sUser.totalSessions + (sUser.totalSessions === 1 ? ' item' : ' items');
+            document.getElementById('source-sessions-detail').textContent =
+                `${sUser.completedSessions} completed check-out(s), ${sUser.activeSessions} active check-in(s) (${sUser.totalHoursFormatted} logged)`;
+            document.getElementById('transfer-count-label').textContent =
+                `Moving ${sUser.totalSessions} Timesheet Item${sUser.totalSessions === 1 ? '' : 's'}`;
+        } else {
+            document.getElementById('source-field-status').textContent = '—';
+            document.getElementById('source-field-pin').textContent = '—';
+            document.getElementById('source-field-unique-id').textContent = '—';
+            document.getElementById('source-field-email').textContent = '—';
+            document.getElementById('source-field-phone').textContent = '—';
+            document.getElementById('source-field-created').textContent = '—';
+            document.getElementById('source-field-custom').textContent = '—';
+            renderNotesDisclosure('source-notes-details', 'source-notes-summary', 'source-notes-list', []);
+            document.getElementById('source-sessions-badge').textContent = '0 items';
+            document.getElementById('source-sessions-detail').textContent = 'Select a source user to view timesheet items to move.';
+            document.getElementById('transfer-count-label').textContent = 'Timesheets Only';
+        }
+
+        // Populate Target Card
+        document.getElementById('target-card-name').textContent = tUser ? tUser.fullName : 'Select a Target User';
+        if (tUser) {
+            renderStatusBadge(document.getElementById('target-field-status'), tUser.isActive);
+            document.getElementById('target-field-pin').textContent = tUser.pin || '—';
+            document.getElementById('target-field-unique-id').textContent = tUser.uniqueId ? tUser.uniqueId : (tUser.hasEncryptedId ? 'Encrypted (legacy)' : 'None');
+            document.getElementById('target-field-email').textContent = tUser.email || 'None';
+            document.getElementById('target-field-phone').textContent = tUser.phone || 'None';
+            document.getElementById('target-field-created').textContent = tUser.createdAt;
+            renderCustomFields(document.getElementById('target-field-custom'), tUser.customFields);
+            renderNotesDisclosure('target-notes-details', 'target-notes-summary', 'target-notes-list', tUser.notes);
+            document.getElementById('target-sessions-badge').textContent =
+                tUser.totalSessions + (tUser.totalSessions === 1 ? ' item' : ' items');
+            document.getElementById('target-sessions-detail').textContent =
+                `${tUser.completedSessions} completed check-out(s), ${tUser.activeSessions} active check-in(s) (${tUser.totalHoursFormatted} logged)`;
+        } else {
+            document.getElementById('target-field-status').textContent = '—';
+            document.getElementById('target-field-pin').textContent = '—';
+            document.getElementById('target-field-unique-id').textContent = '—';
+            document.getElementById('target-field-email').textContent = '—';
+            document.getElementById('target-field-phone').textContent = '—';
+            document.getElementById('target-field-created').textContent = '—';
+            document.getElementById('target-field-custom').textContent = '—';
+            renderNotesDisclosure('target-notes-details', 'target-notes-summary', 'target-notes-list', []);
+            document.getElementById('target-sessions-badge').textContent = '0 items';
+            document.getElementById('target-sessions-detail').textContent = 'Select a target user to view existing timesheet items.';
+        }
+
+        // Populate Target Entity Preview & Warning Labels
+        const previewTargetName = document.getElementById('preview-target-name');
+        const previewTargetStatus = document.getElementById('preview-target-status');
+        const previewTargetSummary = document.getElementById('preview-target-profile-summary');
+        const previewEquation = document.getElementById('preview-timesheet-equation');
+        const previewSourceName = document.getElementById('preview-source-name');
+        const previewSourceBullet1 = document.getElementById('preview-source-bullet-1');
+        const targetAfterNote = document.getElementById('target-sessions-after-note');
+
+        previewTargetName.textContent = tUser ? tUser.fullName : '— Select Target User —';
+        previewTargetStatus.textContent = tUser ? (tUser.isActive ? 'Active' : 'Inactive') : 'Target Status Kept';
+        if (tUser) {
+            previewTargetSummary.textContent = `PIN: ${tUser.pin || '—'} • Email: ${tUser.email || 'None'} • Phone: ${tUser.phone || 'None'}`;
+        } else {
+            previewTargetSummary.textContent = 'All profile fields (Name, PIN, Email, Phone, Custom Fields) remain strictly those of the Target User.';
+        }
+
+        previewSourceName.textContent = sUser ? (sUser.firstName + ' ' + sUser.lastName + ' - MERGED') : '— Select Source User —';
+        const mergedLastNameEl = document.getElementById('preview-source-merged-lastname');
+        if (mergedLastNameEl) {
+            mergedLastNameEl.textContent = sUser ? (sUser.lastName + ' - MERGED') : 'LastName - MERGED';
+        }
+
+        if (sUser && tUser) {
+            const combined = tUser.totalSessions + sUser.totalSessions;
+            targetAfterNote.textContent = `After merge: ${combined} total timesheet items (${tUser.totalSessions} existing + ${sUser.totalSessions} moved)`;
+            previewEquation.textContent = `${tUser.totalSessions} existing + ${sUser.totalSessions} moved from ${sUser.fullName} = ${combined} total timesheet item(s)`;
+            previewSourceBullet1.textContent = `All ${sUser.totalSessions} timesheet item(s) moved from ${sUser.fullName} → ${tUser.fullName}.`;
+        } else {
+            targetAfterNote.textContent = 'Receives all timesheet items from the Merge From user';
+            previewEquation.textContent = 'Select both users above to preview combined timesheet item count';
+            previewSourceBullet1.textContent = 'All timesheet items (check-ins and check-outs) moved to Target User.';
+        }
+
+        // Dynamic text in Warning Checkboxes
+        document.getElementById('warn1-source-name').textContent = sUser ? sUser.fullName : 'the selected Source User';
+        document.getElementById('warn1-source-name-2').textContent = sUser ? sUser.fullName : 'the Source User';
+        document.getElementById('warn1-target-name').textContent = tUser ? tUser.fullName : 'the selected Target User';
+        document.getElementById('warn1-count').textContent = sUser ? String(sUser.totalSessions) : '0';
+        document.getElementById('warn2-target-name').textContent = tUser ? tUser.fullName : 'the Target User';
+        document.getElementById('warn2-source-name').textContent = sUser ? sUser.fullName : 'the Source User';
+    }
+
+    sourceSelect.addEventListener('change', updateComparisonUI);
+    targetSelect.addEventListener('change', updateComparisonUI);
+
+    swapBtn.addEventListener('click', () => {
+        const temp = sourceSelect.value;
+        sourceSelect.value = targetSelect.value;
+        targetSelect.value = temp;
+        updateComparisonUI();
+    });
+
+    // Two-stage confirmation dialog on submit
+    if (confirmDialog && typeof confirmDialog.showModal === 'function') {
+        form.addEventListener('submit', (e) => {
+            if (confirmedViaDialog) {
+                submitBtn.disabled = true;
+                return;
+            }
+            updateComparisonUI();
+            if (!form.checkValidity()) {
+                return;
+            }
+            const sUser = USERS_DATA[sourceSelect.value];
+            const tUser = USERS_DATA[targetSelect.value];
+            if (!sUser || !tUser || sUser.id === tUser.id) {
+                e.preventDefault();
+                return;
+            }
+
+            e.preventDefault();
+            document.getElementById('modal-source-name').textContent = `${sUser.fullName} (PIN: ${sUser.pin || '—'})`;
+            document.getElementById('modal-target-name').textContent = `${tUser.fullName} (PIN: ${tUser.pin || '—'})`;
+            document.getElementById('modal-source-name-short').textContent = sUser.fullName;
+            document.getElementById('modal-target-name-short').textContent = tUser.fullName;
+            document.getElementById('modal-moved-count').textContent = String(sUser.totalSessions);
+            document.getElementById('modal-final-total').textContent = String(tUser.totalSessions + sUser.totalSessions);
+
+            confirmDialog.showModal();
+        });
+
+        confirmDialog.addEventListener('close', () => {
+            const choice = confirmDialog.returnValue;
+            confirmDialog.returnValue = '';
+            if (choice === 'confirm') {
+                confirmedViaDialog = true;
+                submitBtn.disabled = true;
+                form.requestSubmit ? form.requestSubmit() : form.submit();
+            }
+        });
+
+        // Light-dismiss fallback for browsers without closedBy support
+        if (!('closedBy' in HTMLDialogElement.prototype)) {
+            confirmDialog.addEventListener('click', (event) => {
+                if (event.target !== confirmDialog) return;
+                const rect = confirmDialog.getBoundingClientRect();
+                const isDialogContent = (
+                    rect.top <= event.clientY &&
+                    event.clientY <= rect.top + rect.height &&
+                    rect.left <= event.clientX &&
+                    event.clientX <= rect.left + rect.width
+                );
+                if (isDialogContent) return;
+                confirmDialog.close();
+            });
+        }
+    }
+
+    // Select-menu interaction fallback and aria-invalid syncing
+    const syncAria = (el) => {
+        if (el && el.matches) {
+            try {
+                el.setAttribute('aria-invalid', el.matches(':user-invalid') ? 'true' : 'false');
+            } catch (_) {}
+        }
+    };
+    document.addEventListener('blur', (e) => syncAria(e.target), true);
+    document.addEventListener('input', (e) => {
+        if (e.target && e.target.hasAttribute && e.target.hasAttribute('aria-invalid')) {
+            syncAria(e.target);
+        }
+    });
+
+    const UserInvalidFallback = (() => {
+        const dirtyState = new WeakMap();
+        const updateState = (input) => {
+            const isValid = input.checkValidity();
+            input.classList.toggle('user-invalid-fallback', !isValid);
+            input.classList.toggle('user-valid-fallback', isValid);
+            if (!isValid) {
+                input.setAttribute('aria-invalid', 'true');
+            } else {
+                input.removeAttribute('aria-invalid');
+            }
+        };
+        const handleEvent = (event) => {
+            const input = event.target;
+            if (!input || !input.checkValidity) return;
+            if (event.type === 'input' || event.type === 'change') {
+                const state = dirtyState.get(input) || { hasInteracted: false, hasBlurred: false };
+                state.hasInteracted = true;
+                dirtyState.set(input, state);
+                if (state.hasBlurred) updateState(input);
+            } else if (event.type === 'blur') {
+                const state = dirtyState.get(input) || { hasInteracted: false, hasBlurred: false };
+                state.hasBlurred = true;
+                dirtyState.set(input, state);
+                if (state.hasInteracted) updateState(input);
+            }
+        };
+        const init = (root = document) => {
+            if (typeof CSS !== 'undefined' && CSS.supports && CSS.supports('selector(:user-invalid)')) return;
+            root.addEventListener('blur', handleEvent, true);
+            root.addEventListener('input', handleEvent);
+            root.addEventListener('change', handleEvent);
+        };
+        return { init };
+    })();
+    UserInvalidFallback.init(form);
+})();
+</script>
+{% endblock %}
+

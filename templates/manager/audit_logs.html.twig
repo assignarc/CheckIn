@@ -41,6 +41,9 @@
                         </td>
                         <td>
                             {% if log.detailsJson is iterable and log.detailsJson|length > 0 %}
+                                {% if log.detailsJson.summary is defined and log.detailsJson.summary %}
+                                    <div class="fs-xs fw-600 text-primary mb-1">{{ log.detailsJson.summary }}</div>
+                                {% endif %}
                                 <details class="fs-xs">
                                     <summary class="cursor-pointer text-purple-400 fw-600" style="outline: none; list-style: none;">
                                         <span class="d-inline-flex align-items-center gap-1">

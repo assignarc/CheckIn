@@ -224,6 +224,19 @@ class CronController extends AbstractController
             }
         }
 
+        // Direct SQL safety checks to guarantee unique_id and notes columns exist on org_users table
+        foreach ([
+            "ALTER TABLE org_users ADD unique_id VARCHAR(255) DEFAULT NULL",
+            "ALTER TABLE org_users ADD notes JSON DEFAULT NULL",
+        ] as $alterSql) {
+            try {
+                $em->getConnection()->executeStatement($alterSql);
+                $sqls[] = $alterSql;
+            } catch (\Throwable $ex) {
+                // Column already exists
+            }
+        }
+
         return new JsonResponse([
             'status' => 'success',
             'queries_executed' => $sqls

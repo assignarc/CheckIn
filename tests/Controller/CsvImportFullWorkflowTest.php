@@ -123,20 +123,140 @@ class CsvImportFullWorkflowTest extends WebTestCase
         // Refresh database state
         $em->clear();
 
-        // Assertion 1: Check existing user was updated/matched correctly on unique identifier (PIN/Email)
+        // Assertion 1: Check existing user (who had only legacy uniqueIdHash in DB) was matched by encrypted hash
+        // AND now has plaintext uniqueId backfilled alongside uniqueIdHash!
         $matchedUser = $em->getRepository(OrgUser::class)->findOneBy(['pin' => $pinExisting, 'organization' => $org]);
         $this->assertNotNull($matchedUser);
         $this->assertEquals('Student Updated', $matchedUser->getLastName());
+        $this->assertSame($pinExisting, $matchedUser->getUniqueId());
+        $this->assertSame($userMatchingService->generateHash($pinExisting), $matchedUser->getUniqueIdHash());
 
-        // Assertion 2: Check brand-new user was created
+        // Assertion 2: Check brand-new user was created with BOTH plaintext uniqueId and encrypted uniqueIdHash
         $newUser = $em->getRepository(OrgUser::class)->findOneBy(['pin' => $pinNew, 'organization' => $org]);
         $this->assertNotNull($newUser);
         $this->assertEquals($firstNew, $newUser->getFirstName());
         $this->assertEquals("new_{$randId}@acme.com", $newUser->getEmail());
+        $this->assertSame($pinNew, $newUser->getUniqueId());
+        $this->assertSame($userMatchingService->generateHash($pinNew), $newUser->getUniqueIdHash());
 
         // Assertion 3: Check omitted user still exists unharmed in organization
         $stillOmitted = $em->getRepository(OrgUser::class)->findOneBy(['pin' => $pinOmitted, 'organization' => $org]);
         $this->assertNotNull($stillOmitted);
         $this->assertEquals($firstOmitted, $stillOmitted->getFirstName());
+    }
+
+    public function testCsvImportPlaintextAndFirstLastNameMatchingPrecedence(): void
+    {
+        $client = static::createClient();
+        $container = static::getContainer();
+        /** @var EntityManagerInterface $em */
+        $em = $container->get(EntityManagerInterface::class);
+        $userMatchingService = $container->get(\App\Service\UserMatchingService::class);
+
+        $manager = $em->getRepository(Manager::class)->findOneBy(['email' => 'manager@acme.com']);
+        $this->assertNotNull($manager);
+        $org = $manager->getOrganization();
+        $client->loginUser($manager);
+
+        $rand = rand(10000, 99999);
+        $plainUid = "PLAIN-{$rand}";
+        $nameAssignedUid = "NAME-{$rand}";
+
+        // User A: Has plaintext uniqueId in DB ("PLAIN-{$rand}")
+        $userPlain = new OrgUser();
+        $userPlain->setOrganization($org);
+        $userPlain->setFirstName("PlainFirst{$rand}");
+        $userPlain->setLastName("PlainLast{$rand}");
+        $userPlain->setEmail("plain_{$rand}@acme.com");
+        $userPlain->setPin('P' . rand(100, 999));
+        $userPlain->setPinHash(hash('sha256', 'P123'));
+        $userPlain->setUniqueId($plainUid);
+        $userPlain->setUniqueIdHash($userMatchingService->generateHash($plainUid));
+        $em->persist($userPlain);
+
+        // User B: Has NO uniqueId or uniqueIdHash in DB, will be matched by First Name + Last Name
+        $userByName = new OrgUser();
+        $userByName->setOrganization($org);
+        $userByName->setFirstName("NameMatch{$rand}");
+        $userByName->setLastName("Target{$rand}");
+        $userByName->setEmail("oldname_{$rand}@acme.com");
+        $userByName->setPin('N' . rand(100, 999));
+        $userByName->setPinHash(hash('sha256', 'N123'));
+        $userByName->setUniqueId(null);
+        $userByName->setUniqueIdHash(null);
+        $em->persist($userByName);
+
+        $em->flush();
+        $userPlainId = $userPlain->getId();
+        $userByNameId = $userByName->getId();
+
+        // CSV contains:
+        // Row 0: Matches User A by plaintext unique_id ($plainUid) even though last_name is changed to "RenamedViaPlainId"
+        // Row 1: Matches User B by First Name + Last Name ("NameMatch{$rand}", "Target{$rand}") and assigns new unique_id $nameAssignedUid
+        $csvContent = "unique_id,first_name,last_name,email\n" .
+                      "{$plainUid},PlainFirst{$rand},RenamedViaPlainId,plain_{$rand}@acme.com\n" .
+                      "{$nameAssignedUid},NameMatch{$rand},Target{$rand},updatedname_{$rand}@acme.com\n";
+
+        $csvPath = tempnam(sys_get_temp_dir(), 'csv_import_precedence_test');
+        file_put_contents($csvPath, $csvContent);
+        $uploadedFile = new UploadedFile($csvPath, 'precedence.csv', 'text/csv', null, true);
+
+        // Step 1
+        $client->request('POST', '/manager/users/import', ['step' => 1], ['import_file' => $uploadedFile]);
+        $this->assertResponseIsSuccessful();
+
+        // Step 2
+        $client->request('POST', '/manager/users/import', [
+            'step' => 2,
+            'unique_col' => '0',
+            'mappings' => [
+                'first_name' => '1',
+                'last_name' => '2',
+                'email' => '3',
+            ],
+        ]);
+        $this->assertResponseIsSuccessful();
+
+        // Step 3: Both rows should have been detected as 'update'
+        $client->request('POST', '/manager/users/import', [
+            'step' => 3,
+            'actions' => [
+                0 => 'update',
+                1 => 'update',
+            ],
+            'enable_inactive' => '0',
+        ]);
+        $this->assertResponseIsSuccessful();
+
+        // Step 4
+        $client->request('POST', '/manager/users/import', [
+            'step' => 4,
+            'missing_action' => 'keep',
+        ]);
+        $this->assertResponseIsSuccessful();
+
+        // Step 5
+        $client->request('POST', '/manager/users/import', [
+            'step' => 5,
+            'wizard_action' => 'confirm',
+        ]);
+        $this->assertResponseRedirects('/manager/users');
+
+        $em->clear();
+        $reloadedPlain = $em->getRepository(OrgUser::class)->find($userPlainId);
+        $reloadedByName = $em->getRepository(OrgUser::class)->find($userByNameId);
+
+        // User A matched by plaintext uniqueId and updated lastName
+        $this->assertSame('RenamedViaPlainId', $reloadedPlain->getLastName());
+        $this->assertSame($plainUid, $reloadedPlain->getUniqueId());
+        $this->assertSame($userMatchingService->generateHash($plainUid), $reloadedPlain->getUniqueIdHash());
+
+        // User B matched by First + Last Name and now stores BOTH plaintext uniqueId and encrypted uniqueIdHash
+        $this->assertSame("updatedname_{$rand}@acme.com", $reloadedByName->getEmail());
+        $this->assertSame($nameAssignedUid, $reloadedByName->getUniqueId());
+        $this->assertSame($userMatchingService->generateHash($nameAssignedUid), $reloadedByName->getUniqueIdHash());
+
+        // Cleanup
+        $em->getConnection()->executeStatement("DELETE FROM org_users WHERE id IN ({$userPlainId}, {$userByNameId})");
     }
 }

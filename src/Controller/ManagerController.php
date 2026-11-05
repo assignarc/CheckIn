@@ -385,7 +385,7 @@ class ManagerController extends AbstractController
         }
 
         if (!$org->getSemiPermanentKioskToken()) {
-            $org->setSemiPermanentKioskToken(bin2hex(random_bytes(16)));
+            $org->setSemiPermanentKioskToken(bin2hex(random_bytes(8)));
             $em->flush();
         }
 
@@ -425,7 +425,7 @@ class ManagerController extends AbstractController
         $org = $manager->getOrganization();
 
         $oldToken = $org->getSemiPermanentKioskToken();
-        $newToken = bin2hex(random_bytes(16));
+        $newToken = bin2hex(random_bytes(8));
         $org->setSemiPermanentKioskToken($newToken);
         $em->flush();
 
@@ -451,7 +451,7 @@ class ManagerController extends AbstractController
             \Symfony\Component\Routing\Generator\UrlGeneratorInterface::ABSOLUTE_URL
         );
 
-        $qrApiUrl = 'https://api.qrserver.com/v1/create-qr-code/?size=360x360&ecc=H&color=6366f1&data=' . urlencode($kioskUrl);
+        $qrApiUrl = 'https://api.qrserver.com/v1/create-qr-code/?size=440x440&ecc=L&color=000000&bgcolor=ffffff&qzone=4&data=' . urlencode($kioskUrl);
 
         $imgData = null;
         try {
@@ -804,7 +804,7 @@ class ManagerController extends AbstractController
     }
 
     #[Route('/users/add', name: 'app_manager_user_add', methods: ['POST'])]
-    public function addOrgUser(Request $request, EntityManagerInterface $em): Response
+    public function addOrgUser(Request $request, EntityManagerInterface $em, \App\Service\UserMatchingService $userMatchingService): Response
     {
         /** @var Manager $manager */
         $manager = $this->getUser();
@@ -817,10 +817,34 @@ class ManagerController extends AbstractController
         $email = $request->request->get('email');
         $phone = $request->request->get('phone');
         $pin = strtoupper(trim($request->request->get('pin', '')));
+        $uniqueId = trim((string) $request->request->get('unique_id', ''));
 
         if (!$first || !$last) {
             $this->addFlash('danger', 'First name and last name are required.');
             return $this->redirectToRoute('app_manager_users');
+        }
+
+        $uniqueHash = null;
+        if ($uniqueId !== '') {
+            $uniqueHash = $userMatchingService->generateHash($uniqueId);
+            $existingOrgUsers = $em->getRepository(OrgUser::class)->findBy(['organization' => $org]);
+            foreach ($existingOrgUsers as $existingUser) {
+                if (
+                    ($existingUser->getUniqueId() !== null && strtolower(trim($existingUser->getUniqueId())) === strtolower($uniqueId)) ||
+                    ($existingUser->getUniqueIdHash() !== null && $existingUser->getUniqueIdHash() === $uniqueHash)
+                ) {
+                    $this->addFlash(
+                        'danger',
+                        sprintf(
+                            "Unique ID '%s' is already assigned to another user (%s %s).",
+                            $uniqueId,
+                            $existingUser->getFirstName(),
+                            $existingUser->getLastName()
+                        )
+                    );
+                    return $this->redirectToRoute('app_manager_users');
+                }
+            }
         }
 
         // Auto-generate PIN if left blank
@@ -849,6 +873,15 @@ class ManagerController extends AbstractController
         $orgUser->setIsActive($isActive);
         $orgUser->setPinHash($this->pinService->hashPin($pin));
         $orgUser->setPin($pin);
+        if ($uniqueId !== '') {
+            $orgUser->setUniqueId($uniqueId);
+            $orgUser->setUniqueIdHash($uniqueHash);
+        }
+
+        $note = trim((string) $request->request->get('note', ''));
+        if ($note !== '') {
+            $orgUser->addNote($note, $manager->getFirstName() . ' ' . $manager->getLastName(), 'manager');
+        }
 
         $em->persist($orgUser);
         $em->flush();
@@ -872,7 +905,7 @@ class ManagerController extends AbstractController
     }
 
     #[Route('/users/edit/{id}', name: 'app_manager_user_edit', methods: ['POST'])]
-    public function editOrgUser(int $id, Request $request, EntityManagerInterface $em): Response
+    public function editOrgUser(int $id, Request $request, EntityManagerInterface $em, \App\Service\UserMatchingService $userMatchingService): Response
     {
         /** @var Manager $manager */
         $manager = $this->getUser();
@@ -889,6 +922,8 @@ class ManagerController extends AbstractController
         $email = trim($request->request->get('email', ''));
         $phone = trim($request->request->get('phone', ''));
         $pin   = strtoupper(trim($request->request->get('pin', '')));
+        $hasUniqueIdParam = $request->request->has('unique_id');
+        $uniqueId = trim((string) $request->request->get('unique_id', ''));
 
         $changedFields = [];
         if ($first && $orgUser->getFirstName() !== $first) {
@@ -924,6 +959,55 @@ class ManagerController extends AbstractController
             $orgUser->setPinHash($this->pinService->hashPin($pin));
         }
 
+        if ($hasUniqueIdParam && $uniqueId !== '') {
+            $newHash = $userMatchingService->generateHash($uniqueId);
+            $existingOrgUsers = $em->getRepository(OrgUser::class)->findBy(['organization' => $org]);
+            foreach ($existingOrgUsers as $existingUser) {
+                if ($existingUser->getId() === $orgUser->getId()) {
+                    continue;
+                }
+                if (
+                    ($existingUser->getUniqueId() !== null && strtolower(trim($existingUser->getUniqueId())) === strtolower($uniqueId)) ||
+                    ($existingUser->getUniqueIdHash() !== null && $existingUser->getUniqueIdHash() === $newHash)
+                ) {
+                    $this->addFlash(
+                        'danger',
+                        sprintf(
+                            "Unique ID '%s' is already assigned to another user (%s %s).",
+                            $uniqueId,
+                            $existingUser->getFirstName(),
+                            $existingUser->getLastName()
+                        )
+                    );
+                    return $this->redirectToRoute('app_manager_users');
+                }
+            }
+
+            if ($orgUser->getUniqueId() !== $uniqueId || $orgUser->getUniqueIdHash() !== $newHash) {
+                $oldUniqueId = $orgUser->getUniqueId();
+                $changedFields['uniqueId'] = ['old' => $oldUniqueId, 'new' => $uniqueId];
+                $orgUser->setUniqueId($uniqueId);
+                $orgUser->setUniqueIdHash($newHash);
+                $orgUser->addNote(
+                    sprintf(
+                        'Unique ID updated from "%s" to "%s" by %s %s.',
+                        $oldUniqueId ?? ($orgUser->getUniqueIdHash() ? '[Encrypted Legacy ID]' : 'None'),
+                        $uniqueId,
+                        $manager->getFirstName(),
+                        $manager->getLastName()
+                    ),
+                    'System',
+                    'system'
+                );
+            }
+        }
+
+        $note = trim((string) $request->request->get('note', ''));
+        if ($note !== '') {
+            $orgUser->addNote($note, $manager->getFirstName() . ' ' . $manager->getLastName(), 'manager');
+            $changedFields['note_added'] = $note;
+        }
+
         $orgUser->setUpdatedAt(new \DateTimeImmutable());
         $em->flush();
 
@@ -940,6 +1024,38 @@ class ManagerController extends AbstractController
         ), \App\Event\UserUpdatedEvent::NAME);
 
         $this->addFlash('success', "User {$orgUser->getFirstName()} {$orgUser->getLastName()} updated successfully.");
+        return $this->redirectToRoute('app_manager_users');
+    }
+
+    #[Route('/users/add-note/{id}', name: 'app_manager_user_add_note', methods: ['POST'])]
+    public function addUserNote(int $id, Request $request, EntityManagerInterface $em): Response
+    {
+        /** @var Manager $manager */
+        $manager = $this->getUser();
+        $org = $manager->getOrganization();
+
+        $orgUser = $em->getRepository(OrgUser::class)->find($id);
+        if (!$orgUser || $orgUser->getOrganization()->getId() !== $org->getId()) {
+            $this->addFlash('danger', 'User not found.');
+            return $this->redirectToRoute('app_manager_users');
+        }
+
+        $note = trim((string) $request->request->get('note', ''));
+        if ($note === '') {
+            $this->addFlash('warning', 'Note cannot be empty.');
+            return $this->redirectToRoute('app_manager_users');
+        }
+
+        $orgUser->addNote($note, $manager->getFirstName() . ' ' . $manager->getLastName(), 'manager');
+        $orgUser->setUpdatedAt(new \DateTimeImmutable());
+        $em->flush();
+
+        $this->logAudit($em, $org, 'USER_NOTE_ADD', [
+            'orgUser_id' => $orgUser->getId(),
+            'note' => $note,
+        ], $request);
+
+        $this->addFlash('success', "Note added to {$orgUser->getFirstName()} {$orgUser->getLastName()}.");
         return $this->redirectToRoute('app_manager_users');
     }
 
@@ -1052,6 +1168,313 @@ class ManagerController extends AbstractController
         return $this->redirectToRoute('app_manager_users');
     }
 
+    #[Route('/users/merge', name: 'app_manager_users_merge', methods: ['GET', 'POST'])]
+    public function mergeUsers(Request $request, EntityManagerInterface $em): Response
+    {
+        /** @var Manager $manager */
+        $manager = $this->getUser();
+        $org = $manager->getOrganization();
+
+        if ($org->isArchived()) {
+            $this->addFlash('warning', 'Your organization has been archived. Merging users is disabled.');
+            return $this->redirectToRoute('app_manager_billing');
+        }
+
+        if ($request->isMethod('POST')) {
+            if (!$this->isCsrfTokenValid('merge_users', (string) $request->request->get('_token'))) {
+                $this->addFlash('danger', 'Invalid security token. Please try again.');
+                return $this->redirectToRoute('app_manager_users_merge');
+            }
+
+            $sourceId = (int) $request->request->get('source_user_id', 0);
+            $targetId = (int) $request->request->get('target_user_id', 0);
+            $confirm1 = (string) $request->request->get('confirm_warning_1', '') === '1';
+            $confirm2 = (string) $request->request->get('confirm_warning_2', '') === '1';
+
+            if (!$sourceId || !$targetId) {
+                $this->addFlash('danger', 'Please select both a "Merge From" user and a "Merge Into" user.');
+                return $this->redirectToRoute('app_manager_users_merge');
+            }
+
+            if ($sourceId === $targetId) {
+                $this->addFlash('danger', 'Cannot merge a user into themselves. Please select two different users.');
+                return $this->redirectToRoute('app_manager_users_merge', [
+                    'source_id' => $sourceId,
+                ]);
+            }
+
+            if (!$confirm1 || !$confirm2) {
+                $this->addFlash('danger', 'You must accept both warning confirmations before merging users.');
+                return $this->redirectToRoute('app_manager_users_merge', [
+                    'source_id' => $sourceId,
+                    'target_id' => $targetId,
+                ]);
+            }
+
+            $sourceUser = $em->getRepository(OrgUser::class)->find($sourceId);
+            $targetUser = $em->getRepository(OrgUser::class)->find($targetId);
+
+            if (!$sourceUser || $sourceUser->getOrganization()->getId() !== $org->getId() ||
+                !$targetUser || $targetUser->getOrganization()->getId() !== $org->getId()) {
+                $this->addFlash('danger', 'Both selected users must belong to your organization.');
+                return $this->redirectToRoute('app_manager_users_merge');
+            }
+
+            if ($sourceUser->isMerged() || $targetUser->isMerged()) {
+                $this->addFlash('danger', 'Already merged users cannot be selected for future merges.');
+                return $this->redirectToRoute('app_manager_users_merge');
+            }
+
+            $movedSessionsCount = 0;
+            $wasSourceActive = $sourceUser->isActive();
+            $sourceOriginalName = $sourceUser->getFirstName() . ' ' . $sourceUser->getLastName();
+            $targetOriginalName = $targetUser->getFirstName() . ' ' . $targetUser->getLastName();
+            $managerFullName = $manager->getFirstName() . ' ' . $manager->getLastName();
+
+            $em->wrapInTransaction(function () use (
+                $em,
+                $org,
+                $sourceUser,
+                $targetUser,
+                $sourceOriginalName,
+                $targetOriginalName,
+                $managerFullName,
+                &$movedSessionsCount
+            ) {
+                $sessions = $em->getRepository(WorkSession::class)->findBy([
+                    'organization' => $org,
+                    'orgUser' => $sourceUser,
+                ]);
+
+                foreach ($sessions as $session) {
+                    $session->setOrgUser($targetUser);
+                    $movedSessionsCount++;
+                }
+
+                // Mark source user inactive and append " - MERGED" to last name once
+                $sourceUser->markAsMerged();
+
+                // Release Unique ID & Hash from the deactivated source user (transferring to target if target has none)
+                $sourcePlainId = $sourceUser->getUniqueId();
+                $sourceHashId = $sourceUser->getUniqueIdHash();
+                $sourceUser->setUniqueId(null);
+                $sourceUser->setUniqueIdHash(null);
+                $em->flush();
+
+                if ($targetUser->getUniqueId() === null && $sourcePlainId !== null) {
+                    $targetUser->setUniqueId($sourcePlainId);
+                }
+                if ($targetUser->getUniqueIdHash() === null && $sourceHashId !== null) {
+                    $targetUser->setUniqueIdHash($sourceHashId);
+                }
+
+                // Add system notes to both Merged From and Merged To users
+                $sourceUser->addNote(
+                    sprintf(
+                        'System: Merged FROM %s (ID #%d, PIN: %s) INTO %s (ID #%d, PIN: %s) by %s. %d timesheet item(s) moved; user marked Inactive and renamed to "%s %s".',
+                        $sourceOriginalName,
+                        $sourceUser->getId(),
+                        $sourceUser->getPin() ?: '—',
+                        $targetOriginalName,
+                        $targetUser->getId(),
+                        $targetUser->getPin() ?: '—',
+                        $managerFullName,
+                        $movedSessionsCount,
+                        $sourceUser->getFirstName(),
+                        $sourceUser->getLastName()
+                    ),
+                    'System',
+                    'system'
+                );
+
+                $targetUser->addNote(
+                    sprintf(
+                        'System: Merged %d timesheet item(s) FROM %s (ID #%d, PIN: %s) INTO %s (ID #%d, PIN: %s) by %s.',
+                        $movedSessionsCount,
+                        $sourceOriginalName,
+                        $sourceUser->getId(),
+                        $sourceUser->getPin() ?: '—',
+                        $targetOriginalName,
+                        $targetUser->getId(),
+                        $targetUser->getPin() ?: '—',
+                        $managerFullName
+                    ),
+                    'System',
+                    'system'
+                );
+
+                $sourceUser->setUpdatedAt(new \DateTimeImmutable());
+                $targetUser->setUpdatedAt(new \DateTimeImmutable());
+
+                $em->flush();
+            });
+
+            $mergeSummary = sprintf(
+                'Merged %s (ID #%d) into %s (ID #%d): %d timesheet item(s) moved; %s marked Inactive and renamed to "%s %s".',
+                $sourceOriginalName,
+                $sourceUser->getId(),
+                $targetOriginalName,
+                $targetUser->getId(),
+                $movedSessionsCount,
+                $sourceOriginalName,
+                $sourceUser->getFirstName(),
+                $sourceUser->getLastName()
+            );
+
+            $mergeDetails = [
+                'summary' => $mergeSummary,
+                'source_user_id' => $sourceUser->getId(),
+                'source_user_name_before' => $sourceOriginalName,
+                'source_user_name_after' => $sourceUser->getFirstName() . ' ' . $sourceUser->getLastName(),
+                'target_user_id' => $targetUser->getId(),
+                'target_user_name' => $targetOriginalName,
+                'sessions_moved' => $movedSessionsCount,
+                'source_was_active' => $wasSourceActive,
+                'performed_by' => $managerFullName . ' (' . $manager->getEmail() . ')',
+            ];
+
+            // 1. Log Manager Audit Event (USER_MERGE)
+            $this->logAudit($em, $org, 'USER_MERGE', $mergeDetails, $request);
+
+            // 2. Log System Audit Event (SYSTEM_USER_MERGE with System actor)
+            $systemLog = new AuditLog();
+            $systemLog->setOrganization($org);
+            $systemLog->setManager(null); // System actor
+            $systemLog->setAction('SYSTEM_USER_MERGE');
+            $systemLog->setDetailsJson($mergeDetails);
+            $systemLog->setIpAddress($request->getClientIp());
+            $systemLog->setUserAgent('SYSTEM_MERGE');
+            $em->persist($systemLog);
+            $em->flush();
+
+            if ($wasSourceActive) {
+                $this->eventDispatcher->dispatch(new \App\Event\UserUpdatedEvent(
+                    $sourceUser,
+                    'merge_deactivate',
+                    ['isActive' => ['old' => true, 'new' => false]],
+                    new \DateTimeImmutable()
+                ), \App\Event\UserUpdatedEvent::NAME);
+            }
+
+            $this->addFlash(
+                'success',
+                sprintf(
+                    'Successfully merged <strong>%s</strong> into <strong>%s</strong>. Moved <strong>%d</strong> timesheet item(s), added system notes to both users, and marked <strong>%s %s</strong> as Inactive.',
+                    htmlspecialchars($sourceOriginalName, ENT_QUOTES),
+                    htmlspecialchars($targetOriginalName, ENT_QUOTES),
+                    $movedSessionsCount,
+                    htmlspecialchars($sourceUser->getFirstName(), ENT_QUOTES),
+                    htmlspecialchars($sourceUser->getLastName(), ENT_QUOTES)
+                )
+            );
+
+            return $this->redirectToRoute('app_manager_users');
+        }
+
+        $orgUsers = $em->getRepository(OrgUser::class)->findBy(
+            ['organization' => $org],
+            ['lastName' => 'ASC', 'firstName' => 'ASC']
+        );
+
+        $allSessions = $em->getRepository(WorkSession::class)->findBy(
+            ['organization' => $org],
+            ['startedAt' => 'DESC']
+        );
+
+        $sessionStatsByUser = [];
+        foreach ($allSessions as $session) {
+            $uid = $session->getOrgUser()->getId();
+            if (!isset($sessionStatsByUser[$uid])) {
+                $sessionStatsByUser[$uid] = [
+                    'total' => 0,
+                    'completed' => 0,
+                    'active' => 0,
+                    'durationSeconds' => 0,
+                    'recent' => [],
+                ];
+            }
+            $sessionStatsByUser[$uid]['total']++;
+            if ($session->getEndedAt() !== null) {
+                $sessionStatsByUser[$uid]['completed']++;
+                $sessionStatsByUser[$uid]['durationSeconds'] += (int) ($session->getDurationSeconds() ?? 0);
+            } else {
+                $sessionStatsByUser[$uid]['active']++;
+            }
+
+            if (count($sessionStatsByUser[$uid]['recent']) < 5) {
+                $durSec = $session->getDurationSeconds();
+                $durFormatted = 'In Progress';
+                if ($session->getEndedAt() !== null && $durSec !== null) {
+                    $hrs = intdiv($durSec, 3600);
+                    $mins = intdiv($durSec % 3600, 60);
+                    $durFormatted = sprintf('%dh %02dm', $hrs, $mins);
+                }
+                $sessionStatsByUser[$uid]['recent'][] = [
+                    'id' => $session->getId(),
+                    'startedAt' => $session->getStartedAt()->format('M d, Y h:i A'),
+                    'endedAt' => $session->getEndedAt() ? $session->getEndedAt()->format('M d, Y h:i A') : null,
+                    'category' => $session->getCategory() ? $session->getCategory()->getName() : 'General',
+                    'duration' => $durFormatted,
+                    'isActive' => $session->getEndedAt() === null,
+                ];
+            }
+        }
+
+        $usersData = [];
+        foreach ($orgUsers as $u) {
+            $uid = $u->getId();
+            $stats = $sessionStatsByUser[$uid] ?? [
+                'total' => 0,
+                'completed' => 0,
+                'active' => 0,
+                'durationSeconds' => 0,
+                'recent' => [],
+            ];
+            $totalSec = $stats['durationSeconds'];
+            $hours = intdiv($totalSec, 3600);
+            $minutes = intdiv($totalSec % 3600, 60);
+
+            $usersData[$uid] = [
+                'id' => $uid,
+                'firstName' => $u->getFirstName(),
+                'lastName' => $u->getLastName(),
+                'fullName' => $u->getFirstName() . ' ' . $u->getLastName(),
+                'email' => $u->getEmail() ?? '',
+                'phone' => $u->getPhone() ?? '',
+                'pin' => $u->getPin() ?? '',
+                'uniqueId' => $u->getUniqueId() ?? '',
+                'hasEncryptedId' => $u->getUniqueIdHash() !== null,
+                'isActive' => $u->isActive(),
+                'isMerged' => $u->isMerged(),
+                'createdAt' => $u->getCreatedAt()->format('M d, Y'),
+                'customFields' => $u->getCustomFieldsJson(),
+                'notes' => $u->getNotes(),
+                'totalSessions' => $stats['total'],
+                'completedSessions' => $stats['completed'],
+                'activeSessions' => $stats['active'],
+                'totalDurationSeconds' => $totalSec,
+                'totalHoursFormatted' => sprintf('%dh %02dm', $hours, $minutes),
+                'recentSessions' => $stats['recent'],
+            ];
+        }
+
+        $selectedSourceId = (int) $request->query->get('source_id', 0);
+        $selectedTargetId = (int) $request->query->get('target_id', 0);
+        if (isset($usersData[$selectedSourceId]) && $usersData[$selectedSourceId]['isMerged']) {
+            $selectedSourceId = 0;
+        }
+        if (isset($usersData[$selectedTargetId]) && $usersData[$selectedTargetId]['isMerged']) {
+            $selectedTargetId = 0;
+        }
+
+        return $this->render('manager/merge_users.html.twig', [
+            'orgUsers' => $orgUsers,
+            'usersData' => $usersData,
+            'selectedSourceId' => isset($usersData[$selectedSourceId]) ? $selectedSourceId : 0,
+            'selectedTargetId' => isset($usersData[$selectedTargetId]) ? $selectedTargetId : 0,
+        ]);
+    }
+
     #[Route('/users/import', name: 'app_manager_users_import', methods: ['GET', 'POST'])]
     public function importWizard(Request $request, EntityManagerInterface $em, \App\Service\UserMatchingService $userMatchingService, \App\Service\AppConfigService $configService): Response
     {
@@ -1151,11 +1574,19 @@ class ManagerController extends AbstractController
                 $results = [];
                 $dbOrgUsers = $em->getRepository(OrgUser::class)->findBy(['organization' => $org]);
                 
+                $empMapByPlainId = [];
                 $empMapByHash = [];
                 $empMapByEmail = [];
                 $empMapByPhone = [];
+                $empMapByName = [];
 
                 foreach ($dbOrgUsers as $dbEmp) {
+                    if ($dbEmp->isMerged()) {
+                        continue;
+                    }
+                    if ($dbEmp->getUniqueId() !== null && trim($dbEmp->getUniqueId()) !== '') {
+                        $empMapByPlainId[strtolower(trim($dbEmp->getUniqueId()))] = $dbEmp;
+                    }
                     if ($dbEmp->getUniqueIdHash()) {
                         $empMapByHash[$dbEmp->getUniqueIdHash()] = $dbEmp;
                     }
@@ -1164,6 +1595,10 @@ class ManagerController extends AbstractController
                     }
                     if ($dbEmp->getPhone()) {
                         $empMapByPhone[strtolower($dbEmp->getPhone())][] = $dbEmp;
+                    }
+                    $nameKey = strtolower(trim($dbEmp->getFirstName())) . '-' . strtolower(trim($dbEmp->getLastName()));
+                    if (!isset($empMapByName[$nameKey])) {
+                        $empMapByName[$nameKey] = $dbEmp;
                     }
                 }
 
@@ -1203,7 +1638,9 @@ class ManagerController extends AbstractController
                         $rowPhone,
                         $empMapByHash,
                         $empMapByEmail,
-                        $empMapByPhone
+                        $empMapByPhone,
+                        $empMapByPlainId,
+                        $empMapByName
                     );
 
                     $matchedOrgUser = $matchResult['matchedUser'];
@@ -1223,6 +1660,7 @@ class ManagerController extends AbstractController
                         'pin' => $rowPin,
                         'custom' => $customData,
                         'match_type' => $matchType,
+                        'unique_val' => $uniqueVal,
                         'unique_hash' => $uniqueHash,
                         'matched_orgUser_id' => $matchedOrgUser ? $matchedOrgUser->getId() : null,
                         'matched_orgUser_name' => $matchedOrgUser ? ($matchedOrgUser->getFirstName().' '.$matchedOrgUser->getLastName()) : null,
@@ -1407,6 +1845,9 @@ class ManagerController extends AbstractController
                             if ($item['email']) $orgUser->setEmail($item['email']);
                             if ($item['phone']) $orgUser->setPhone($item['phone']);
                             $orgUser->setUniqueIdHash($item['unique_hash']);
+                            if (!empty($item['unique_val'])) {
+                                $orgUser->setUniqueId($item['unique_val']);
+                            }
                             
                             // Determine active status using LicenseService
                             $isActive = $this->licenseService->isNextUserActiveAllowed($org, $importedActiveCountInThisBatch);
@@ -1434,6 +1875,9 @@ class ManagerController extends AbstractController
                                 if ($item['email']) $orgUser->setEmail($item['email']);
                                 if ($item['phone']) $orgUser->setPhone($item['phone']);
                                 $orgUser->setUniqueIdHash($item['unique_hash']);
+                                if (!empty($item['unique_val'])) {
+                                    $orgUser->setUniqueId($item['unique_val']);
+                                }
                                 
                                 if ($enableInactive && !$orgUser->isActive()) {
                                     if ($this->licenseService->isNextUserActiveAllowed($org, $importedActiveCountInThisBatch)) {
@@ -2060,7 +2504,7 @@ class ManagerController extends AbstractController
         $org = $manager->getOrganization();
         $logs = $em->getRepository(AuditLog::class)->findBy(
             ['organization' => $org],
-            ['createdAt' => 'DESC'],
+            ['createdAt' => 'DESC', 'id' => 'DESC'],
             200 // Limit to last 200 for manager view
         );
 

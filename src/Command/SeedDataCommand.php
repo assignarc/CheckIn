@@ -97,7 +97,10 @@ class SeedDataCommand extends Command
             $configKeysStr = implode(',', array_map(function($k) { return "'" . addslashes($k) . "'"; }, $defaultConfigs));
             $this->entityManager->getConnection()->executeStatement("DELETE FROM app_config WHERE setting_key IN ({$configKeysStr})");
 
-            // Delete all system administrator users
+            // Delete all system administrator audit logs and users
+            $this->entityManager->getConnection()->executeStatement(
+                "DELETE FROM audit_logs WHERE manager_id IN (SELECT id FROM managers WHERE role = 'ROLE_SYSTEM_ADMIN') OR organization_id IS NULL"
+            );
             $this->entityManager->getConnection()->executeStatement(
                 "DELETE FROM managers WHERE role = 'ROLE_SYSTEM_ADMIN'"
             );
@@ -138,6 +141,9 @@ class SeedDataCommand extends Command
                     $this->entityManager->getConnection()->executeStatement("DELETE FROM organizations WHERE id IN ({$idsStr})");
                 }
             }
+            $this->entityManager->getConnection()->executeStatement(
+                "DELETE FROM audit_logs WHERE manager_id IS NOT NULL AND manager_id NOT IN (SELECT id FROM managers WHERE deleted_at IS NULL)"
+            );
             $io->success('Existing seed data cleared!');
         }
 
